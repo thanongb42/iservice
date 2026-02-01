@@ -1,0 +1,16 @@
+# Prevent PHP execution in uploads directory
+# Security measure to prevent uploaded files from being executed
+
+<FilesMatch "\.(?i:php|php3|php4|php5|phtml|pht)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Disable directory listing
+Options -Indexes
+
+# Allow access to common file types
+<FilesMatch "\.(?i:jpe?g|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|mp4|mp3|zip|rar)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>

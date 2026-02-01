@@ -1,0 +1,37 @@
+# Dependencies
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Cache
+storage/cache/*
+!storage/cache/.gitkeep
+
+# Uploads (optional - uncomment if you don't want to track uploads)
+# uploads/
+# public/uploads/
+
+# Temp files
+tmpclaude-*
+*.tmp
+
+# Claude settings (local)
+.claude/settings.local.json
