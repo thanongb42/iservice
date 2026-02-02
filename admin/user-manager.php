@@ -70,16 +70,7 @@ include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการผู้ใช้งาน - ระบบบริการดิจิทัล</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
+<style>
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
@@ -388,16 +379,10 @@ include 'admin-layout/topbar.php';
             width: 100%;
         }
     </style>
-</head>
-<body class="bg-gray-50">
- 
 
-    <!-- Main Content -->
-    <main class="main-content-transition lg:ml-0">
-        <div class="p-6">
-            
-           
-        <!-- Header -->
+    <!-- Content -->
+    <div>
+        <!-- Statistic Cards -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">
                 <i class="fas fa-users text-teal-600 mr-3"></i>จัดการผู้ใช้งาน
@@ -1030,4 +1015,8 @@ include 'admin-layout/topbar.php';
 </main>
 
 </body>
-</html>
+            }
+        });
+    </script>
+</div>
+<?php include 'admin-layout/footer.php'; ?>

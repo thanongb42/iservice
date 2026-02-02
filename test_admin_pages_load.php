@@ -47,4 +47,23 @@ try {
     ob_get_clean();
     echo "✗ Error: " . $e->getMessage() . "\n";
 }
+
+// Test user-manager.php
+echo "Testing admin/user-manager.php...\n";
+chdir(__DIR__ . '/admin');
+ob_start();
+try {
+    // Modify query for test since it connects to DB
+    require 'user-manager.php';
+    $output = ob_get_clean();
+    // Check for some unique content
+    if (strpos($output, 'จัดการข้อมูลผู้ใช้งานทั้งหมด') !== false) {
+        echo "✓ user-manager.php loaded successfully\n";
+    } else {
+        echo "✗ Page loaded but content not found\n";
+    }
+} catch (Exception $e) {
+    ob_get_clean();
+    echo "✗ Error: " . $e->getMessage() . "\n";
+}
 ?>
