@@ -7,6 +7,21 @@
 session_start();
 require_once 'config/database.php';
 
+// Fetch system settings
+$system_settings = [];
+if (isset($conn)) {
+    $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($settings_query) {
+        while ($row = $settings_query->fetch_assoc()) {
+            $system_settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+}
+
+$app_name = !empty($system_settings['app_name']) ? $system_settings['app_name'] : 'ระบบบริการดิจิทัล';
+$org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'เทศบาลนครรังสิต';
+$logo_path = !empty($system_settings['logo_image']) && file_exists($system_settings['logo_image']) ? $system_settings['logo_image'] : 'images/logo/rangsit-big-logo.png';
+
 // If already logged in, redirect to index
 if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
@@ -181,10 +196,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             <!-- Logo Section -->
             <div class="logo-container text-center mb-8">
                 <div class="inline-block mb-4">
-                    <img src="images/logo/rangsit-big-logo.png" alt="Logo" class="w-32 h-32 object-contain">
+                    <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Logo" class="w-32 h-32 object-contain">
                 </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">ระบบบริการดิจิทัล</h1>
-                <p class="text-gray-600">เทศบาลนครรังสิต</p>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2"><?php echo htmlspecialchars($app_name); ?></h1>
+                <p class="text-gray-600"><?php echo htmlspecialchars($org_name); ?></p>
                 <div class="h-1 w-20 bg-gradient-to-r from-teal-700 to-teal-400 mx-auto mt-3 rounded-full"></div>
             </div>
 

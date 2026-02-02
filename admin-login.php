@@ -9,6 +9,21 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
 
 require_once 'config/database.php';
 
+// Fetch system settings
+$system_settings = [];
+if (isset($conn)) {
+    $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($settings_query) {
+        while ($row = $settings_query->fetch_assoc()) {
+            $system_settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+}
+
+$app_name = !empty($system_settings['app_name']) ? $system_settings['app_name'] : 'Admin Login';
+$org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'ระบบจัดการสำหรับผู้ดูแล';
+$logo_path = !empty($system_settings['logo_image']) && file_exists($system_settings['logo_image']) ? $system_settings['logo_image'] : null;
+
 // Handle login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -84,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - ระบบบริการดิจิทัล</title>
+    <title><?php echo htmlspecialchars($app_name); ?> - ระบบบริการดิจิทัล</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -224,9 +239,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="login-card">
         <div class="gradient-header">
-            <i class="fas fa-shield-alt shield-icon"></i>
-            <h1 class="text-2xl font-bold mb-2">Admin Login</h1>
-            <p class="text-teal-100 text-sm">ระบบจัดการสำหรับผู้ดูแล</p>
+            <?php if ($logo_path): ?>
+                <img src="<?= htmlspecialchars($logo_path) ?>" alt="Logo" class="h-20 w-auto mx-auto mb-4 bg-white rounded-lg p-1">
+            <?php else: ?>
+                <i class="fas fa-shield-alt shield-icon"></i>
+            <?php endif; ?>
+            <h1 class="text-2xl font-bold mb-2"><?php echo htmlspecialchars($app_name); ?></h1>
+            <p class="text-teal-100 text-sm"><?php echo htmlspecialchars($org_name); ?></p>
         </div>
 
         <div class="p-8">
