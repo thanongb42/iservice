@@ -110,7 +110,7 @@ $menu_items = [
             <div class="space-y-1">
                 <?php foreach ($menu_items as $item): ?>
                 <a href="<?php echo $item['url']; ?>" class="flex items-center space-x-3 px-3 py-2 rounded-lg <?php echo $current_page === $item['id'] ? 'bg-teal-600' : 'hover:bg-teal-600'; ?> transition sidebar-item group">
-                    <i class="fas <?php echo $item['icon']; ?> w-5 text-center text-base"></i>
+                    <i class="fas <?php echo $item['icon']; ?> w-5 text-center text-lg"></i>
                     <span class="menu-text sidebar-transition text-sm"><?php echo $item['label']; ?></span>
                     <?php if ($item['badge']): ?>
                     <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-auto"><?php echo $item['badge']; ?></span>
@@ -123,14 +123,14 @@ $menu_items = [
             <div class="nav-section pt-2 mt-2 border-t border-teal-600 space-y-1">
                 <!-- Back to Site -->
                 <a href="../index.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-teal-600 transition sidebar-item group">
-                    <i class="fas fa-external-link-alt w-5 text-center text-base"></i>
+                    <i class="fas fa-external-link-alt w-5 text-center text-lg"></i>
                     <span class="menu-text sidebar-transition text-sm">กลับหน้าเว็บไซต์</span>
                     <span class="sidebar-tooltip">กลับหน้าเว็บไซต์</span>
                 </a>
 
                 <!-- Logout -->
                 <a href="../logout.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-red-600 transition sidebar-item group">
-                    <i class="fas fa-sign-out-alt w-5 text-center text-base"></i>
+                    <i class="fas fa-sign-out-alt w-5 text-center text-lg"></i>
                     <span class="menu-text sidebar-transition text-sm">ออกจากระบบ</span>
                     <span class="sidebar-tooltip">ออกจากระบบ</span>
                 </a>
