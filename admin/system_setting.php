@@ -14,7 +14,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $page_title = 'ตั้งค่าระบบ';
-$current_page = 'system_settings';
+$current_page = 'system_setting';
 $breadcrumb = [
     ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
     ['label' => 'ตั้งค่าระบบ']

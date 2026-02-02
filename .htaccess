@@ -1,9 +1,15 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /green_theme/
+    RewriteBase /iservice/
 
-    # Redirect to public folder if it exists
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # Don't redirect admin folder
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d [OR]
+    RewriteCond %{REQUEST_URI} ^/iservice/admin/ [OR]
+    RewriteCond %{REQUEST_URI} ^/iservice/config/ [OR]
+    RewriteCond %{REQUEST_URI} ^/iservice/api/
+    RewriteRule ^ - [L]
+
+    # Redirect all other requests to public folder
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
