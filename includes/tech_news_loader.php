@@ -81,8 +81,10 @@ function get_tech_news_detail($id) {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        // Increment view count
-        $conn->query("UPDATE tech_news SET view_count = view_count + 1 WHERE id = $id");
+        // Increment view count using prepared statement for SQL injection prevention
+        $update_stmt = $conn->prepare("UPDATE tech_news SET view_count = view_count + 1 WHERE id = ?");
+        $update_stmt->bind_param("i", $id);
+        $update_stmt->execute();
         return $result->fetch_assoc();
     }
 

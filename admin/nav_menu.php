@@ -66,25 +66,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_menu'])) {
     }
 }
 
-// DELETE - Remove menu
+// DELETE - Remove menu (using prepared statements for SQL injection prevention)
 if ($action === 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
 
-    // Delete children first
-    $conn->query("DELETE FROM nav_menu WHERE parent_id = $id");
+    // Delete children first using prepared statement
+    $stmt = $conn->prepare("DELETE FROM nav_menu WHERE parent_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
 
-    // Delete parent
-    if ($conn->query("DELETE FROM nav_menu WHERE id = $id")) {
+    // Delete parent using prepared statement
+    $stmt = $conn->prepare("DELETE FROM nav_menu WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
         $message = "ลบเมนูสำเร็จ!";
     } else {
         $error = "เกิดข้อผิดพลาด: " . $conn->error;
     }
 }
 
-// TOGGLE ACTIVE - Toggle menu status
+// TOGGLE ACTIVE - Toggle menu status (using prepared statement for SQL injection prevention)
 if ($action === 'toggle' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
-    $conn->query("UPDATE nav_menu SET is_active = NOT is_active WHERE id = $id");
+    $stmt = $conn->prepare("UPDATE nav_menu SET is_active = NOT is_active WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
     $message = "เปลี่ยนสถานะสำเร็จ!";
 }
 
@@ -95,8 +101,11 @@ while ($row = $result->fetch_assoc()) {
     $menu_id = $row['id'];
     $row['children'] = [];
 
-    // Fetch children
-    $child_result = $conn->query("SELECT * FROM nav_menu WHERE parent_id = $menu_id ORDER BY menu_order ASC");
+    // Fetch children using prepared statement for SQL injection prevention
+    $child_stmt = $conn->prepare("SELECT * FROM nav_menu WHERE parent_id = ? ORDER BY menu_order ASC");
+    $child_stmt->bind_param("i", $menu_id);
+    $child_stmt->execute();
+    $child_result = $child_stmt->get_result();
     while ($child = $child_result->fetch_assoc()) {
         $row['children'][] = $child;
     }
@@ -107,11 +116,14 @@ while ($row = $result->fetch_assoc()) {
 // Get parent menus for dropdown
 $parent_menus = $conn->query("SELECT id, menu_name FROM nav_menu WHERE parent_id IS NULL ORDER BY menu_name ASC");
 
-// Get edit data
+// Get edit data using prepared statement for SQL injection prevention
 $edit_data = null;
 if ($action === 'edit' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
-    $result = $conn->query("SELECT * FROM nav_menu WHERE id = $id");
+    $stmt = $conn->prepare("SELECT * FROM nav_menu WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $edit_data = $result->fetch_assoc();
 }
 ?>

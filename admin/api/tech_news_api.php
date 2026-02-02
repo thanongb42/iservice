@@ -32,11 +32,14 @@ try {
                 throw new Exception('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
             }
 
-            // Check pin limit (only if pinning)
+            // Check pin limit (only if pinning) - using prepared statements for SQL injection prevention
             if ($is_pinned) {
                 $id = intval($_POST['id'] ?? 0);
                 if ($action == 'update') {
-                    $pinned_count = $conn->query("SELECT COUNT(*) as count FROM tech_news WHERE is_pinned = 1 AND id != $id")->fetch_assoc()['count'];
+                    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tech_news WHERE is_pinned = 1 AND id != ?");
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $pinned_count = $stmt->get_result()->fetch_assoc()['count'];
                 } else {
                     $pinned_count = $conn->query("SELECT COUNT(*) as count FROM tech_news WHERE is_pinned = 1")->fetch_assoc()['count'];
                 }
@@ -154,9 +157,12 @@ try {
                 throw new Exception('ID ไม่ถูกต้อง');
             }
 
-            // Check pin limit if pinning
+            // Check pin limit if pinning - using prepared statement for SQL injection prevention
             if ($is_pinned == 1) {
-                $pinned_count = $conn->query("SELECT COUNT(*) as count FROM tech_news WHERE is_pinned = 1 AND id != $id")->fetch_assoc()['count'];
+                $stmt = $conn->prepare("SELECT COUNT(*) as count FROM tech_news WHERE is_pinned = 1 AND id != ?");
+                $stmt->bind_param("i", $id);
+                $stmt->execute();
+                $pinned_count = $stmt->get_result()->fetch_assoc()['count'];
                 if ($pinned_count >= 4) {
                     throw new Exception('ไม่สามารถปักหมุดได้เกิน 4 ข่าว');
                 }
