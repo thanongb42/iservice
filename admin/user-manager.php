@@ -241,6 +241,152 @@ include 'admin-layout/topbar.php';
             font-size: 0.875rem;
             font-weight: 500;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0);
+            transition: background-color 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 32px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #0d9488;
+            border-radius: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #0f766e;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0d9488;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+            background-color: #f0fdfa;
+        }
+
+        .form-group input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-group p {
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: #0d9488;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0f766e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        .w-full {
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -553,37 +699,50 @@ include 'admin-layout/topbar.php';
     <!-- Add/Edit User Modal -->
     <div id="userModal" class="modal">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-user-plus text-teal-600 mr-2"></i>
-                    <span id="modalTitle">เพิ่มผู้ใช้ใหม่</span>
-                </h2>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-2xl"></i>
+            <!-- Modal Header -->
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </div>
+                        <span id="modalTitle">เพิ่มผู้ใช้ใหม่</span>
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-1">กรอกข้อมูลผู้ใช้งานใหม่ในระบบ</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition text-2xl">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
 
+            <!-- Modal Form -->
             <form id="userForm">
                 <input type="hidden" id="userId" name="user_id">
                 <input type="hidden" id="formAction" name="action" value="add">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="form-group">
-                        <label for="username">ชื่อผู้ใช้ *</label>
+                        <label for="username">
+                            <i class="fas fa-user text-teal-600 mr-1"></i>ชื่อผู้ใช้ <span style="color: #dc2626;">*</span>
+                        </label>
                         <input type="text" id="username" name="username" required
                                pattern="[a-zA-Z0-9_]{4,20}"
                                placeholder="4-20 ตัวอักษร (a-z, 0-9, _)">
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="email">
+                            <i class="fas fa-envelope text-teal-600 mr-1"></i>Email <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="email" id="email" name="email" required placeholder="example@domain.com">
                     </div>
 
                     <div class="form-group md:col-span-2">
-                        <label for="prefix_id">คำนำหน้า *</label>
+                        <label for="prefix_id">
+                            <i class="fas fa-tag text-teal-600 mr-1"></i>คำนำหน้า <span style="color: #dc2626;">*</span>
+                        </label>
                         <select id="prefix_id" name="prefix_id" required>
-                            <option value="">-- เลือกคำนำหน้า *</option>
+                            <option value="">-- เลือกคำนำหน้า --</option>
                             <?php
                             $prefix_labels = [
                                 'general' => 'คำนำหน้าทั่วไป',
@@ -611,22 +770,30 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="first_name">ชื่อ *</label>
-                        <input type="text" id="first_name" name="first_name" required>
+                        <label for="first_name">
+                            <i class="fas fa-user-tag text-teal-600 mr-1"></i>ชื่อ <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="first_name" name="first_name" required placeholder="ชื่อจริง">
                     </div>
 
                     <div class="form-group">
-                        <label for="last_name">นามสกุล *</label>
-                        <input type="text" id="last_name" name="last_name" required>
+                        <label for="last_name">
+                            <i class="fas fa-user-tag text-teal-600 mr-1"></i>นามสกุล <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="last_name" name="last_name" required placeholder="นามสกุล">
                     </div>
 
                     <div class="form-group">
-                        <label for="phone">เบอร์โทรศัพท์</label>
-                        <input type="tel" id="phone" name="phone" pattern="[0-9]{10}">
+                        <label for="phone">
+                            <i class="fas fa-phone text-teal-600 mr-1"></i>เบอร์โทรศัพท์
+                        </label>
+                        <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="0891234567">
                     </div>
 
                     <div class="form-group">
-                        <label for="department_id">หน่วยงาน</label>
+                        <label for="department_id">
+                            <i class="fas fa-building text-teal-600 mr-1"></i>หน่วยงาน
+                        </label>
                         <select id="department_id" name="department_id">
                             <option value="">-- ไม่ระบุ --</option>
                             <?php
@@ -641,12 +808,16 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="position">ตำแหน่ง</label>
-                        <input type="text" id="position" name="position">
+                        <label for="position">
+                            <i class="fas fa-briefcase text-teal-600 mr-1"></i>ตำแหน่ง
+                        </label>
+                        <input type="text" id="position" name="position" placeholder="ตำแหน่งงาน">
                     </div>
 
                     <div class="form-group">
-                        <label for="role">บทบาท *</label>
+                        <label for="role">
+                            <i class="fas fa-shield-alt text-teal-600 mr-1"></i>บทบาท <span style="color: #dc2626;">*</span>
+                        </label>
                         <select id="role" name="role" required>
                             <option value="user">ผู้ใช้ทั่วไป</option>
                             <option value="staff">เจ้าหน้าที่</option>
@@ -655,7 +826,9 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="status">สถานะ *</label>
+                        <label for="status">
+                            <i class="fas fa-check-circle text-teal-600 mr-1"></i>สถานะ <span style="color: #dc2626;">*</span>
+                        </label>
                         <select id="status" name="status" required>
                             <option value="active">ใช้งาน</option>
                             <option value="inactive">ไม่ใช้งาน</option>
@@ -663,21 +836,25 @@ include 'admin-layout/topbar.php';
                         </select>
                     </div>
 
-                    <div class="form-group md:col-span-2" id="passwordGroup">
-                        <label for="password">รหัสผ่าน <span id="passwordRequired">*</span></label>
-                        <input type="password" id="password" name="password">
-                        <p class="text-sm text-gray-500 mt-1">
+                    <div class="form-group md:col-span-2">
+                        <label for="password">
+                            <i class="fas fa-lock text-teal-600 mr-1"></i>รหัสผ่าน <span id="passwordRequired" style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="password" id="password" name="password" placeholder="กรอกรหัสผ่านเพื่อเพิ่มผู้ใช้">
+                        <p>
+                            <i class="fas fa-info-circle text-teal-600 mr-1"></i>
                             <span id="passwordHint">ต้องมีความยาวอย่างน้อย 6 ตัวอักษร</span>
                         </p>
                     </div>
                 </div>
 
-                <div class="flex justify-end space-x-3 mt-6">
+                <!-- Modal Footer -->
+                <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
                     <button type="button" onclick="closeModal()" class="btn btn-secondary">
-                        <i class="fas fa-times mr-2"></i>ยกเลิก
+                        <i class="fas fa-times"></i>ยกเลิก
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save mr-2"></i>บันทึก
+                        <i class="fas fa-save"></i>บันทึกข้อมูล
                     </button>
                 </div>
             </form>
