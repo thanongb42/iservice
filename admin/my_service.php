@@ -37,7 +37,6 @@ $color_map = [
     'gray' => ['bg' => 'bg-gray-500', 'text' => 'text-gray-600', 'border' => 'border-gray-200'],
     'yellow' => ['bg' => 'bg-yellow-500', 'text' => 'text-yellow-600', 'border' => 'border-yellow-200'],
 ];
-];
 ?>
 <?php
 include 'admin-layout/header.php';
