@@ -74,14 +74,14 @@ $menu_items = [
         'id' => 'reports',
         'icon' => 'fa-chart-bar',
         'label' => 'รายงาน',
-        'url' => 'reports.php',
+        'url' => 'admin_report.php',
         'badge' => null
     ],
     [
         'id' => 'system_settings',
         'icon' => 'fa-cog',
         'label' => 'ตั้งค่าระบบ',
-        'url' => 'system_settings.php',
+        'url' => 'system_setting.php',
         'badge' => null
     ]
 ];

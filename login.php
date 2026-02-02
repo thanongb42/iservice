@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                             <input type="checkbox" name="remember" class="mr-2 rounded text-teal-600 focus:ring-teal-500">
                             <span>จดจำการเข้าสู่ระบบ</span>
                         </label>
-                        <a href="#" class="text-sm text-teal-700 hover:text-teal-900 font-medium">ลืมรหัสผ่าน?</a>
+                        <a href="forgot_password.php" class="text-sm text-teal-700 hover:text-teal-900 font-medium">ลืมรหัสผ่าน?</a>
                     </div>
 
                     <!-- Login Button -->
