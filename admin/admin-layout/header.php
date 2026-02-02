@@ -188,13 +188,13 @@ $page_title = $page_title ?? 'Admin Dashboard';
 
         /* Collapsed sidebar adjustments */
         #sidebar.sidebar-collapsed .sidebar-item {
-            padding: 0.5rem;
+            padding: 0.375rem;
             justify-content: center;
         }
 
         #sidebar.sidebar-collapsed .sidebar-item i {
             width: auto;
-            font-size: 0.875rem;
+            font-size: 1rem;
         }
 
         #sidebar.sidebar-collapsed nav {
