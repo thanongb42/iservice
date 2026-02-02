@@ -449,12 +449,7 @@ include __DIR__ . '/includes/header_public.php';
                 <?php echo $tech_news_html; ?>
             </div>
 
-            <!-- Link to Admin -->
-            <div class="text-center mt-8">
-                <a href="admin/tech_news.php" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition text-sm">
-                    <i class="fas fa-cog mr-2"></i>จัดการข่าวเทคโนโลยี (Admin)
-                </a>
-            </div>
+
         </div>
     </section>
 
