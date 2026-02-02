@@ -188,7 +188,7 @@ $page_title = $page_title ?? 'Admin Dashboard';
 
         /* Collapsed sidebar adjustments */
         #sidebar.sidebar-collapsed .sidebar-item {
-            padding: 0.625rem;
+            padding: 0.5rem;
             justify-content: center;
         }
 
@@ -198,35 +198,35 @@ $page_title = $page_title ?? 'Admin Dashboard';
         }
 
         #sidebar.sidebar-collapsed nav {
-            padding: 0.5rem;
+            padding: 0.375rem;
         }
 
         #sidebar.sidebar-collapsed nav .space-y-1 {
-            gap: 0.25rem;
+            gap: 0.125rem;
         }
 
         #sidebar.sidebar-collapsed nav .space-y-1 > * + * {
-            margin-top: 0.25rem;
+            margin-top: 0.125rem;
         }
 
         #sidebar.sidebar-collapsed .nav-section {
-            padding-top: 0.5rem;
-            margin-top: 0.5rem;
-            gap: 0.25rem;
+            padding-top: 0.375rem;
+            margin-top: 0.375rem;
+            gap: 0.125rem;
         }
 
         #sidebar.sidebar-collapsed .nav-section > * + * {
-            margin-top: 0.25rem;
+            margin-top: 0.125rem;
         }
 
         /* Collapsed header and user section */
         #sidebar.sidebar-collapsed .sidebar-header {
-            padding: 0.5rem;
+            padding: 0.375rem;
             justify-content: center;
         }
 
         #sidebar.sidebar-collapsed .sidebar-user {
-            padding: 0.5rem;
+            padding: 0.375rem;
             justify-content: center;
         }
 
@@ -236,7 +236,7 @@ $page_title = $page_title ?? 'Admin Dashboard';
         }
 
         #sidebar.sidebar-collapsed .sidebar-footer {
-            padding: 0.5rem;
+            padding: 0.375rem;
         }
 
         /* ปรับ collapse button ให้ขนาดเหมาะสม */
