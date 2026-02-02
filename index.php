@@ -404,12 +404,7 @@ include __DIR__ . '/includes/header_public.php';
             <?php echo $service_cards_html; ?>
         </div>
 
-        <!-- Link to Admin (สำหรับ dev เท่านั้น ให้ลบออกหลัง production) -->
-        <div class="text-center mt-12">
-            <a href="admin/my_service.php" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition text-sm">
-                <i class="fas fa-cog mr-2"></i>จัดการบริการ (Admin)
-            </a>
-        </div>
+
     </section>
 
     <!-- Learning Resources Center -->
