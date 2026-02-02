@@ -198,25 +198,35 @@ $page_title = $page_title ?? 'Admin Dashboard';
         }
 
         #sidebar.sidebar-collapsed nav {
-            padding: 0.75rem;
+            padding: 0.5rem;
         }
 
-        #sidebar.sidebar-collapsed nav .space-y-2 > * + * {
+        #sidebar.sidebar-collapsed nav .space-y-1 {
+            gap: 0.25rem;
+        }
+
+        #sidebar.sidebar-collapsed nav .space-y-1 > * + * {
             margin-top: 0.25rem;
         }
 
         #sidebar.sidebar-collapsed .nav-section {
-            padding-top: 0.75rem;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+            gap: 0.25rem;
+        }
+
+        #sidebar.sidebar-collapsed .nav-section > * + * {
+            margin-top: 0.25rem;
         }
 
         /* Collapsed header and user section */
         #sidebar.sidebar-collapsed .sidebar-header {
-            padding: 0.75rem;
+            padding: 0.5rem;
             justify-content: center;
         }
 
         #sidebar.sidebar-collapsed .sidebar-user {
-            padding: 0.75rem;
+            padding: 0.5rem;
             justify-content: center;
         }
 
@@ -226,27 +236,26 @@ $page_title = $page_title ?? 'Admin Dashboard';
         }
 
         #sidebar.sidebar-collapsed .sidebar-footer {
-            padding: 0.75rem;
+            padding: 0.5rem;
         }
 
-        /* ปรับ collapse button ใน sidebar footer ให้ขนาดและระยะห่างเหมาะสม */
+        /* ปรับ collapse button ให้ขนาดเหมาะสม */
         .sidebar-footer #collapseBtn {
-            min-height: 0;
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
+            min-height: auto;
+            height: auto;
+            padding: 0.375rem 0.5rem;
             border-radius: 0.375rem;
         }
+
         .sidebar-footer #collapseBtn i {
-            font-size: 0.85rem;
-            height: 18px;
+            font-size: 0.75rem;
+            height: 14px;
             line-height: 1;
         }
+
         .sidebar-footer #collapseBtn span {
-            font-size: 0.85rem;
-            line-height: 1.1;
-        }
+            font-size: 0.7rem;
+            line-height: 1;
         }
     </style>
 </head>

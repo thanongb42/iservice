@@ -77,7 +77,7 @@ $menu_items = [
 <aside id="sidebar" class="fixed top-0 left-0 h-screen bg-gradient-to-b from-teal-800 to-teal-700 text-white sidebar-expanded sidebar-transition z-50 shadow-2xl sidebar-mobile">
     <div class="flex flex-col h-full">
         <!-- Sidebar Header -->
-        <div class="sidebar-header flex items-center justify-between p-4 border-b border-teal-600">
+        <div class="sidebar-header flex items-center justify-between p-3 border-b border-teal-600">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-headset text-lg"></i>
@@ -93,7 +93,7 @@ $menu_items = [
         </div>
 
         <!-- User Info -->
-        <div class="sidebar-user p-4 border-b border-teal-600">
+        <div class="sidebar-user p-3 border-b border-teal-600">
             <div class="flex items-center space-x-3">
                 <div class="user-avatar w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-user text-base"></i>
@@ -106,10 +106,10 @@ $menu_items = [
         </div>
 
         <!-- Navigation Menu -->
-        <nav class="flex-1 overflow-y-auto p-3">
+        <nav class="flex-1 overflow-y-auto p-2">
             <div class="space-y-1">
                 <?php foreach ($menu_items as $item): ?>
-                <a href="<?php echo $item['url']; ?>" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg <?php echo $current_page === $item['id'] ? 'bg-teal-600' : 'hover:bg-teal-600'; ?> transition sidebar-item group">
+                <a href="<?php echo $item['url']; ?>" class="flex items-center space-x-3 px-3 py-2 rounded-lg <?php echo $current_page === $item['id'] ? 'bg-teal-600' : 'hover:bg-teal-600'; ?> transition sidebar-item group">
                     <i class="fas <?php echo $item['icon']; ?> w-5 text-center text-base"></i>
                     <span class="menu-text sidebar-transition text-sm"><?php echo $item['label']; ?></span>
                     <?php if ($item['badge']): ?>
@@ -120,16 +120,16 @@ $menu_items = [
                 <?php endforeach; ?>
             </div>
 
-            <div class="nav-section pt-3 mt-3 border-t border-teal-600 space-y-1">
+            <div class="nav-section pt-2 mt-2 border-t border-teal-600 space-y-1">
                 <!-- Back to Site -->
-                <a href="../index.php" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-teal-600 transition sidebar-item group">
+                <a href="../index.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-teal-600 transition sidebar-item group">
                     <i class="fas fa-external-link-alt w-5 text-center text-base"></i>
                     <span class="menu-text sidebar-transition text-sm">กลับหน้าเว็บไซต์</span>
                     <span class="sidebar-tooltip">กลับหน้าเว็บไซต์</span>
                 </a>
 
                 <!-- Logout -->
-                <a href="../logout.php" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-red-600 transition sidebar-item group">
+                <a href="../logout.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-red-600 transition sidebar-item group">
                     <i class="fas fa-sign-out-alt w-5 text-center text-base"></i>
                     <span class="menu-text sidebar-transition text-sm">ออกจากระบบ</span>
                     <span class="sidebar-tooltip">ออกจากระบบ</span>
@@ -138,10 +138,10 @@ $menu_items = [
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="sidebar-footer p-3 border-t border-teal-600">
-            <button id="collapseBtn" onclick="toggleSidebar()" class="w-full flex items-center justify-center space-x-1 p-1.5 rounded-md hover:bg-teal-600 transition min-h-0">
-                <i class="fas fa-chevron-left text-xs" id="collapseIcon" style="line-height:1;height:18px;"></i>
-                <span id="collapseText" class="sidebar-transition text-xs leading-tight">ย่อเมนู</span>
+        <div class="sidebar-footer p-2 border-t border-teal-600">
+            <button id="collapseBtn" onclick="toggleSidebar()" class="w-full flex items-center justify-center space-x-1 p-1 rounded-md hover:bg-teal-600 transition">
+                <i class="fas fa-chevron-left text-xs" id="collapseIcon" style="line-height:1;"></i>
+                <span id="collapseText" class="sidebar-transition text-xs leading-none">ย่อเมนู</span>
             </button>
         </div>
     </div>
