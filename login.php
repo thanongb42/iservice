@@ -108,12 +108,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             position: relative;
         }
 
-        .input-group i {
+        .input-group > i {
             position: absolute;
             left: 1rem;
             top: 50%;
             transform: translateY(-50%);
             color: #0f766e;
+            z-index: 10;
         }
 
         .input-group input {

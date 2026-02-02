@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 1.5rem;
         }
 
-        .input-group i {
+        .input-group i:not(.password-toggle) {
             position: absolute;
             left: 1rem;
             top: 50%;
