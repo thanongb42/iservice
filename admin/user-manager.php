@@ -33,6 +33,17 @@ $stats = $stats_result->fetch_assoc();
 $users_query = "SELECT * FROM v_users_full ORDER BY created_at DESC";
 $users_result = $conn->query($users_query);
 
+// Pagination setup
+$items_per_page = 10;
+$total_users = $users_result->num_rows;
+$total_pages = ceil($total_users / $items_per_page);
+$current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($current_page - 1) * $items_per_page;
+
+// Re-query with LIMIT and OFFSET
+$users_query = "SELECT * FROM v_users_full ORDER BY created_at DESC LIMIT $offset, $items_per_page";
+$users_result = $conn->query($users_query);
+
 // Get prefixes for dropdown
 $prefixes_query = "SELECT prefix_id, prefix_name, prefix_type FROM prefixes WHERE is_active = 1 ORDER BY display_order";
 $prefixes_result = $conn->query($prefixes_query);
@@ -88,6 +99,148 @@ include 'admin-layout/topbar.php';
         .role-admin { background-color: #dbeafe; color: #1e40af; }
         .role-staff { background-color: #e0e7ff; color: #4338ca; }
         .role-user { background-color: #f3f4f6; color: #374151; }
+
+        /* Table Styling */
+        #usersTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #usersTable thead {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+        }
+
+        #usersTable th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            letter-spacing: 0.5px;
+        }
+
+        #usersTable tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        #usersTable tbody tr:hover {
+            background-color: #f0fdfa;
+            box-shadow: inset 0 1px 2px rgba(13, 148, 136, 0.1);
+        }
+
+        #usersTable td {
+            padding: 14px 16px;
+            font-size: 0.875rem;
+        }
+
+        #usersTable td:first-child {
+            font-weight: 500;
+            color: #0d9488;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin-right: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .action-btn-view {
+            color: #0369a1;
+        }
+
+        .action-btn-view:hover {
+            background-color: #ecf0ff;
+            color: #0284c7;
+        }
+
+        .action-btn-edit {
+            color: #059669;
+        }
+
+        .action-btn-edit:hover {
+            background-color: #ecfdf5;
+            color: #10b981;
+        }
+
+        .action-btn-delete {
+            color: #dc2626;
+        }
+
+        .action-btn-delete:hover {
+            background-color: #fef2f2;
+            color: #ef4444;
+        }
+
+        /* Pagination Styling */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pagination a {
+            background-color: #f3f4f6;
+            color: #0d9488;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+        }
+
+        .pagination a:hover {
+            background-color: #0d9488;
+            color: white;
+            border-color: #0d9488;
+        }
+
+        .pagination span.current {
+            background-color: #0d9488;
+            color: white;
+            border: 1px solid #0d9488;
+            font-weight: 600;
+        }
+
+        .pagination span.info {
+            color: #6b7280;
+            padding: 0 12px;
+        }
+
+        .table-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background-color: #f0fdfa;
+            border-radius: 8px;
+            border-left: 4px solid #0d9488;
+        }
+
+        .table-info-text {
+            color: #065f46;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -214,90 +367,187 @@ include 'admin-layout/topbar.php';
         </div>
 
         <!-- Users Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            <!-- Table Info Bar -->
+            <div class="table-info">
+                <div class="table-info-text">
+                    <i class="fas fa-users mr-2"></i>
+                    แสดง <strong><?= $users_result->num_rows ?></strong> จาก <strong><?= $total_users ?></strong> ผู้ใช้
+                </div>
+                <div class="text-sm text-gray-600">
+                    หน้า <strong><?= $current_page ?></strong> จาก <strong><?= $total_pages ?></strong>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
                 <table id="usersTable">
                     <thead>
                         <tr>
-                            <th>รหัส</th>
-                            <th>ชื่อผู้ใช้</th>
-                            <th>ชื่อ-นามสกุล</th>
-                            <th>Email</th>
-                            <th>หน่วยงาน</th>
-                            <th>บทบาท</th>
-                            <th>สถานะ</th>
-                            <th>วันที่สร้าง</th>
-                            <th>การจัดการ</th>
+                            <th style="width: 8%;">
+                                <i class="fas fa-hashtag mr-1"></i>ID
+                            </th>
+                            <th style="width: 15%;">
+                                <i class="fas fa-user mr-1"></i>ชื่อผู้ใช้
+                            </th>
+                            <th style="width: 20%;">
+                                <i class="fas fa-id-card mr-1"></i>ชื่อ-นามสกุล
+                            </th>
+                            <th style="width: 18%;">
+                                <i class="fas fa-envelope mr-1"></i>Email
+                            </th>
+                            <th style="width: 12%;">
+                                <i class="fas fa-building mr-1"></i>หน่วยงาน
+                            </th>
+                            <th style="width: 8%;">
+                                <i class="fas fa-shield-alt mr-1"></i>บทบาท
+                            </th>
+                            <th style="width: 8%;">
+                                <i class="fas fa-check-circle mr-1"></i>สถานะ
+                            </th>
+                            <th style="width: 10%;">
+                                <i class="fas fa-tools mr-1"></i>การจัดการ
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($user = $users_result->fetch_assoc()): ?>
-                        <tr data-role="<?php echo $user['role']; ?>" data-status="<?php echo $user['status']; ?>">
-                            <td class="font-mono text-sm"><?php echo $user['user_id']; ?></td>
-                            <td>
-                                <div class="flex items-center">
-                                    <div class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center mr-2">
-                                        <span class="text-teal-600 font-bold text-sm">
-                                            <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
-                                        </span>
-                                    </div>
-                                    <span class="font-medium"><?php echo htmlspecialchars($user['username']); ?></span>
-                                </div>
-                            </td>
-                            <td><?php echo htmlspecialchars($user['full_name']); ?></td>
-                            <td><?php echo htmlspecialchars($user['email']); ?></td>
-                            <td>
-                                <?php if ($user['department_name']): ?>
-                                    <span class="text-sm text-gray-600">
-                                        <?php echo htmlspecialchars($user['department_name']); ?>
+                        <?php if ($users_result->num_rows > 0): ?>
+                            <?php while ($user = $users_result->fetch_assoc()): ?>
+                            <tr data-role="<?php echo $user['role']; ?>" data-status="<?php echo $user['status']; ?>" data-user-id="<?php echo $user['user_id']; ?>">
+                                <td class="font-mono">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 bg-teal-100 rounded text-teal-700 font-bold text-xs">
+                                        <?php echo $user['user_id']; ?>
                                     </span>
-                                <?php else: ?>
-                                    <span class="text-gray-400 text-sm">ไม่ระบุ</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <span class="role-badge role-<?php echo $user['role']; ?>">
-                                    <?php
-                                    $role_text = ['admin' => 'ผู้ดูแล', 'staff' => 'เจ้าหน้าที่', 'user' => 'ผู้ใช้'];
-                                    echo $role_text[$user['role']];
-                                    ?>
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-badge status-<?php echo $user['status']; ?>">
-                                    <?php
-                                    $status_text = ['active' => 'ใช้งาน', 'inactive' => 'ไม่ใช้งาน', 'suspended' => 'ระงับ'];
-                                    echo $status_text[$user['status']];
-                                    ?>
-                                </span>
-                            </td>
-                            <td class="text-sm text-gray-600">
-                                <?php echo date('d/m/Y', strtotime($user['created_at'])); ?>
-                            </td>
-                            <td>
-                                <div class="flex space-x-2">
-                                    <button onclick="viewUser(<?php echo $user['user_id']; ?>)"
-                                            class="text-blue-600 hover:text-blue-800" title="ดูรายละเอียด">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button onclick="editUser(<?php echo $user['user_id']; ?>)"
-                                            class="text-green-600 hover:text-green-800" title="แก้ไข">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
-                                    <button onclick="deleteUser(<?php echo $user['user_id']; ?>)"
-                                            class="text-red-600 hover:text-red-800" title="ลบ">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                </td>
+                                <td>
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center">
+                                            <span class="text-white font-bold text-sm">
+                                                <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
+                                            </span>
+                                        </div>
+                                        <span class="font-medium text-gray-900"><?php echo htmlspecialchars($user['username']); ?></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-gray-700">
+                                        <?php echo htmlspecialchars($user['full_name']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-gray-600 text-sm"><?php echo htmlspecialchars($user['email']); ?></span>
+                                </td>
+                                <td>
+                                    <?php if ($user['department_name']): ?>
+                                        <span class="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                            <?php echo htmlspecialchars($user['department_name']); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-gray-400 text-sm italic">ไม่ระบุ</span>
                                     <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
+                                </td>
+                                <td>
+                                    <span class="role-badge role-<?php echo $user['role']; ?>">
+                                        <?php
+                                        $role_text = ['admin' => 'ผู้ดูแล', 'staff' => 'เจ้าหน้าที่', 'user' => 'ผู้ใช้'];
+                                        echo $role_text[$user['role']];
+                                        ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-<?php echo $user['status']; ?>">
+                                        <i class="fas fa-circle text-xs mr-1"></i>
+                                        <?php
+                                        $status_text = ['active' => 'ใช้งาน', 'inactive' => 'ไม่ใช้งาน', 'suspended' => 'ระงับ'];
+                                        echo $status_text[$user['status']];
+                                        ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center space-x-1">
+                                        <button class="action-btn action-btn-view" onclick="viewUser(<?php echo $user['user_id']; ?>)" 
+                                                title="ดูรายละเอียด" data-bs-toggle="tooltip">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn action-btn-edit" onclick="editUser(<?php echo $user['user_id']; ?>)"
+                                                title="แก้ไข" data-bs-toggle="tooltip">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
+                                        <button class="action-btn action-btn-delete" onclick="deleteUser(<?php echo $user['user_id']; ?>)"
+                                                title="ลบ" data-bs-toggle="tooltip">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="8" class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-inbox text-3xl mb-2 block opacity-50"></i>
+                                    ไม่พบข้อมูลผู้ใช้งาน
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="pagination">
+            <span class="info">
+                <i class="fas fa-list mr-1"></i>
+                หน้า:
+            </span>
+            
+            <?php if ($current_page > 1): ?>
+                <a href="?page=1" title="หน้าแรก">
+                    <i class="fas fa-chevron-double-left"></i>
+                </a>
+                <a href="?page=<?php echo $current_page - 1; ?>" title="หน้าก่อนหน้า">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            <?php endif; ?>
+
+            <?php 
+            $start_page = max(1, $current_page - 2);
+            $end_page = min($total_pages, $current_page + 2);
+            
+            if ($start_page > 1): ?>
+                <a href="?page=1">1</a>
+                <?php if ($start_page > 2): ?>
+                    <span class="info">...</span>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php for ($page = $start_page; $page <= $end_page; $page++): ?>
+                <?php if ($page == $current_page): ?>
+                    <span class="current"><?php echo $page; ?></span>
+                <?php else: ?>
+                    <a href="?page=<?php echo $page; ?>"><?php echo $page; ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+
+            <?php if ($end_page < $total_pages): ?>
+                <?php if ($end_page < $total_pages - 1): ?>
+                    <span class="info">...</span>
+                <?php endif; ?>
+                <a href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a>
+            <?php endif; ?>
+
+            <?php if ($current_page < $total_pages): ?>
+                <a href="?page=<?php echo $current_page + 1; ?>" title="หน้าถัดไป">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="?page=<?php echo $total_pages; ?>" title="หน้าสุดท้าย">
+                    <i class="fas fa-chevron-double-right"></i>
+                </a>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Add/Edit User Modal -->
