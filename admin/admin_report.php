@@ -31,7 +31,7 @@ $department_id = $_GET['dept'] ?? null;
 // Overview Statistics
 $stats = [
     'total_users' => $conn->query("SELECT COUNT(*) as cnt FROM users")->fetch_assoc()['cnt'],
-    'total_departments' => $conn->query("SELECT COUNT(*) as cnt FROM departments WHERE parent_id IS NULL")->fetch_assoc()['cnt'],
+    'total_departments' => $conn->query("SELECT COUNT(*) as cnt FROM departments WHERE parent_department_id IS NULL")->fetch_assoc()['cnt'],
     'total_services' => $conn->query("SELECT COUNT(*) as cnt FROM my_service")->fetch_assoc()['cnt'],
     'active_requests' => $conn->query("SELECT COUNT(*) as cnt FROM service_requests WHERE status != 'completed'")->fetch_assoc()['cnt'],
     'total_tech_news' => $conn->query("SELECT COUNT(*) as cnt FROM tech_news WHERE is_active = 1")->fetch_assoc()['cnt'],
@@ -46,7 +46,7 @@ while ($row = $status_query->fetch_assoc()) {
 
 // Users by Department
 $users_by_dept = [];
-$dept_query = $conn->query("SELECT d.name, COUNT(u.id) as count FROM departments d LEFT JOIN users u ON d.id = u.department_id WHERE d.parent_id IS NULL GROUP BY d.id ORDER BY d.name");
+$dept_query = $conn->query("SELECT d.department_name as name, COUNT(u.id) as count FROM departments d LEFT JOIN users u ON d.department_id = u.department_id WHERE d.parent_department_id IS NULL GROUP BY d.department_id ORDER BY d.department_name");
 while ($row = $dept_query->fetch_assoc()) {
     $users_by_dept[] = $row;
 }
@@ -367,9 +367,9 @@ include 'admin-layout/topbar.php';
                     <tbody>
                         <?php 
                         $users_query = $conn->query("
-                            SELECT u.id, u.username, u.email, u.role, d.name as dept_name 
+                            SELECT u.id, u.username, u.email, u.role, d.department_name as dept_name 
                             FROM users u 
-                            LEFT JOIN departments d ON u.department_id = d.id 
+                            LEFT JOIN departments d ON u.department_id = d.department_id 
                             ORDER BY u.username
                         ");
                         while ($user = $users_query->fetch_assoc()):
