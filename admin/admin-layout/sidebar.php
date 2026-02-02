@@ -12,6 +12,21 @@
 $current_page = $current_page ?? 'dashboard';
 $pending_requests = $pending_requests ?? 0;
 
+// Fetch system settings for sidebar
+$system_settings = [];
+if (isset($conn)) {
+    $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($settings_query) {
+        while ($row = $settings_query->fetch_assoc()) {
+            $system_settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+}
+
+$sidebar_app_name = !empty($system_settings['app_name']) ? $system_settings['app_name'] : 'iService';
+$sidebar_org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'ระบบบริการดิจิทัล';
+$sidebar_logo = !empty($system_settings['logo_image']) && file_exists('../' . $system_settings['logo_image']) ? $system_settings['logo_image'] : null;
+
 // Menu items configuration
 $menu_items = [
     [
@@ -78,7 +93,7 @@ $menu_items = [
         'badge' => null
     ],
     [
-        'id' => 'system_settings',
+        'id' => 'system_setting',
         'icon' => 'fa-cog',
         'label' => 'ตั้งค่าระบบ',
         'url' => 'system_setting.php',
@@ -93,12 +108,16 @@ $menu_items = [
         <!-- Sidebar Header -->
         <div class="sidebar-header flex items-center justify-between p-3 border-b border-teal-600">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-headset text-lg"></i>
-                </div>
+                <?php if ($sidebar_logo): ?>
+                    <img src="../<?php echo htmlspecialchars($sidebar_logo); ?>" alt="Logo" class="w-10 h-10 object-contain bg-white rounded-lg flex-shrink-0">
+                <?php else: ?>
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-headset text-lg"></i>
+                    </div>
+                <?php endif; ?>
                 <div id="sidebarLogo" class="sidebar-transition">
-                    <h1 class="text-lg font-bold">iService</h1>
-                    <p class="text-xs text-teal-200">ระบบบริการดิจิทัล</p>
+                    <h1 class="text-lg font-bold truncate" style="max-width: 140px;"><?php echo htmlspecialchars($sidebar_app_name); ?></h1>
+                    <p class="text-xs text-teal-200 truncate" style="max-width: 140px;"><?php echo htmlspecialchars($sidebar_org_name); ?></p>
                 </div>
             </div>
             <button id="sidebarToggle" onclick="toggleMobileSidebar()" class="lg:hidden text-white hover:bg-teal-600 p-2 rounded">

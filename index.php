@@ -1,4 +1,5 @@
 <?php
+session_start();
 // Load navigation menu from database
 require_once __DIR__ . '/includes/nav_menu_loader.php';
 $nav_menus = get_menu_structure();
@@ -21,40 +22,9 @@ $all_news = get_all_tech_news(8); // ดึงข่าว 8 รายการ 
 $latest_news = get_latest_tech_news(3); // ดึงข่าวล่าสุด 3 ข่าว (สำหรับ sidebar)
 $tech_news_html = render_tech_news_cards($all_news);
 $tech_updates_html = render_tech_updates($latest_news);
-?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ข้อมูลธุรกรรมเมือง ศีลคำเขียว รุกรม</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Sarabun', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Responsive Typography */
-        h1 { font-size: clamp(1.25rem, 5vw, 1.875rem); }
-        h2 { font-size: clamp(1.875rem, 6vw, 2.25rem); }
-        h3 { font-size: clamp(1.5rem, 5vw, 1.875rem); }
-        h4 { font-size: clamp(1.125rem, 4vw, 1.5rem); }
-        p { font-size: clamp(0.875rem, 2vw, 1rem); }
-
+$page_title = "ข้อมูลธุรกรรมเมือง ศีลคำเขียว รุกรม";
+$extra_styles = '
         .hero-gradient {
             background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 50%, #7fb069 100%);
             background-attachment: fixed;
@@ -64,19 +34,6 @@ $tech_updates_html = render_tech_updates($latest_news);
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
-
-        /* Sticky navbar with scroll effect */
-        nav.bg-white {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        header.bg-teal-700 {
-            position: relative;
-            z-index: 999;
-        }
-
 
         /* Hero Section Responsive */
         @media (max-width: 768px) {
@@ -93,7 +50,7 @@ $tech_updates_html = render_tech_updates($latest_news);
                 height: auto;
             }
         }
-
+        
         /* Grid Responsive */
         @media (max-width: 1440px) {
             .grid-cols-7 {
@@ -139,82 +96,6 @@ $tech_updates_html = render_tech_updates($latest_news);
             section {
                 padding: 1rem !important;
             }
-        }
-
-        /* Mobile Menu Styles */
-        #mobileMenu a {
-            display: block;
-            padding: 0.75rem 1rem;
-            color: #374151;
-            font-weight: 500;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        #mobileMenu a:hover {
-            background-color: #f3f4f6;
-            color: #0d9488;
-        }
-
-        #mobileMenu a.active {
-            background-color: #ccfbf1;
-            color: #0f766e;
-        }
-
-        /* Submenu in mobile */
-        #mobileMenu .group {
-            position: relative;
-        }
-
-        #mobileMenu .group > div {
-            padding-left: 2rem;
-        }
-
-        #mobileMenu .group > div a {
-            font-size: 0.875rem;
-            padding: 0.5rem 1rem;
-        }
-
-        /* Header Responsive */
-        @media (max-width: 768px) {
-            /* Top header - allow it to wrap but keep left alignment */
-            header.bg-teal-700 .flex {
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-
-            header.bg-teal-700 input {
-                width: 100%;
-                order: 3;
-            }
-
-            /* Navigation header - keep horizontal layout */
-            header.bg-white .flex {
-                justify-content: space-between !important;
-            }
-
-            header.bg-white h1 {
-                font-size: 1rem;
-                line-height: 1.3;
-            }
-
-            header.bg-white p {
-                font-size: 0.6rem;
-                line-height: 1.2;
-            }
-
-            /* Reduce logo size on mobile */
-            header.bg-white .w-16 {
-                width: 3rem;
-                height: 3rem;
-            }
-        }
-
-        /* Image Responsive */
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
         }
 
         /* Container Responsive */
@@ -280,77 +161,10 @@ $tech_updates_html = render_tech_updates($latest_news);
                 background-color: white;
             }
         }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-teal-700 text-white">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-3">
-                <div class="flex items-center space-x-4">
-                   
-                    <div>
-                        <h1 class="text-lg font-bold">เทศบาลนครรังสิต</h1>
-                        <p class="text-xs">ระบบบริการภายใน ฝ่ายบริการและเผยแพร่วิชาการ</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <form class="flex items-center">
-                        <input type="search" placeholder="ค้นหา" class="px-3 py-1 rounded text-gray-800 text-sm">
-                        <button type="submit" class="ml-2 text-white hover:text-yellow-300 transition-colors">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                    <button class="text-sm">TH | EN</button>
-                    <a href="admin-login.php" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
-                        <i class="fas fa-user-shield"></i>
-                        <span class="hidden md:inline">Admin Login</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
+';
 
-    <!-- Navigation -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-teal-500 shadow-md">
-                        <img src="images/logo/rangsit-big-logo.png" alt="Rangsit Logo" class="w-full h-full object-cover p-1">
-                    </div>
-                    <div>
-                        <h1 class="text-xl md:text-2xl font-display font-bold text-gray-900 leading-tight">เทศบาลนครรังสิต</h1>
-                        <p class="text-sm md:text-base text-gray-600 font-medium">ฝ่ายบริการและเผยแพร่วิชาการ <span class="text-teal-700">กองยุทธศาสตร์และงบประมาณ</span></p>
-                    </div>
-                </div>
-
-                <nav class="hidden lg:flex space-x-1 items-center">
-                    <?php echo $nav_html; ?>
-                    <a href="admin-login.php" class="ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
-                        <i class="fas fa-user-shield"></i>
-                        <span>Admin</span>
-                    </a>
-                </nav>
-
-                <button id="mobileMenuBtn" class="lg:hidden text-gray-900 text-2xl focus:outline-none">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </div>
-
-            <!-- Mobile Menu (Hidden by default) -->
-            <nav id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200 py-4">
-                <div class="flex flex-col space-y-2">
-                    <?php echo $nav_html; ?>
-                    <a href="admin-login.php" class="flex items-center space-x-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 px-4 py-3 rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md">
-                        <i class="fas fa-user-shield text-xl"></i>
-                        <span>Admin Login</span>
-                    </a>
-                </div>
-            </nav>
-        </div>
-    </header>
-
+include __DIR__ . '/includes/header_public.php';
+?>
     <!-- Hero Banner -->
     <section class="relative bg-gradient-to-br from-teal-600 via-teal-700 to-blue-800 text-white py-16 md:py-20 lg:py-28 overflow-hidden">
         <!-- Background Pattern -->
@@ -1233,6 +1047,6 @@ $tech_updates_html = render_tech_updates($latest_news);
                 imageObserver.observe(img);
             });
         }
-    </script>
-</body>
-</html>
+*/
+?>
+<?php include __DIR__ . '/includes/footer_public.php'; ?>

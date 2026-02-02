@@ -1,6 +1,11 @@
 <?php
 session_start();
 
+// Security Headers
+header("X-Frame-Options: DENY");
+header("X-Content-Type-Options: nosniff");
+header("X-XSS-Protection: 1; mode=block");
+
 // If already logged in as admin, redirect to admin panel
 if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
     header('Location: admin/index.php');
@@ -8,6 +13,11 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
 }
 
 require_once 'config/database.php';
+
+// Generate CSRF Token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // Fetch system settings
 $system_settings = [];
@@ -28,6 +38,12 @@ $logo_path = !empty($system_settings['logo_image']) && file_exists($system_setti
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 
+    // Verify CSRF Token
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        echo json_encode(['success' => false, 'message' => 'Security validation failed (CSRF)']);
+        exit();
+    }
+
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -47,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
+        sleep(1); // Brute-force delay
         echo json_encode(['success' => false, 'message' => 'ไม่พบบัญชีผู้ใช้นี้ในระบบ']);
         exit();
     }
@@ -55,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if user is admin
     if ($user['role'] !== 'admin') {
+        sleep(1); 
         echo json_encode(['success' => false, 'message' => 'คุณไม่มีสิทธิ์เข้าถึงระบบผู้ดูแล']);
         exit();
     }
@@ -68,9 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify password
     if (!password_verify($password, $user['password'])) {
         echo json_encode(['success' => false, 'message' => 'รหัสผ่านไม่ถูกต้อง']);
-        exit();
+        exit();on_encode(['success' => false, 'message' => 'รหัสผ่านไม่ถูกต้อง']);
+    }   exit();
     }
-
     // Set session
     $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['username'] = $user['username'];
@@ -78,22 +96,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['last_name'] = $user['last_name'];
     $_SESSION['prefix_name'] = $user['prefix_name'] ?? '';
     $_SESSION['full_name'] = trim(($user['prefix_name'] ?? '') . ' ' . $user['first_name'] . ' ' . $user['last_name']);
-    $_SESSION['email'] = $user['email'];
-    $_SESSION['role'] = $user['role'];
-
-    // Update last login
+    $_SESSION['email'] = $user['email'];st_name'];
+    $_SESSION['role'] = $user['role'];st_name'];
+    $_SESSION['prefix_name'] = $user['prefix_name'] ?? '';
+    // Update last login'] = trim(($user['prefix_name'] ?? '') . ' ' . $user['first_name'] . ' ' . $user['last_name']);
     $update_stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
     $update_stmt->bind_param("i", $user['user_id']);
     $update_stmt->execute();
-
-    echo json_encode([
-        'success' => true,
+    // Update last login
+    echo json_encode([nn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
+        'success' => true,am("i", $user['user_id']);
         'message' => 'เข้าสู่ระบบสำเร็จ',
         'redirect' => 'admin/index.php'
-    ]);
-    exit();
-}
-?>
+    ]);o json_encode([
+    exit();ccess' => true,
+}       'message' => 'เข้าสู่ระบบสำเร็จ',
+?>      'redirect' => 'admin/index.php'
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -102,298 +120,299 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?php echo htmlspecialchars($app_name); ?> - ระบบบริการดิจิทัล</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
-            min-height: 100vh;
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>0">
+    <style><?php echo htmlspecialchars($app_name); ?> - ระบบบริการดิจิทัล</title>
+        body {c="https://cdn.tailwindcss.com"></script>
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);4.0/css/all.min.css">
+            min-height: 100vh;sdelivr.net/npm/sweetalert2@11"></script>
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .login-card {
-            background: white;
+            justify-content: center;ent(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
+        }   min-height: 100vh;
+            display: flex;
+        .login-card {ms: center;
+            background: white;enter;
             border-radius: 1rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
+            max-width: 450px;;
+            width: 100%;s: 1rem;
+            margin: 1rem; 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }   overflow: hidden;
             max-width: 450px;
-            width: 100%;
-            margin: 1rem;
-        }
-
         .gradient-header {
             background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
             padding: 2rem;
             text-align: center;
-            color: white;
-        }
-
-        .input-group {
+            color: white;{
+        }   background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+            padding: 2rem;
+        .input-group {: center;
             position: relative;
             margin-bottom: 1.5rem;
         }
-
+        .input-group {
         .input-group i:not(.password-toggle) {
-            position: absolute;
+            position: absolute;em;
             left: 1rem;
             top: 50%;
-            transform: translateY(-50%);
-            color: #6b7280;
-        }
-
-        .input-group input {
-            width: 100%;
+            transform: translateY(-50%);gle) {
+            color: #6b7280;ute;
+        }   left: 1rem;
+            top: 50%;
+        .input-group input {lateY(-50%);
+            width: 100%;80;
             padding: 0.75rem 1rem 0.75rem 3rem;
             border: 2px solid #e5e7eb;
             border-radius: 0.5rem;
             font-size: 0.875rem;
-            transition: all 0.3s;
-        }
-
+            transition: all 0.3s; 0.75rem 3rem;
+        }   border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
         .input-group input:focus {
-            outline: none;
+            outline: none;l 0.3s;
             border-color: #14b8a6;
             box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
-        }
-
-        .btn-login {
+        }input-group input:focus {
+            outline: none;
+        .btn-login {olor: #14b8a6;
             background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
             color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            font-weight: 600;
-            width: 100%;
-            border: none;
-            cursor: pointer;
+            font-weight: 600;r-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            width: 100%;;
+            border: none;rem 1.5rem;
+            cursor: pointer;.5rem;
             transition: all 0.3s;
-        }
-
-        .btn-login:hover {
+        }   width: 100%;
+            border: none;
+        .btn-login:hover {r;
             background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(20, 184, 166, 0.3);
-        }
-
-        .btn-login:disabled {
-            opacity: 0.6;
+        }btn-login:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        .btn-login:disabled {ateY(-2px);
+            opacity: 0.6; 10px 20px rgba(20, 184, 166, 0.3);
             cursor: not-allowed;
             transform: none;
-        }
-
-        .password-toggle {
+        }btn-login:disabled {
+            opacity: 0.6;
+        .password-toggle {lowed;
             position: absolute;
             right: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            cursor: pointer;
+            cursor: pointer;te;
             color: #6b7280;
-        }
-
+        }   top: 50%;
+            transform: translateY(-50%);
         .password-toggle:hover {
             color: #14b8a6;
         }
 
-        .back-link {
+        .back-link {ggle:hover {
             display: inline-flex;
             align-items: center;
             color: #0d9488;
             text-decoration: none;
-            font-size: 0.875rem;
-            margin-top: 1rem;
+            font-size: 0.875rem;;
+            margin-top: 1rem;er;
             transition: color 0.3s;
+        }   text-decoration: none;
+            font-size: 0.875rem;
+        .back-link:hover {em;
+            color: #0f766e;or 0.3s;
         }
 
-        .back-link:hover {
-            color: #0f766e;
-        }
-
-        .shield-icon {
+        .shield-icon {er {
             font-size: 4rem;
             margin-bottom: 1rem;
             color: #fbbf24;
             text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-        }
-
-        .info-box {
-            background: #f0fdfa;
+        }   font-size: 4rem;
+            margin-bottom: 1rem;
+        .info-box {#fbbf24;
+            background: #f0fdfa;x rgba(251, 191, 36, 0.5);
             border: 1px solid #14b8a6;
             border-radius: 0.5rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
-        }
-
-        .info-box p {
-            color: #0f766e;
+        }   border: 1px solid #14b8a6;
+            border-radius: 0.5rem;
+        .info-box p {1rem;
+            color: #0f766e;1.5rem;
             font-size: 0.875rem;
             margin: 0;
-        }
-
-        .info-box strong {
+        }info-box p {
+            color: #0f766e;
+        .info-box strong {75rem;
             display: block;
             margin-bottom: 0.5rem;
             color: #0d9488;
-        }
-    </style>
-</head>
-<body>
+        }info-box strong {
+    </style>display: block;
+</head>     margin-bottom: 0.5rem;
+<body>      color: #0d9488;
     <div class="login-card">
         <div class="gradient-header">
             <?php if ($logo_path): ?>
                 <img src="<?= htmlspecialchars($logo_path) ?>" alt="Logo" class="h-20 w-auto mx-auto mb-4 bg-white rounded-lg p-1">
-            <?php else: ?>
+            <?php else: ?>">
                 <i class="fas fa-shield-alt shield-icon"></i>
-            <?php endif; ?>
-            <h1 class="text-2xl font-bold mb-2"><?php echo htmlspecialchars($app_name); ?></h1>
+            <?php endif; ?>_path): ?>
+            <h1 class="text-2xl font-bold mb-2"><?php echo htmlspecialchars($app_name); ?></h1>-auto mb-4 bg-white rounded-lg p-1">
             <p class="text-teal-100 text-sm"><?php echo htmlspecialchars($org_name); ?></p>
-        </div>
-
-        <div class="p-8">
-            <div class="mb-6 text-center">
+        </div>  <i class="fas fa-shield-alt shield-icon"></i>
+            <?php endif; ?>
+        <div class="p-8">xt-2xl font-bold mb-2"><?php echo htmlspecialchars($app_name); ?></h1>
+            <div class="text-center mb-8">m"><?php echo htmlspecialchars($org_name); ?></p>
                 <h2 class="text-xl font-bold text-gray-800 mb-2">เข้าสู่ระบบผู้ดูแล</h2>
-                <p class="text-gray-600 text-sm">สำหรับผู้ดูแลระบบเท่านั้น</p>
-            </div>
-
-            <!-- Info Box for Testing -->
-            <div class="info-box">
-                <strong><i class="fas fa-info-circle mr-1"></i>ข้อมูลสำหรับทดสอบ:</strong>
-                <p><strong>Username:</strong> admin</p>
-                <p><strong>Password:</strong> admin123</p>
-            </div>
-
-            <form id="adminLoginForm">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input
-                        type="text"
-                        name="username"
+                <p class="text-gray-500 mt-2">ผู้ดูแลระบบ</p>
+            </div>="p-8">
+            <div class="mb-6 text-center">
+            <form id="adminLoginForm" class="space-y-6">old text-gray-800 mb-2">เข้าสู่ระบบผู้ดูแล</h2>
+                <!-- CSRF Token -->y-600 text-sm">สำหรับผู้ดูแลระบบเท่านั้น</p>
+                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                
+                <div class="bg-gray-50 p-1 rounded-lg border border-gray-200 flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-3"></i>lass="info-box">
+                    <input                <strong><i class="fas fa-info-circle mr-1"></i>ข้อมูลสำหรับทดสอบ:</strong>
+                        type="text"strong> admin</p>
+                        name="username"ong> admin123</p>
                         id="username"
                         placeholder="ชื่อผู้ใช้หรืออีเมล"
-                        required
-                        autocomplete="username"
+                        requiredm">
+                        autocomplete="username"">
+                        class="bg-transparent border-0 focus:ring-0 focus:outline-none flex-1"user"></i>
                     >
-                </div>
+                </div>xt"
 
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input
-                        type="password"
+                <div class="bg-gray-50 p-1 rounded-lg border border-gray-200 flex items-center">   id="username"
+                    <i class="fas fa-lock text-gray-400 mr-3"></i>  placeholder="ชื่อผู้ใช้หรืออีเมล"
+                    <input                        required
+                        type="password"rname"
                         name="password"
                         id="password"
                         placeholder="รหัสผ่าน"
-                        required
-                        autocomplete="current-password"
-                    >
+                        required">
+                        autocomplete="current-password"lock"></i>
+                        class="bg-transparent border-0 focus:ring-0 focus:outline-none flex-1"
+                    >ssword"
                     <i class="fas fa-eye password-toggle" id="togglePassword"></i>
-                </div>
+                </div>   id="password"
 
-                <div class="mb-6">
-                    <div class="flex items-center justify-between text-sm">
+                <div class="mb-6">  required
+                    <div class="flex items-center justify-between text-sm">                        autocomplete="current-password"
                         <label class="flex items-center text-gray-700 cursor-pointer">
-                            <input type="checkbox" class="mr-2 rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                            <input type="checkbox" class="mr-2 rounded border-gray-300 text-teal-600 focus:ring-teal-500">d"></i>
                             <span>จดจำฉัน</span>
                         </label>
                         <a href="login.php" class="text-teal-600 hover:text-teal-700">Login ผู้ใช้ทั่วไป</a>
-                    </div>
+                    </div>flex items-center justify-between text-sm">
                 </div>
-
-                <button type="submit" class="btn-login" id="loginBtn">
-                    <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
-                </button>
+  <input type="checkbox" class="mr-2 rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                <button type="submit" class="btn-login" id="loginBtn">      <span>จดจำฉัน</span>
+                    <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ                        </label>
+                </button>:text-teal-700">Login ผู้ใช้ทั่วไป</a>
             </form>
 
             <div class="mt-6 text-center">
-                <a href="index.php" class="back-link">
-                    <i class="fas fa-arrow-left mr-2"></i>
+                <a href="index.php" class="back-link">                <button type="submit" class="btn-login" id="loginBtn">
+                    <i class="fas fa-arrow-left mr-2"></i>in-alt mr-2"></i>เข้าสู่ระบบ
                     กลับสู่หน้าหลัก
                 </a>
             </div>
-        </div>
-
-        <div class="bg-gray-50 px-8 py-4 border-t">
-            <div class="flex items-center justify-between text-xs text-gray-600">
+        </div>ss="mt-6 text-center">
+ href="index.php" class="back-link">
+        <div class="bg-gray-50 px-8 py-4 border-t">      <i class="fas fa-arrow-left mr-2"></i>
+            <div class="flex items-center justify-between text-xs text-gray-600">                    กลับสู่หน้าหลัก
                 <span><i class="fas fa-shield-alt mr-1"></i>ปลอดภัย</span>
                 <span><i class="fas fa-lock mr-1"></i>เข้ารหัส</span>
                 <span><i class="fas fa-check-circle mr-1"></i>Admin Only</span>
             </div>
         </div>
-    </div>
-
-    <script>
-        // Toggle password visibility
-        const togglePassword = document.getElementById('togglePassword');
+    </div>lass="flex items-center justify-between text-xs text-gray-600">
+  <span><i class="fas fa-shield-alt mr-1"></i>ปลอดภัย</span>
+    <script>      <span><i class="fas fa-lock mr-1"></i>เข้ารหัส</span>
+        // Toggle password visibility                <span><i class="fas fa-check-circle mr-1"></i>Admin Only</span>
+        const togglePassword = document.getElementById('togglePassword');</div>
         const passwordInput = document.getElementById('password');
 
         togglePassword.addEventListener('click', function() {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            const type = passwordInput.type === 'password' ? 'text' : 'password';    <script>
             passwordInput.type = type;
             this.classList.toggle('fa-eye');
-            this.classList.toggle('fa-eye-slash');
+            this.classList.toggle('fa-eye-slash');.getElementById('password');
         });
-
-        // Handle form submission
-        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+unction() {
+        // Handle form submission const type = passwordInput.type === 'password' ? 'text' : 'password';
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {            passwordInput.type = type;
+            e.preventDefault();('fa-eye');
 
             const loginBtn = document.getElementById('loginBtn');
             const formData = new FormData(e.target);
 
-            // Disable button during request
-            loginBtn.disabled = true;
+            // Disable button during requestdEventListener('submit', async (e) => {
+            loginBtn.disabled = true;            e.preventDefault();
             loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังเข้าสู่ระบบ...';
-
+.getElementById('loginBtn');
             try {
                 const response = await fetch('admin-login.php', {
-                    method: 'POST',
+                    method: 'POST',sable button during request
                     body: formData
-                });
+                });i class="fas fa-spinner fa-spin mr-2"></i>กำลังเข้าสู่ระบบ...';
 
                 const data = await response.json();
-
+                const response = await fetch('admin-login.php', {
                 if (data.success) {
-                    Swal.fire({
+                    Swal.fire({                    body: formData
                         icon: 'success',
                         title: 'สำเร็จ!',
-                        text: data.message,
+                        text: data.message,nse.json();
                         showConfirmButton: false,
                         timer: 1500
                     }).then(() => {
-                        window.location.href = data.redirect;
-                    });
+                        window.location.href = data.redirect;ess',
+                    });ร็จ!',
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'ผิดพลาด',
-                        text: data.message,
+                    Swal.fire({ showConfirmButton: false,
+                        icon: 'error',timer: 1500
+                        title: 'ผิดพลาด',=> {
+                        text: data.message,n.href = data.redirect;
                         confirmButtonColor: '#14b8a6'
                     });
 
-                    // Re-enable button
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';
-                }
+                    // Re-enable button icon: 'error',
+                    loginBtn.disabled = false;                        title: 'ผิดพลาด',
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';age,
+                }14b8a6'
             } catch (error) {
                 console.error('Error:', error);
-                Swal.fire({
+                Swal.fire({ble button
                     icon: 'error',
-                    title: 'เกิดข้อผิดพลาด',
+                    title: 'เกิดข้อผิดพลาด',n.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';
                     text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
                     confirmButtonColor: '#14b8a6'
                 });
 
-                // Re-enable button
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';
-            }
+                // Re-enable button icon: 'error',
+                loginBtn.disabled = false;                    title: 'เกิดข้อผิดพลาด',
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';ถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+            }14b8a6'
         });
 
-        // Auto-focus username field
-        document.getElementById('username').focus();
-
+        // Auto-focus username field     // Re-enable button
+        document.getElementById('username').focus();                loginBtn.disabled = false;
+ '<i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ';
         // Prevent form resubmission on page refresh
-        if (window.history.replaceState) {
+        if (window.history.replaceState) {        });
             window.history.replaceState(null, null, window.location.href);
         }
+    </script>
+</body>
+</html>event form resubmission on page refresh
     </script>
 </body>
 </html>

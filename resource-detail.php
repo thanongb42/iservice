@@ -1,4 +1,5 @@
 <?php
+session_start();
 /**
  * Learning Resource Detail Page
  * แสดงรายละเอียดทรัพยากรการเรียนรู้แต่ละรายการ
@@ -40,36 +41,36 @@ $stmt->execute();
 $related_result = $stmt->get_result();
 $related_resources = $related_result->fetch_all(MYSQLI_ASSOC);
 
+// Fetch system settings
+$app_name = 'เทศบาลนครรังสิต';
+$org_name = 'เทศบาลนครรังสิต';
+$app_description = 'ระบบบริการภายใน ฝ่ายบริการและเผยแพร่วิชาการ';
+$logo_path = 'images/logo/rangsit-big-logo.png';
+
+$system_settings = [];
+if (isset($conn)) {
+    $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($settings_query) {
+        while ($row = $settings_query->fetch_assoc()) {
+            $system_settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+}
+
+if (!empty($system_settings['app_name'])) $app_name = $system_settings['app_name'];
+if (!empty($system_settings['organization_name'])) $org_name = $system_settings['organization_name'];
+if (!empty($system_settings['app_description'])) $app_description = $system_settings['app_description'];
+if (!empty($system_settings['logo_image']) && file_exists($system_settings['logo_image'])) $logo_path = $system_settings['logo_image'];
+
 // Load navigation menu
 $nav_menus = get_menu_structure();
 $nav_html = render_nav_menu($nav_menus);
 
 // Get resource type configuration
 $type_config = get_resource_type_config($resource['resource_type']);
-?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($resource['title']) ?> - ศูนย์รวมการเรียนรู้</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- jQuery (required for Turn.js) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- PDF.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-    <!-- Turn.js for Flipbook Effect -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
-
-    <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-        }
+$page_title = htmlspecialchars($resource['title']) . " - ศูนย์รวมการเรียนรู้";
+$extra_styles = "
         .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
@@ -148,45 +149,31 @@ $type_config = get_resource_type_config($resource['resource_type']);
             height: auto;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-teal-700 text-white">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-3">
-                <div class="flex items-center space-x-4">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Ccircle cx='25' cy='25' r='24' fill='%23FFFFFF'/%3E%3Ctext fill='%2314B8A6' font-family='Arial,sans-serif' font-weight='bold' font-size='16' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ELIT%3C/text%3E%3C/svg%3E" alt="Logo" class="h-12">
-                    <div>
-                        <h1 class="text-lg font-bold">คณะกรรมการกิจการกระจายเสียง</h1>
-                        <p class="text-xs">กิจการโทรทัศน์ และกิจการโทรคมนาคมแห่งชาติ</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
+";
 
-    <!-- Navigation -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-teal-500 shadow-md">
-                        <img src="images/logo/rangsit-big-logo.png" alt="Rangsit Logo" class="w-full h-full object-cover p-1">
-                    </div>
-                    <div>
-                        <h1 class="text-xl md:text-2xl font-display font-bold text-gray-900 leading-tight">เทศบาลนครรังสิต</h1>
-                        <p class="text-sm md:text-base text-gray-600 font-medium">ฝ่ายบริการและเผยแพร่วิชาการ <span class="text-teal-700">กองยุทธศาสตร์และงบประมาณ</span></p>
-                    </div>
-                </div>
+// Add specific scripts for Turn.js and PDF.js to head using extra_styles workaround or add before header
+// Since header_public includes <head>, we need to inject scripts there or use $extra_head variable if I added it.
+// I added extra_styles in header which is inside <style> tag.
+// I need to add script tags also. I should update header_public.php to support extra_head_content.
 
-                <nav class="hidden lg:flex space-x-1">
-                    <?php echo $nav_html; ?>
-                </nav>
-            </div>
-        </div>
-    </header>
+// Let's assume I can put scripts in extra_styles if I close style tag? No that's messy.
+// I should update header_public.php first to allow extra content in head.
+?>
+<?php
+// Define extra head content
+$extra_head_content = "
+    <!-- jQuery (required for Turn.js) -->
+    <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
 
+    <!-- PDF.js Library -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'></script>
+
+    <!-- Turn.js for Flipbook Effect -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js'></script>
+";
+
+include __DIR__ . '/includes/header_public.php';
+?>
     <!-- Breadcrumb -->
     <section class="bg-white border-b py-4">
         <div class="container mx-auto px-4">
@@ -695,17 +682,70 @@ $type_config = get_resource_type_config($resource['resource_type']);
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-300 py-12">
-        <div class="container mx-auto px-4 text-center">
-            <p>&copy; 2568 เทศบาลนครรังสิต - ฝ่ายบริการและเผยแพร่วิชาการ</p>
+<?php include __DIR__ . '/includes/footer_public.php'; ?>
+                        <li><a href="#" class="hover:text-white transition-colors">โครงการตู้น้ำดื่มอัจฉริยะ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">โครงการป้ายรถเมล์อัจฉริยะ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">โครงการรังสิตซิตี้แอพ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ข้อมูล</h5>
+                    <ul class="space-y-2 text-xs md:text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">ศูนย์ข้อมูลข่าวสาร</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">คำถามที่พบบ่อย</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">ดาวน์โหลด</a></li>
+                        <li><a href="admin-login.php" class="hover:text-yellow-400 transition-colors flex items-center">
+                            <i class="fas fa-user-shield mr-2"></i>Admin Panel
+                        </a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ติดต่อเรา</h5>
+                    <p class="text-xs md:text-sm mb-2">ที่อยู่ เลขที่ 151 ถนนรังสิต-ปทุมธานี </p>
+                    <p class="text-xs md:text-sm mb-2">ตำบลประชาธิปัตย์ อำเภอธัญบุรี </p>
+                    <p class="text-xs md:text-sm">จังหวัดปทุมธานี 12130</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 pt-6 text-center text-xs md:text-sm">
+                <p>&copy; 2569 Rangsit City Municipality . All rights reserved.</p>
+            </div>
         </div>
     </footer>
 
     <script>
-        function copyLink() {
-            navigator.clipboard.writeText(window.location.href);
-            alert('คัดลอกลิงก์แล้ว!');
+        // Start Session only if not already started
+        <?php if (session_status() === PHP_SESSION_NONE) echo "/* session not started in JS context */"; ?>
+        
+        // Mobile Menu Toggle logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+
+                // Toggle icon between bars and times
+                const icon = this.querySelector('i');
+                if (mobileMenu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                }
+            });
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', function(event) {
+                const isClickInsideMenu = mobileMenu.contains(event.target);
+                const isClickOnButton = mobileMenuBtn.contains(event.target);
+
+                if (!isClickInsideMenu && !isClickOnButton && !mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuBtn.querySelector('i').classList.remove('fa-times');
+                    mobileMenuBtn.querySelector('i').classList.add('fa-bars');
+                }
+            });
         }
     </script>
 </body>
