@@ -194,7 +194,7 @@ $page_title = $page_title ?? 'Admin Dashboard';
 
         #sidebar.sidebar-collapsed .sidebar-item i {
             width: auto;
-            font-size: 1.125rem;
+            font-size: 0.875rem;
         }
 
         #sidebar.sidebar-collapsed nav {
