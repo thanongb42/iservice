@@ -86,6 +86,13 @@ $menu_items = [
         'badge' => null
     ],
     [
+        'id' => 'related_agencies',
+        'icon' => 'fa-building',
+        'label' => 'หน่วยงานที่เกี่ยวข้อง',
+        'url' => 'related_agencies.php',
+        'badge' => null
+    ],
+    [
         'id' => 'reports',
         'icon' => 'fa-chart-bar',
         'label' => 'รายงาน',
