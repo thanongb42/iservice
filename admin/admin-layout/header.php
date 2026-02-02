@@ -8,6 +8,36 @@
  */
 
 $page_title = $page_title ?? 'Admin Dashboard';
+
+// Fetch favicon if not already available
+$favicon_path = '';
+if (!isset($system_settings)) {
+    // Assuming db connection is already included by parent script
+    if (isset($conn)) {
+        $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+        if ($settings_query) {
+            while ($row = $settings_query->fetch_assoc()) {
+                $settings = []; // Temp
+                $settings[$row['setting_key']] = $row['setting_value'];
+                
+                // If found logo
+                if ($row['setting_key'] == 'logo_image') {
+                     $favicon_path = '../' . $row['setting_value'];
+                }
+            }
+        }
+    }
+} else {
+     $favicon_path = !empty($system_settings['logo_image']) ? '../' . $system_settings['logo_image'] : '';
+}
+
+// Fallback for admin pages (assuming running from admin/)
+if (empty($favicon_path) || !file_exists($favicon_path)) {
+     // Try to see if we can find one
+     if (isset($logo_path)) {
+        $favicon_path = $logo_path;
+     }
+}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -15,6 +45,9 @@ $page_title = $page_title ?? 'Admin Dashboard';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?> - ระบบบริการดิจิทัล</title>
+    <?php if (!empty($favicon_path)): ?>
+    <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($favicon_path); ?>">
+    <?php endif; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
