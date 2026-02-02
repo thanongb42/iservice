@@ -12,7 +12,7 @@ $response = ['success' => false, 'message' => ''];
 
 try {
     // Check admin access
-    if (!isset($_SESSION['admin_id'])) {
+    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
         throw new Exception('ไม่มีสิทธิ์เข้าถึง');
     }
 
