@@ -456,14 +456,13 @@ include 'admin-layout/topbar.php';
 
     </div>
 
+    <script>
+    // PDF Export (Basic)
+    document.querySelector('.btn-export')?.addEventListener('click', function() {
+        alert('ฟีเจอร์นี้จะเพิ่มในรุ่นถัดไป');
+        // TODO: Implement PDF export using library like jsPDF or html2pdf
+    });
+    </script>
 </main>
 
 <?php include 'admin-layout/footer.php'; ?>
-
-<script>
-// PDF Export (Basic)
-document.querySelector('.btn-export')?.addEventListener('click', function() {
-    alert('ฟีเจอร์นี้จะเพิ่มในรุ่นถัดไป');
-    // TODO: Implement PDF export using library like jsPDF or html2pdf
-});
-</script>

@@ -63,16 +63,6 @@ include 'admin-layout/header.php';
 include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการโครงสร้างหน่วยงาน - Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .tree-item { margin-left: 20px; }
         .level-badge {
@@ -87,8 +77,6 @@ include 'admin-layout/topbar.php';
         .level-3 { background: #f59e0b; color: white; }
         .level-4 { background: #8b5cf6; color: white; }
     </style>
-</head>
-<body class="bg-gray-50">
 
 <!-- Main Content -->
 <main class="main-content-transition lg:ml-0">
@@ -738,3 +726,7 @@ include 'admin-layout/topbar.php';
 
 </body>
 </html>
+    </script>
+    </div>
+</main>
+<?php include 'admin-layout/footer.php'; ?>
