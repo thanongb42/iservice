@@ -432,12 +432,7 @@ include __DIR__ . '/includes/header_public.php';
                 </a>
             </div>
 
-            <!-- Link to Admin (สำหรับ dev เท่านั้น ให้ลบออกหลัง production) -->
-            <div class="text-center mt-8">
-                <a href="admin/learning_resources.php" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition text-sm">
-                    <i class="fas fa-cog mr-2"></i>จัดการทรัพยากรการเรียนรู้ (Admin)
-                </a>
-            </div>
+
         </div>
     </section>
 
