@@ -2,14 +2,18 @@
     RewriteEngine On
     RewriteBase /iservice/
 
-    # Don't redirect admin folder
+    # Don't rewrite if file or directory exists
     RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d [OR]
-    RewriteCond %{REQUEST_URI} ^/iservice/admin/ [OR]
-    RewriteCond %{REQUEST_URI} ^/iservice/config/ [OR]
-    RewriteCond %{REQUEST_URI} ^/iservice/api/
+    RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Redirect all other requests to public folder
-    RewriteRule ^(.*)$ public/$1 [L]
+    # Protect admin, api, app, config, includes folders - don't redirect them
+    RewriteRule ^(admin|api|app|config|includes)(/|$) - [L]
+
+    # Redirect assets and public content to public folder
+    RewriteRule ^(css|js|images|fonts)(/|$) public/$0 [L]
+
+    # Redirect all other requests (non-PHP) to public folder
+    RewriteCond %{REQUEST_URI} !\.php$
+    RewriteRule ^(?!public/)(.*)$ public/$1 [L]
 </IfModule>
