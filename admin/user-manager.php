@@ -1012,11 +1012,5 @@ include 'admin-layout/topbar.php';
             }
         });
     </script>
-</main>
-
-</body>
-            }
-        });
-    </script>
 </div>
 <?php include 'admin-layout/footer.php'; ?>
