@@ -37,8 +37,8 @@ $users_result = $conn->query($users_query);
 $items_per_page = 10;
 $total_users = $users_result->num_rows;
 $total_pages = ceil($total_users / $items_per_page);
-$current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$offset = ($current_page - 1) * $items_per_page;
+$current_page_num = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($current_page_num - 1) * $items_per_page;
 
 // Re-query with LIMIT and OFFSET
 $users_query = "SELECT * FROM v_users_full ORDER BY created_at DESC LIMIT $offset, $items_per_page";
@@ -390,38 +390,13 @@ include 'admin-layout/topbar.php';
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-gradient-to-r from-teal-700 to-teal-500 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <a href="index.php" class="text-xl font-bold">
-                        <i class="fas fa-home mr-2"></i>Admin Panel
-                    </a>
-                    <span class="text-teal-200">|</span>
-                    <span class="text-white">จัดการผู้ใช้งาน</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm">
-                        <i class="fas fa-user-circle mr-2"></i>
-                        <?php echo htmlspecialchars($user['full_name']); ?>
-                    </span>
-                    <a href="../logout.php" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+ 
 
     <!-- Main Content -->
     <main class="main-content-transition lg:ml-0">
         <div class="p-6">
-            <!-- Page Title -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">จัดการผู้ใช้งาน</h1>
-                <p class="text-gray-600">ระบบจัดการข้อมูลผู้ใช้งาน เพิ่ม แก้ไข ลบ และจัดการสิทธิ์</p>
-            </div>
+            
+           
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">
@@ -521,7 +496,7 @@ include 'admin-layout/topbar.php';
                     แสดง <strong><?= $users_result->num_rows ?></strong> จาก <strong><?= $total_users ?></strong> ผู้ใช้
                 </div>
                 <div class="text-sm text-gray-600">
-                    หน้า <strong><?= $current_page ?></strong> จาก <strong><?= $total_pages ?></strong>
+                    หน้า <strong><?= $current_page_num ?></strong> จาก <strong><?= $total_pages ?></strong>
                 </div>
             </div>
 
@@ -649,18 +624,18 @@ include 'admin-layout/topbar.php';
                 หน้า:
             </span>
             
-            <?php if ($current_page > 1): ?>
+            <?php if ($current_page_num > 1): ?>
                 <a href="?page=1" title="หน้าแรก">
                     <i class="fas fa-chevron-double-left"></i>
                 </a>
-                <a href="?page=<?php echo $current_page - 1; ?>" title="หน้าก่อนหน้า">
+                <a href="?page=<?php echo $current_page_num - 1; ?>" title="หน้าก่อนหน้า">
                     <i class="fas fa-chevron-left"></i>
                 </a>
             <?php endif; ?>
 
             <?php 
-            $start_page = max(1, $current_page - 2);
-            $end_page = min($total_pages, $current_page + 2);
+            $start_page = max(1, $current_page_num - 2);
+            $end_page = min($total_pages, $current_page_num + 2);
             
             if ($start_page > 1): ?>
                 <a href="?page=1">1</a>
@@ -670,7 +645,7 @@ include 'admin-layout/topbar.php';
             <?php endif; ?>
 
             <?php for ($page = $start_page; $page <= $end_page; $page++): ?>
-                <?php if ($page == $current_page): ?>
+                <?php if ($page == $current_page_num): ?>
                     <span class="current"><?php echo $page; ?></span>
                 <?php else: ?>
                     <a href="?page=<?php echo $page; ?>"><?php echo $page; ?></a>
@@ -684,8 +659,8 @@ include 'admin-layout/topbar.php';
                 <a href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a>
             <?php endif; ?>
 
-            <?php if ($current_page < $total_pages): ?>
-                <a href="?page=<?php echo $current_page + 1; ?>" title="หน้าถัดไป">
+            <?php if ($current_page_num < $total_pages): ?>
+                <a href="?page=<?php echo $current_page_num + 1; ?>" title="หน้าถัดไป">
                     <i class="fas fa-chevron-right"></i>
                 </a>
                 <a href="?page=<?php echo $total_pages; ?>" title="หน้าสุดท้าย">
@@ -1052,8 +1027,6 @@ include 'admin-layout/topbar.php';
             }
         });
     </script>
-
-    <?php include 'admin-layout/footer.php'; ?>
 </main>
 
 </body>
