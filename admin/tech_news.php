@@ -58,9 +58,6 @@ include 'admin-layout/topbar.php';
             </h1>
             <p class="mt-2 text-gray-600">เพิ่ม แก้ไข ลบ และปักหมุดข่าว (สูงสุด 4 ข่าว)</p>
         </div>
-                </div>
-            </div>
-        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- News List -->
