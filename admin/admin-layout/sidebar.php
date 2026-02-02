@@ -69,6 +69,20 @@ $menu_items = [
         'label' => 'จัดการเมนู',
         'url' => 'nav_menu.php',
         'badge' => null
+    ],
+    [
+        'id' => 'reports',
+        'icon' => 'fa-chart-bar',
+        'label' => 'รายงาน',
+        'url' => 'reports.php',
+        'badge' => null
+    ],
+    [
+        'id' => 'system_settings',
+        'icon' => 'fa-cog',
+        'label' => 'ตั้งค่าระบบ',
+        'url' => 'system_settings.php',
+        'badge' => null
     ]
 ];
 ?>
