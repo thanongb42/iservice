@@ -10,6 +10,13 @@ require_once '../config/database.php';
 // Start session
 session_start();
 
+$page_title = 'จัดการเมนูนำทาง';
+$current_page = 'nav_menu';
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'จัดการเมนูนำทาง']
+];
+
 // Handle CRUD operations
 $action = $_GET['action'] ?? 'list';
 $message = '';
@@ -127,34 +134,20 @@ if ($action === 'edit' && isset($_GET['id'])) {
     $edit_data = $result->fetch_assoc();
 }
 ?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการเมนูนำทาง - Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Sarabun', sans-serif; }
-    </style>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">
-                        <i class="fas fa-bars text-teal-600"></i> จัดการเมนูนำทาง
-                    </h1>
-                    <p class="text-gray-600 mt-2">เพิ่ม แก้ไข ลบ และจัดการลำดับเมนู</p>
-                </div>
-                <a href="../index.php" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับหน้าแรก
-                </a>
-            </div>
+<?php
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
+?>
+
+<main class="main-content-transition lg:ml-0">
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Page Title -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-bars text-teal-600"></i> จัดการเมนูนำทาง
+            </h1>
+            <p class="mt-2 text-gray-600">เพิ่ม แก้ไข ลบ และจัดการลำดับเมนู</p>
         </div>
 
         <!-- Messages -->
@@ -379,5 +372,8 @@ if ($action === 'edit' && isset($_GET['id'])) {
             </div>
         </div>
     </div>
-</body>
-</html>
+</main>
+
+<?php
+include 'admin-layout/footer.php';
+?>

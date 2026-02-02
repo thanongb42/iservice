@@ -7,6 +7,13 @@
 require_once '../config/database.php';
 session_start();
 
+$page_title = 'จัดการข่าวเทคโนโลยี';
+$current_page = 'tech_news';
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'จัดการข่าวเทคโนโลยี']
+];
+
 // Fetch all news
 $news_list = [];
 $result = $conn->query("SELECT * FROM tech_news ORDER BY is_pinned DESC, display_order ASC, created_at DESC");
@@ -25,22 +32,13 @@ $category_colors = [
     'indigo' => ['bg' => 'bg-indigo-100', 'text' => 'text-indigo-700'],
 ];
 ?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการข่าวเทคโนโลยี - Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<?php
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
+?>
 
-    <!-- Quill Editor (Free, No API Key Required) -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<main class="main-content-transition lg:ml-0">
 
     <style>
         body { font-family: 'Sarabun', sans-serif; }
@@ -51,25 +49,15 @@ $category_colors = [
             overflow: hidden;
         }
     </style>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">
-                        <i class="fas fa-newspaper text-teal-600"></i> จัดการข่าวเทคโนโลยี
-                    </h1>
-                    <p class="text-gray-600 mt-2">เพิ่ม แก้ไข ลบ และปักหมุดข่าว (สูงสุด 4 ข่าว)</p>
-                </div>
-                <div class="flex space-x-3">
-                    <a href="learning_resources.php" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition">
-                        <i class="fas fa-graduation-cap mr-2"></i>จัดการศูนย์เรียนรู้
-                    </a>
-                    <a href="../index.php" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition">
-                        <i class="fas fa-arrow-left mr-2"></i>กลับหน้าแรก
-                    </a>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Page Title -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-newspaper text-teal-600"></i> จัดการข่าวเทคโนโลยี
+            </h1>
+            <p class="mt-2 text-gray-600">เพิ่ม แก้ไข ลบ และปักหมุดข่าว (สูงสุด 4 ข่าว)</p>
+        </div>
                 </div>
             </div>
         </div>
@@ -550,6 +538,9 @@ $category_colors = [
             }
         }
     </script>
-</body>
-</html>
-<?php $conn->close(); ?>
+</main>
+
+<?php
+include 'admin-layout/footer.php';
+$conn->close();
+?>

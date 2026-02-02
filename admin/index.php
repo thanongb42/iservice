@@ -8,6 +8,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
+// Get user info
+$user = [
+    'username' => $_SESSION['username'] ?? 'Admin',
+    'email' => $_SESSION['email'] ?? '',
+    'full_name' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Admin',
+    'first_name' => $_SESSION['first_name'] ?? 'Admin'
+];
+
 // Get statistics
 $stats = [];
 
@@ -23,7 +31,7 @@ $stats['active_users'] = $result->fetch_assoc()['count'];
 $result = $conn->query("SELECT COUNT(*) as count FROM departments");
 $stats['total_departments'] = $result->fetch_assoc()['count'];
 
-// Total service requests (if table exists)
+// Total service requests
 $result = $conn->query("SHOW TABLES LIKE 'service_requests'");
 if ($result->num_rows > 0) {
     $result = $conn->query("SELECT COUNT(*) as count FROM service_requests");
@@ -31,53 +39,70 @@ if ($result->num_rows > 0) {
 
     $result = $conn->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'pending'");
     $stats['pending_requests'] = $result->fetch_assoc()['count'];
+
+    $result = $conn->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'in_progress'");
+    $stats['in_progress_requests'] = $result->fetch_assoc()['count'];
+
+    $result = $conn->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'completed'");
+    $stats['completed_requests'] = $result->fetch_assoc()['count'];
 } else {
     $stats['total_requests'] = 0;
     $stats['pending_requests'] = 0;
+    $stats['in_progress_requests'] = 0;
+    $stats['completed_requests'] = 0;
+}
+
+// Learning resources
+$learning_result = $conn->query("SHOW TABLES LIKE 'learning_resources'");
+if ($learning_result->num_rows > 0) {
+    $result = $conn->query("SELECT COUNT(*) as count FROM learning_resources");
+    $stats['learning_resources'] = $result->fetch_assoc()['count'];
+} else {
+    $stats['learning_resources'] = 0;
+}
+
+// Tech news
+$tech_news_result = $conn->query("SHOW TABLES LIKE 'tech_news'");
+if ($tech_news_result->num_rows > 0) {
+    $result = $conn->query("SELECT COUNT(*) as count FROM tech_news");
+    $stats['tech_news'] = $result->fetch_assoc()['count'];
+} else {
+    $stats['tech_news'] = 0;
 }
 
 // Recent users
 $recent_users = $conn->query("SELECT * FROM v_users_full ORDER BY created_at DESC LIMIT 5");
+
+// Recent service requests
+$recent_requests_query = $conn->query("SHOW TABLES LIKE 'service_requests'");
+$recent_requests = null;
+if ($recent_requests_query->num_rows > 0) {
+    $recent_requests = $conn->query("SELECT * FROM service_requests ORDER BY created_at DESC LIMIT 5");
+}
+
+// Page configuration
+$page_title = 'แดชบอร์ด';
+$current_page = 'dashboard';
+$pending_requests = $stats['pending_requests'];
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'แดชบอร์ด']
+];
+
+// Include layout components
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - ระบบบริการดิจิทัล</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-gradient-to-r from-teal-700 to-teal-500 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold">
-                        <i class="fas fa-home mr-2"></i>Admin Dashboard
-                    </h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm">
-                        <i class="fas fa-user-circle mr-2"></i>
-                        <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Admin'); ?>
-                    </span>
-                    <a href="../logout.php" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome Message -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">
-                สวัสดี, <?php echo htmlspecialchars($_SESSION['first_name'] ?? 'Admin'); ?>!
-            </h2>
+<!-- Main Content -->
+<main class="main-content-transition lg:ml-0">
+    <div class="p-6">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                สวัสดี, <?php echo htmlspecialchars($user['first_name']); ?>!
+            </h1>
             <p class="text-gray-600">ยินดีต้อนรับสู่ระบบจัดการ - เทศบาลนครรังสิต</p>
         </div>
 
@@ -302,11 +327,8 @@ $recent_users = $conn->query("SELECT * FROM v_users_full ORDER BY created_at DES
         </div>
     </div>
 
-    <footer class="bg-gray-800 text-white mt-12 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p>&copy; 2025 เทศบาลนครรังสิต. All rights reserved.</p>
-            <p class="text-sm text-gray-400 mt-2">ระบบบริการดิจิทัล v1.0.0</p>
-        </div>
-    </footer>
+    <?php include 'admin-layout/footer.php'; ?>
+</main>
+
 </body>
 </html>

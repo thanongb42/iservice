@@ -4,11 +4,22 @@
  * หน้าจัดการโครงสร้างหน่วยงาน (CRUD) - AJAX Version
  */
 
-// Include database config
+session_start();
 require_once '../config/database.php';
 
-// Start session
-session_start();
+// Check if user is logged in and is admin
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../login.php');
+    exit();
+}
+
+// Get user info
+$user = [
+    'username' => $_SESSION['username'] ?? 'Admin',
+    'email' => $_SESSION['email'] ?? '',
+    'full_name' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Admin',
+    'first_name' => $_SESSION['first_name'] ?? 'Admin'
+];
 
 // Fetch all departments
 $departments = [];
@@ -38,6 +49,19 @@ $level_types = [
     3 => ['ฝ่าย', 'กลุ่มงาน'],
     4 => ['งาน']
 ];
+
+// Page configuration
+$page_title = 'จัดการหน่วยงาน';
+$current_page = 'departments';
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'จัดการหน่วยงาน']
+];
+
+// Include layout components
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -50,7 +74,6 @@ $level_types = [
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { font-family: 'Sarabun', sans-serif; }
         .tree-item { margin-left: 20px; }
         .level-badge {
             display: inline-block;
@@ -65,37 +88,28 @@ $level_types = [
         .level-4 { background: #8b5cf6; color: white; }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
+<body class="bg-gray-50">
+
+<!-- Main Content -->
+<main class="main-content-transition lg:ml-0">
+    <div class="p-6">
         <!-- Header -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">
-                        <i class="fas fa-sitemap text-indigo-600"></i> จัดการโครงสร้างหน่วยงาน
-                    </h1>
-                    <p class="text-gray-600 mt-2">เพิ่ม แก้ไข ลบ และจัดการโครงสร้างหน่วยงาน 4 ระดับ</p>
-                </div>
-                <div class="flex space-x-3">
-                    <a href="my_service.php" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition">
-                        <i class="fas fa-briefcase mr-2"></i>จัดการบริการ
-                    </a>
-                    <a href="../index.php" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition">
-                        <i class="fas fa-arrow-left mr-2"></i>กลับหน้าแรก
-                    </a>
-                </div>
-            </div>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-sitemap text-teal-600"></i> จัดการโครงสร้างหน่วยงาน
+            </h1>
+            <p class="text-gray-600">เพิ่ม แก้ไข ลบ และจัดการโครงสร้างหน่วยงาน 4 ระดับ</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left: Department Tree -->
             <div class="lg:col-span-2">
-                <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-800">
-                            <i class="fas fa-list text-indigo-600"></i> โครงสร้างหน่วยงาน (<?= count($departments) ?>)
+                            <i class="fas fa-list text-teal-600"></i> โครงสร้างหน่วยงาน (<?= count($departments) ?>)
                         </h2>
-                        <button onclick="resetForm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        <button onclick="resetForm()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm transition">
                             <i class="fas fa-plus mr-2"></i>เพิ่มหน่วยงานใหม่
                         </button>
                     </div>
@@ -165,9 +179,9 @@ $level_types = [
 
             <!-- Right: Add/Edit Form -->
             <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
+                <div class="bg-white rounded-lg shadow p-6 sticky top-4">
                     <h2 class="text-xl font-bold text-gray-800 mb-4" id="formTitle">
-                        <i class="fas fa-plus text-indigo-600"></i> เพิ่มหน่วยงานใหม่
+                        <i class="fas fa-plus text-teal-600"></i> เพิ่มหน่วยงานใหม่
                     </h2>
 
                     <form id="departmentForm" class="space-y-4">
@@ -281,14 +295,14 @@ $level_types = [
                         <!-- Status -->
                         <div class="flex items-center">
                             <input type="checkbox" name="status" id="status" value="active" checked
-                                   class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                   class="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
                             <label for="status" class="ml-2 text-sm font-medium text-gray-700">เปิดใช้งาน</label>
                         </div>
 
                         <!-- Submit Buttons -->
                         <div class="flex space-x-3 pt-4">
                             <button type="submit" id="submitBtn"
-                                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                                    class="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold transition">
                                 <i class="fas fa-plus mr-2"></i> เพิ่มหน่วยงาน
                             </button>
 
@@ -579,7 +593,7 @@ $level_types = [
                     isCodeAvailable = true; // Allow saving in edit mode
 
                     // Update form title and button
-                    document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-indigo-600"></i> แก้ไขหน่วยงาน';
+                    document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-teal-600"></i> แก้ไขหน่วยงาน';
                     document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save mr-2"></i> บันทึกการแก้ไข';
                     document.getElementById('cancelBtn').style.display = 'block';
 
@@ -712,10 +726,15 @@ $level_types = [
             isCodeAvailable = false;
 
             document.getElementById('status').checked = true;
-            document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus text-indigo-600"></i> เพิ่มหน่วยงานใหม่';
+            document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus text-teal-600"></i> เพิ่มหน่วยงานใหม่';
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-plus mr-2"></i> เพิ่มหน่วยงาน';
             document.getElementById('cancelBtn').style.display = 'none';
         }
     </script>
+
+    <?php include 'admin-layout/footer.php'; ?>
+    </div>
+</main>
+
 </body>
 </html>

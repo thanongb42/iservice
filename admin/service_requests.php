@@ -13,7 +13,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-$page_title = 'Service Requests Management';
+$page_title = 'จัดการคำขอบริการ';
+$current_page = 'service_requests';
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'จัดการคำขอบริการ']
+];
 
 // Get statistics
 $stats_query = "SELECT
@@ -90,16 +95,13 @@ function getServiceName($code) {
     return $service_names[$code] ?? $code;
 }
 ?>
+<?php
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
+?>
 
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $page_title ?> - Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<main class="main-content-transition lg:ml-0">
     <style>
         .status-badge {
             display: inline-block;
@@ -212,16 +214,14 @@ function getServiceName($code) {
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
     </style>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">
-                <i class="fas fa-tasks"></i> Service Requests Management
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Page Title -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-tasks text-teal-600"></i> จัดการคำขอบริการ
             </h1>
-            <a href="index.php" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </a>
+            <p class="mt-2 text-gray-600">ดูแลและจัดการคำขอบริการต่างๆ จากผู้ใช้งาน</p>
         </div>
 
         <!-- Statistics Cards -->
@@ -878,6 +878,9 @@ function getServiceName($code) {
             }
         }
     </script>
-</body>
-</html>
-<?php $conn->close(); ?>
+</main>
+
+<?php
+include 'admin-layout/footer.php';
+$conn->close();
+?>

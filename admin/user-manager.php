@@ -8,6 +8,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
+// Get user info
+$user = [
+    'username' => $_SESSION['username'] ?? 'Admin',
+    'email' => $_SESSION['email'] ?? '',
+    'full_name' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Admin',
+    'first_name' => $_SESSION['first_name'] ?? 'Admin'
+];
+
 // Get statistics
 $stats_query = "SELECT
     COUNT(*) as total_users,
@@ -36,6 +44,19 @@ while ($row = $prefixes_result->fetch_assoc()) {
 // Get departments for dropdown
 $departments_query = "SELECT department_id, department_name, department_code FROM departments WHERE status = 'active' ORDER BY department_name";
 $departments_result = $conn->query($departments_query);
+
+// Page configuration
+$page_title = 'จัดการผู้ใช้งาน';
+$current_page = 'user-manager';
+$breadcrumb = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'จัดการผู้ใช้งาน']
+];
+
+// Include layout components
+include 'admin-layout/header.php';
+include 'admin-layout/sidebar.php';
+include 'admin-layout/topbar.php';
 ?>
 
 <!DOCTYPE html>
@@ -67,122 +88,6 @@ $departments_result = $conn->query($departments_query);
         .role-admin { background-color: #dbeafe; color: #1e40af; }
         .role-staff { background-color: #e0e7ff; color: #4338ca; }
         .role-user { background-color: #f3f4f6; color: #374151; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideDown 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #14b8a6;
-            ring: 2px;
-            ring-color: #5eead4;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-        }
-
-        .btn-secondary {
-            background-color: #f3f4f6;
-            color: #374151;
-        }
-
-        .btn-secondary:hover {
-            background-color: #e5e7eb;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background-color: #f9fafb;
-            padding: 0.75rem;
-            text-align: left;
-            font-weight: 600;
-            color: #374151;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        tr:hover {
-            background-color: #f9fafb;
-        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -200,7 +105,7 @@ $departments_result = $conn->query($departments_query);
                 <div class="flex items-center space-x-4">
                     <span class="text-sm">
                         <i class="fas fa-user-circle mr-2"></i>
-                        <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Admin'); ?>
+                        <?php echo htmlspecialchars($user['full_name']); ?>
                     </span>
                     <a href="../logout.php" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition">
                         <i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ
@@ -210,7 +115,14 @@ $departments_result = $conn->query($departments_query);
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Main Content -->
+    <main class="main-content-transition lg:ml-0">
+        <div class="p-6">
+            <!-- Page Title -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">จัดการผู้ใช้งาน</h1>
+                <p class="text-gray-600">ระบบจัดการข้อมูลผู้ใช้งาน เพิ่ม แก้ไข ลบ และจัดการสิทธิ์</p>
+            </div>
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">
@@ -713,5 +625,9 @@ $departments_result = $conn->query($departments_query);
             }
         });
     </script>
+
+    <?php include 'admin-layout/footer.php'; ?>
+</main>
+
 </body>
 </html>
