@@ -46,14 +46,14 @@ while ($row = $status_query->fetch_assoc()) {
 
 // Users by Department
 $users_by_dept = [];
-$dept_query = $conn->query("SELECT d.department_name as name, COUNT(u.id) as count FROM departments d LEFT JOIN users u ON d.department_id = u.department_id WHERE d.parent_department_id IS NULL GROUP BY d.department_id ORDER BY d.department_name");
+$dept_query = $conn->query("SELECT d.department_name as name, COUNT(u.user_id) as count FROM departments d LEFT JOIN users u ON d.department_id = u.department_id WHERE d.parent_department_id IS NULL GROUP BY d.department_id ORDER BY d.department_name");
 while ($row = $dept_query->fetch_assoc()) {
     $users_by_dept[] = $row;
 }
 
 // Services Stats
 $services_stats = [];
-$services_query = $conn->query("SELECT id, name, is_active FROM my_service ORDER BY name");
+$services_query = $conn->query("SELECT id, service_name as name, is_active FROM my_service ORDER BY service_name");
 while ($row = $services_query->fetch_assoc()) {
     $services_stats[] = $row;
 }
@@ -367,7 +367,7 @@ include 'admin-layout/topbar.php';
                     <tbody>
                         <?php 
                         $users_query = $conn->query("
-                            SELECT u.id, u.username, u.email, u.role, d.department_name as dept_name 
+                            SELECT u.user_id, u.username, u.email, u.role, d.department_name as dept_name 
                             FROM users u 
                             LEFT JOIN departments d ON u.department_id = d.department_id 
                             ORDER BY u.username
@@ -431,10 +431,10 @@ include 'admin-layout/topbar.php';
                     <tbody>
                         <?php 
                         $requests_query = $conn->query("
-                            SELECT sr.id, sr.service_id, sr.user_id, sr.status, sr.created_at, ms.name, u.username
+                            SELECT sr.id, sr.service_id, sr.user_id, sr.status, sr.created_at, ms.service_name as name, u.username
                             FROM service_requests sr
                             LEFT JOIN my_service ms ON sr.service_id = ms.id
-                            LEFT JOIN users u ON sr.user_id = u.id
+                            LEFT JOIN users u ON sr.user_id = u.user_id
                             WHERE DATE(sr.created_at) BETWEEN '$date_from' AND '$date_to'
                             ORDER BY sr.created_at DESC
                         ");
