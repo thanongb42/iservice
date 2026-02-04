@@ -354,6 +354,23 @@ include 'admin-layout/topbar.php';
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column - Details -->
         <div class="lg:col-span-2">
+            <!-- เรื่องที่ขอ -->
+            <div class="detail-card">
+                <h3><i class="fas fa-file-alt text-green-600"></i> เรื่องที่ขอ</h3>
+                <div class="detail-row full">
+                    <div class="detail-item">
+                        <span class="detail-label">หัวเรื่อง</span>
+                        <span class="detail-value"><?= htmlspecialchars($task['subject']) ?></span>
+                    </div>
+                </div>
+                <div class="detail-row full">
+                    <div class="detail-item">
+                        <span class="detail-label">รายละเอียด</span>
+                        <span class="detail-value text"><?= htmlspecialchars($task['description']) ?></span>
+                    </div>
+                </div>
+            </div>
+
             <!-- ผู้ขอบริการ -->
             <div class="detail-card">
                 <h3><i class="fas fa-user text-blue-600"></i> ผู้ขอบริการ</h3>
@@ -439,23 +456,6 @@ include 'admin-layout/topbar.php';
                                 ไม่มีกำหนด
                             <?php endif; ?>
                         </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- เรื่องที่ขอ -->
-            <div class="detail-card">
-                <h3><i class="fas fa-file-alt text-green-600"></i> เรื่องที่ขอ</h3>
-                <div class="detail-row full">
-                    <div class="detail-item">
-                        <span class="detail-label">หัวเรื่อง</span>
-                        <span class="detail-value"><?= htmlspecialchars($task['subject']) ?></span>
-                    </div>
-                </div>
-                <div class="detail-row full">
-                    <div class="detail-item">
-                        <span class="detail-label">รายละเอียด</span>
-                        <span class="detail-value text"><?= htmlspecialchars($task['description']) ?></span>
                     </div>
                 </div>
             </div>
