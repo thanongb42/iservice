@@ -273,6 +273,29 @@ include 'admin-layout/topbar.php';
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Roles Modal Specific Styles */
+        #rolesModal .modal-content {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .role-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.15s ease;
+        }
+
+        .role-item:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
         /* Form - Clean */
         .form-group {
             margin-bottom: 0;
@@ -547,6 +570,9 @@ include 'admin-layout/topbar.php';
                                         <button class="action-btn action-btn-edit" onclick="editUser(<?php echo $user['user_id']; ?>)" title="แก้ไข">
                                             <i class="fas fa-pen"></i>
                                         </button>
+                                        <button class="action-btn" onclick="setUserRoles(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')" title="จัดการบทบาท" style="color: #7c3aed;">
+                                            <i class="fas fa-user-tag"></i>
+                                        </button>
                                         <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
                                         <button class="action-btn action-btn-delete" onclick="deleteUser(<?php echo $user['user_id']; ?>)" title="ลบ">
                                             <i class="fas fa-trash"></i>
@@ -752,6 +778,49 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
+    <!-- Manage User Roles Modal -->
+    <div id="rolesModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-800">จัดการบทบาท/หน้าที่</h2>
+                <button onclick="closeRolesModal()" class="text-gray-400 hover:text-gray-600 transition p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="py-4">
+                <p class="text-sm text-gray-600 mb-4">ผู้ใช้: <strong id="rolesModalUsername"></strong></p>
+
+                <!-- Current Roles -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">บทบาท/หน้าที่ที่ได้รับมอบหมายแล้ว</h3>
+                    <div id="currentRolesList" class="space-y-2">
+                        <p class="text-sm text-gray-400">กำลังโหลด...</p>
+                    </div>
+                </div>
+
+                <!-- Add New Role -->
+                <div class="border-t pt-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">เพิ่มบทบาท/หน้าที่ใหม่</h3>
+                    <div class="flex gap-2">
+                        <select id="availableRolesSelect" class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                            <option value="">-- เลือกบทบาท --</option>
+                        </select>
+                        <button onclick="addRoleToUser()" class="btn btn-primary px-4">
+                            <i class="fas fa-plus mr-2"></i>เพิ่ม
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                <button type="button" onclick="closeRolesModal()" class="btn btn-secondary">ปิด</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Filter functionality
         const searchInput = document.getElementById('searchInput');
@@ -940,6 +1009,203 @@ include 'admin-layout/topbar.php';
         document.getElementById('userModal').addEventListener('click', (e) => {
             if (e.target.id === 'userModal') {
                 closeModal();
+            }
+        });
+
+        // ========================================
+        // Functions for Managing User Roles
+        // ========================================
+        let currentRolesUserId = null;
+
+        async function setUserRoles(userId, username) {
+            currentRolesUserId = userId;
+            document.getElementById('rolesModalUsername').textContent = username;
+            
+            // Load current roles
+            await loadCurrentRoles(userId);
+            
+            // Load available roles
+            await loadAvailableRoles();
+            
+            document.getElementById('rolesModal').classList.add('active');
+        }
+
+        async function loadCurrentRoles(userId) {
+            try {
+                const response = await fetch(`api/user_roles_api.php?action=get_user_roles&user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const rolesList = document.getElementById('currentRolesList');
+                    
+                    if (data.roles.length === 0) {
+                        rolesList.innerHTML = '<p class="text-sm text-gray-400">ยังไม่มีบทบาทที่ได้รับมอบหมาย</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.roles.forEach(role => {
+                        const primaryBadge = role.is_primary ? '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">หลัก</span>' : '';
+                        html += `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas ${role.role_icon || 'fa-user-tag'}" style="color: ${role.role_color}; font-size: 1.1em;"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-800">${role.role_name}</div>
+                                        <div class="text-xs text-gray-500">${role.role_code}</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    ${!role.is_primary ? `<button onclick="setPrimaryRole(${userId}, ${role.role_id})" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition" title="ตั้งเป็นบทบาทหลัก">ตั้งเป็นหลัก</button>` : ''}
+                                    <button onclick="removeRole(${userId}, ${role.role_id})" class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2 py-1 rounded transition" title="ลบบทบาท">ลบ</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    rolesList.innerHTML = html;
+                } else {
+                    console.error('Error loading roles:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('currentRolesList').innerHTML = '<p class="text-sm text-red-500">ไม่สามารถโหลดข้อมูล</p>';
+            }
+        }
+
+        async function loadAvailableRoles() {
+            try {
+                const response = await fetch('api/user_roles_api.php?action=get_available_roles');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('availableRolesSelect');
+                    select.innerHTML = '<option value="">-- เลือกบทบาท --</option>';
+                    
+                    data.roles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.role_id;
+                        option.textContent = `${role.role_name} (${role.role_code})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('Error loading available roles:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function addRoleToUser() {
+            const roleId = document.getElementById('availableRolesSelect').value;
+            
+            if (!roleId) {
+                Swal.fire('แจ้งเตือน', 'กรุณาเลือกบทบาท', 'warning');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'add_role');
+                formData.append('user_id', currentRolesUserId);
+                formData.append('role_id', roleId);
+                formData.append('is_primary', 0);
+                
+                const response = await fetch('api/user_roles_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire('สำเร็จ', data.message, 'success');
+                    document.getElementById('availableRolesSelect').value = '';
+                    await loadCurrentRoles(currentRolesUserId);
+                    await loadAvailableRoles();
+                } else {
+                    Swal.fire('ผิดพลาด', data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเพิ่มบทบาทได้', 'error');
+            }
+        }
+
+        async function removeRole(userId, roleId) {
+            const result = await Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบบทบาทนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            });
+            
+            if (!result.isConfirmed) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'remove_role');
+                formData.append('user_id', userId);
+                formData.append('role_id', roleId);
+                
+                const response = await fetch('api/user_roles_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire('สำเร็จ', data.message, 'success');
+                    await loadCurrentRoles(userId);
+                    await loadAvailableRoles();
+                } else {
+                    Swal.fire('ผิดพลาด', data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบบทบาทได้', 'error');
+            }
+        }
+
+        async function setPrimaryRole(userId, roleId) {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'set_primary_role');
+                formData.append('user_id', userId);
+                formData.append('role_id', roleId);
+                
+                const response = await fetch('api/user_roles_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire('สำเร็จ', data.message, 'success');
+                    await loadCurrentRoles(userId);
+                } else {
+                    Swal.fire('ผิดพลาด', data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอัปเดตบทบาทหลักได้', 'error');
+            }
+        }
+
+        function closeRolesModal() {
+            document.getElementById('rolesModal').classList.remove('active');
+            currentRolesUserId = null;
+        }
+
+        // Close roles modal on outside click
+        document.getElementById('rolesModal').addEventListener('click', (e) => {
+            if (e.target.id === 'rolesModal') {
+                closeRolesModal();
             }
         });
     </script>
