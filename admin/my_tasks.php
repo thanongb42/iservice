@@ -389,9 +389,9 @@ include 'admin-layout/topbar.php';
                             <?php endif; ?>
 
                             <?php if (in_array($task['status'], ['pending', 'accepted', 'in_progress'])): ?>
-                                <button class="btn-status" style="background-color: #fee2e2; color: #7f1d1d;" onclick="showTaskDetails(<?= $task['assignment_id'] ?>)">
+                                <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>" class="btn-status" style="background-color: #fee2e2; color: #7f1d1d; text-decoration: none; display: flex; align-items: center; justify-content: center;">
                                     <i class="fas fa-eye"></i> ดูรายละเอียด
-                                </button>
+                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -455,11 +455,8 @@ include 'admin-layout/topbar.php';
     }
 
     function showTaskDetails(assignmentId) {
-        Swal.fire({
-            title: 'รายละเอียดงาน',
-            html: '<p>กำลังโหลดข้อมูล...</p>',
-            icon: 'info'
-        });
+        // Redirect to task detail page
+        window.location.href = `task_detail.php?assignment_id=${assignmentId}`;
     }
 </script>
 
