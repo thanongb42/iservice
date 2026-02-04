@@ -178,10 +178,16 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
                 <nav class="hidden lg:flex space-x-1 items-center">
                     <?php echo $nav_html; ?>
                     <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="logout.php" class="ml-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
+                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                        <a href="admin/admin_dashboard.php" class="ml-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
+                            <i class="fas fa-cogs"></i>
+                            <span>Admin Panel</span>
+                        </a>
+                        <?php endif; ?>
+                        <a href="logout.php" class="ml-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
                     <?php else: ?>
                     <a href="admin-login.php" class="ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
                         <i class="fas fa-user-shield"></i>
@@ -200,8 +206,19 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
             <nav id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200 py-4 absolute top-full left-0 right-0 shadow-lg px-4 z-50">
                 <div class="flex flex-col space-y-2">
                     <?php echo str_replace('flex items-center text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors', 'block text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100', $nav_html); ?>
-                    
-                    <?php if (!isset($_SESSION['user_id'])): ?>
+
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                        <a href="admin/admin_dashboard.php" class="flex items-center space-x-3 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 transition-all shadow-md mt-2">
+                            <i class="fas fa-cogs text-xl"></i>
+                            <span>Admin Panel</span>
+                        </a>
+                        <?php endif; ?>
+                        <a href="logout.php" class="flex items-center space-x-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-lg font-bold hover:from-red-600 hover:to-red-700 transition-all shadow-md mt-2">
+                            <i class="fas fa-sign-out-alt text-xl"></i>
+                            <span>Logout</span>
+                        </a>
+                    <?php else: ?>
                     <a href="admin-login.php" class="flex items-center space-x-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 px-4 py-3 rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md mt-2">
                         <i class="fas fa-user-shield text-xl"></i>
                         <span>Admin Login</span>

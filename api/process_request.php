@@ -209,15 +209,13 @@ try {
             break;
 
         case 'INTERNET':
-            $stmt = $conn->prepare("INSERT INTO request_internet_details (request_id, request_type, location, building, room_number, number_of_users, required_speed, current_issue) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO request_internet_details (request_id, request_type, location, building, room_number, current_issue) VALUES (?, ?, ?, ?, ?, ?)");
             $req_type = clean_input($_POST['request_type']);
             $location = clean_input($_POST['location']);
             $building = clean_input($_POST['building']);
             $room = clean_input($_POST['room_number']);
-            $users = intval($_POST['number_of_users']);
-            $speed = clean_input($_POST['required_speed']);
             $issue = clean_input($_POST['current_issue'] ?? '');
-            $stmt->bind_param("isssiss", $request_id, $req_type, $location, $building, $room, $users, $speed, $issue);
+            $stmt->bind_param("isssss", $request_id, $req_type, $location, $building, $room, $issue);
             break;
 
         case 'QR_CODE':

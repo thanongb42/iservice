@@ -151,7 +151,7 @@ include __DIR__ . '/includes/header_public.php';
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
-                        <?php if ($service_code !== 'EMAIL'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'INTERNET'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 ความสำคัญ <span class="text-red-500">*</span>
@@ -166,7 +166,7 @@ include __DIR__ . '/includes/header_public.php';
                         </div>
                         <?php endif; ?>
 
-                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC' && $service_code !== 'INTERNET'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">วันที่ต้องการให้เสร็จ</label>
                             <input type="date" name="target_date"

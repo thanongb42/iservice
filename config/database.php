@@ -4,12 +4,22 @@
  * ไฟล์ตั้งค่าการเชื่อมต่อฐานข้อมูล
  */
 
-// Database credentials
+// Database credentials on local environment
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'iservice_db');
 define('DB_CHARSET', 'utf8mb4');
+
+
+// Database credentials on Hosting Production environment
+
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'rangsitadmin_iservice');
+// define('DB_PASS', 'IService@2026');
+// define('DB_NAME', 'rangsitadmin_iservice_db');
+// define('DB_CHARSET', 'utf8mb4');
+
 
 // Create connection
 try {

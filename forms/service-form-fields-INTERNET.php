@@ -1,3 +1,22 @@
+<?php
+// Load Internet Request Types from database
+$internet_request_types = [];
+$types_query = $conn->query("SELECT type_code, type_name, icon FROM internet_request_types WHERE is_active = 1 ORDER BY display_order ASC");
+if ($types_query && $types_query->num_rows > 0) {
+    while ($row = $types_query->fetch_assoc()) {
+        $internet_request_types[] = $row;
+    }
+}
+
+// Fallback to default if table doesn't exist or is empty
+if (empty($internet_request_types)) {
+    $internet_request_types = [
+        ['type_code' => 'new_wifi', 'type_name' => 'ขอรหัสผ่าน WiFi ใหม่', 'icon' => 'fa-key'],
+        ['type_code' => 'password_reset', 'type_name' => 'Reset รหัสผ่าน Internet', 'icon' => 'fa-sync'],
+        ['type_code' => 'other', 'type_name' => 'อื่นๆ', 'icon' => 'fa-ellipsis-h']
+    ];
+}
+?>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="md:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -5,11 +24,12 @@
         </label>
         <select name="request_type" required
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="new_wifi">ติดตั้ง WiFi ใหม่</option>
-            <option value="password_reset">ขอรหัสผ่าน WiFi / Reset</option>
-            <option value="signal_issue">สัญญาณ WiFi อ่อน/ไม่เสถียร</option>
-            <option value="speed_issue">ความเร็วอินเทอร์เน็ตช้า</option>
-            <option value="other">อื่นๆ</option>
+            <option value="">-- เลือกประเภทคำขอ --</option>
+            <?php foreach ($internet_request_types as $type): ?>
+                <option value="<?= htmlspecialchars($type['type_code']) ?>">
+                    <?= htmlspecialchars($type['type_name']) ?>
+                </option>
+            <?php endforeach; ?>
         </select>
     </div>
 
@@ -38,34 +58,6 @@
         <input type="text" name="room_number"
                placeholder="เช่น 301, ห้องประชุมใหญ่"
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            จำนวนผู้ใช้งาน (โดยประมาณ)
-        </label>
-        <select name="number_of_users"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="1">1-5 คน</option>
-            <option value="10" selected>6-10 คน</option>
-            <option value="20">11-20 คน</option>
-            <option value="50">21-50 คน</option>
-            <option value="100">มากกว่า 50 คน</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ความเร็วที่ต้องการ
-        </label>
-        <select name="required_speed"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="50mbps">50 Mbps</option>
-            <option value="100mbps" selected>100 Mbps</option>
-            <option value="200mbps">200 Mbps</option>
-            <option value="500mbps">500 Mbps</option>
-            <option value="1gbps">1 Gbps</option>
-        </select>
     </div>
 
     <div class="md:col-span-2">

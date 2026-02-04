@@ -8,6 +8,7 @@ require_once '../config/database.php';
 session_start();
 
 $page_title = 'จัดการหน่วยงานที่เกี่ยวข้อง';
+$current_page = 'related_agencies';
 
 // --- Handle Form Submissions ---
 $message = '';

@@ -21,17 +21,20 @@ try {
     switch ($action) {
         case 'update':
             $tab = $_POST['tab'] ?? '';
-            
+
             if ($tab === 'organization') {
                 updateOrganizationSettings();
             } elseif ($tab === 'email') {
                 updateEmailSettings();
             } elseif ($tab === 'backup') {
                 updateBackupSettings();
+            } else {
+                throw new Exception('ไม่พบ tab ที่ระบุ');
             }
-            
+
             $response['success'] = true;
             $response['message'] = 'บันทึกการเปลี่ยนแปลงสำเร็จแล้ว';
+            $response['reload'] = true;
             break;
 
         case 'test_email':
@@ -58,7 +61,7 @@ echo json_encode($response);
 
 function updateOrganizationSettings() {
     global $conn;
-    
+
     $settings = [
         'organization_name' => $_POST['organization_name'] ?? '',
         'app_name' => $_POST['app_name'] ?? '',
@@ -103,18 +106,22 @@ function updateOrganizationSettings() {
         $settings['logo_image'] = '';
     }
 
-    // Update settings
+    // Update or insert settings using INSERT ON DUPLICATE KEY UPDATE
     foreach ($settings as $key => $value) {
-        $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-        $stmt->bind_param('ss', $value, $key);
-        $stmt->execute();
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
+                                VALUES (?, ?, 'text')
+                                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->bind_param('ss', $key, $value);
+        if (!$stmt->execute()) {
+            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+        }
         $stmt->close();
     }
 }
 
 function updateEmailSettings() {
     global $conn;
-    
+
     $settings = [
         'smtp_host' => $_POST['smtp_host'] ?? '',
         'smtp_port' => $_POST['smtp_port'] ?? '',
@@ -126,16 +133,20 @@ function updateEmailSettings() {
     ];
 
     foreach ($settings as $key => $value) {
-        $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-        $stmt->bind_param('ss', $value, $key);
-        $stmt->execute();
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
+                                VALUES (?, ?, 'text')
+                                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->bind_param('ss', $key, $value);
+        if (!$stmt->execute()) {
+            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+        }
         $stmt->close();
     }
 }
 
 function updateBackupSettings() {
     global $conn;
-    
+
     $settings = [
         'backup_enable' => $_POST['backup_enable'] ?? '0',
         'backup_schedule' => $_POST['backup_schedule'] ?? 'daily',
@@ -143,9 +154,13 @@ function updateBackupSettings() {
     ];
 
     foreach ($settings as $key => $value) {
-        $stmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-        $stmt->bind_param('ss', $value, $key);
-        $stmt->execute();
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
+                                VALUES (?, ?, 'text')
+                                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->bind_param('ss', $key, $value);
+        if (!$stmt->execute()) {
+            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+        }
         $stmt->close();
     }
 }

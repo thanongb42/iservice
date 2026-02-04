@@ -429,11 +429,10 @@ include 'admin-layout/topbar.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         $requests_query = $conn->query("
-                            SELECT sr.id, sr.service_id, sr.user_id, sr.status, sr.created_at, ms.service_name as name, u.username
+                            SELECT sr.request_id, sr.service_name, sr.user_id, sr.status, sr.created_at, u.username
                             FROM service_requests sr
-                            LEFT JOIN my_service ms ON sr.service_id = ms.id
                             LEFT JOIN users u ON sr.user_id = u.user_id
                             WHERE DATE(sr.created_at) BETWEEN '$date_from' AND '$date_to'
                             ORDER BY sr.created_at DESC
@@ -442,8 +441,8 @@ include 'admin-layout/topbar.php';
                             $badge_class = 'status-' . strtolower(str_replace(' ', '-', $req['status']));
                         ?>
                             <tr>
-                                <td>#<?= htmlspecialchars($req['id']) ?></td>
-                                <td><?= htmlspecialchars($req['name'] ?? '-') ?></td>
+                                <td>#<?= htmlspecialchars($req['request_id']) ?></td>
+                                <td><?= htmlspecialchars($req['service_name'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($req['username'] ?? '-') ?></td>
                                 <td><span class="status-badge <?= $badge_class ?>"><?= htmlspecialchars($req['status']) ?></span></td>
                                 <td><?= date('d/m/Y H:i', strtotime($req['created_at'])) ?></td>

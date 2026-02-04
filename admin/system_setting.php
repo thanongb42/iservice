@@ -67,11 +67,11 @@ include 'admin-layout/topbar.php';
             transition: all 0.3s ease;
         }
         .nav-tabs button.active {
-            color: #0d9488;
-            border-bottom-color: #0d9488;
+            color: #009933;
+            border-bottom-color: #009933;
         }
         .nav-tabs button:hover {
-            color: #0f766e;
+            color: #007a29;
         }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -125,8 +125,8 @@ include 'admin-layout/topbar.php';
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #0d9488;
-            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+            border-color: #009933;
+            box-shadow: 0 0 0 3px rgba(0, 153, 51, 0.1);
         }
         .form-row {
             display: grid;
@@ -134,7 +134,7 @@ include 'admin-layout/topbar.php';
             gap: 1.5rem;
         }
         .btn-save {
-            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+            background: linear-gradient(135deg, #009933 0%, #007a29 100%);
             color: white;
             padding: 0.75rem 2rem;
             border: none;
@@ -148,7 +148,7 @@ include 'admin-layout/topbar.php';
         }
         .btn-save:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px rgba(13, 148, 136, 0.3);
+            box-shadow: 0 10px 15px rgba(0, 153, 51, 0.3);
         }
         .alert {
             padding: 1rem;
@@ -193,7 +193,7 @@ include 'admin-layout/topbar.php';
         <!-- Page Title -->
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900">
-                <i class="fas fa-cog text-teal-600"></i> ตั้งค่าระบบ
+                <i class="fas fa-cog text-green-600"></i> ตั้งค่าระบบ
             </h1>
             <p class="mt-2 text-gray-600">จัดการตั้งค่าองค์กร email server และ backup database</p>
         </div>
@@ -232,7 +232,7 @@ include 'admin-layout/topbar.php';
                 <input type="hidden" name="tab" value="organization">
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-info-circle text-teal-600"></i> ข้อมูลองค์กร</h3>
+                    <h3><i class="fas fa-info-circle text-green-600"></i> ข้อมูลองค์กร</h3>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -268,7 +268,7 @@ include 'admin-layout/topbar.php';
                 </div>
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-image text-teal-600"></i> โลโก้องค์กร</h3>
+                    <h3><i class="fas fa-image text-green-600"></i> โลโก้องค์กร</h3>
                     
                     <div class="form-group">
                         <label>อัปโหลดโลโก้</label>
@@ -278,7 +278,7 @@ include 'admin-layout/topbar.php';
                         <?php if (!empty(getSetting('logo_image'))): ?>
                             <div class="mt-3">
                                 <p class="text-sm font-semibold mb-2">โลโก้ปัจจุบัน:</p>
-                                <img src="<?= htmlspecialchars(getSetting('logo_image')) ?>" alt="Logo" class="logo-preview">
+                                <img src="../<?= htmlspecialchars(getSetting('logo_image')) ?>" alt="Logo" class="logo-preview">
                                 <label class="block mt-2">
                                     <input type="checkbox" name="delete_logo"> ลบโลโก้
                                 </label>
@@ -300,7 +300,7 @@ include 'admin-layout/topbar.php';
                 <input type="hidden" name="tab" value="email">
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-envelope text-teal-600"></i> ตั้งค่า SMTP Server</h3>
+                    <h3><i class="fas fa-envelope text-green-600"></i> ตั้งค่า SMTP Server</h3>
                     <p class="text-sm text-gray-600 mb-4">กำหนดเซิร์ฟเวอร์อีเมลสำหรับส่งข้อความจากระบบ</p>
                     
                     <div class="form-row">
@@ -343,7 +343,7 @@ include 'admin-layout/topbar.php';
                 </div>
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-paper-plane text-teal-600"></i> ตั้งค่าข้อความอีเมล</h3>
+                    <h3><i class="fas fa-paper-plane text-green-600"></i> ตั้งค่าข้อความอีเมล</h3>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -377,7 +377,7 @@ include 'admin-layout/topbar.php';
                 <input type="hidden" name="tab" value="backup">
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-database text-teal-600"></i> ตั้งค่า Backup</h3>
+                    <h3><i class="fas fa-database text-green-600"></i> ตั้งค่า Backup</h3>
                     <p class="text-sm text-gray-600 mb-4">จัดการการสำรองข้อมูลอัตโนมัติของฐานข้อมูล</p>
                     
                     <div class="form-row">
@@ -408,7 +408,7 @@ include 'admin-layout/topbar.php';
                 </div>
 
                 <div class="settings-group">
-                    <h3><i class="fas fa-clock text-teal-600"></i> สถานะ Backup</h3>
+                    <h3><i class="fas fa-clock text-green-600"></i> สถานะ Backup</h3>
                     
                     <div class="form-group" style="background: #f3f4f6; padding: 1rem; border-radius: 0.375rem;">
                         <p class="text-sm mb-2">

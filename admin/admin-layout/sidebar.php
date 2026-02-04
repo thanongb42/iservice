@@ -23,28 +23,31 @@ $sidebar_org_name = !empty($system_settings['organization_name']) ? $system_sett
 $sidebar_logo = !empty($system_settings['logo_image']) && file_exists('../' . $system_settings['logo_image']) ? $system_settings['logo_image'] : null;
 
 // Menu items configuration - grouped
+// IDs must match $current_page values set in each PHP file
 $menu_groups = [
     'main' => [
         'label' => '',
         'items' => [
             ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
-            ['id' => 'users', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
+            ['id' => 'user-manager', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
             ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
+            ['id' => 'roles_manager', 'icon' => 'fa-user-tag', 'label' => 'จัดการบทบาท', 'url' => 'roles_manager.php'],
+            ['id' => 'user_roles', 'icon' => 'fa-id-badge', 'label' => 'กำหนดบทบาทผู้ใช้', 'url' => 'user_roles.php'],
         ]
     ],
     'services' => [
         'label' => 'บริการ',
         'items' => [
-            ['id' => 'requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
-            ['id' => 'services', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
+            ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+            ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
         ]
     ],
     'content' => [
         'label' => 'เนื้อหา',
         'items' => [
-            ['id' => 'learning', 'icon' => 'fa-book-open', 'label' => 'ศูนย์การเรียนรู้', 'url' => 'learning_resources.php'],
-            ['id' => 'news', 'icon' => 'fa-newspaper', 'label' => 'ข่าวสารเทคโนโลยี', 'url' => 'tech_news.php'],
-            ['id' => 'menu', 'icon' => 'fa-bars', 'label' => 'จัดการเมนู', 'url' => 'nav_menu.php'],
+            ['id' => 'learning_resources', 'icon' => 'fa-book-open', 'label' => 'ศูนย์การเรียนรู้', 'url' => 'learning_resources.php'],
+            ['id' => 'tech_news', 'icon' => 'fa-newspaper', 'label' => 'ข่าวสารเทคโนโลยี', 'url' => 'tech_news.php'],
+            ['id' => 'nav_menu', 'icon' => 'fa-bars', 'label' => 'จัดการเมนู', 'url' => 'nav_menu.php'],
             ['id' => 'related_agencies', 'icon' => 'fa-building', 'label' => 'หน่วยงานที่เกี่ยวข้อง', 'url' => 'related_agencies.php'],
         ]
     ],

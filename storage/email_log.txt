@@ -2,3 +2,7 @@ To: thanongb42@gmail.com
 Subject: ได้รับคำร้องขอใช้บริการ: ขอพธกร (REQ-2026-0002)
 Link: http://localhost/iservice/tracking.php?req=REQ-2026-0002
 
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0003)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0003
+

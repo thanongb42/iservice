@@ -71,169 +71,172 @@ include 'admin-layout/topbar.php';
 ?>
 
 <style>
+        /* Clean Minimal Table Styles */
+
+        /* Status Badge - Minimal */
         .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.375rem;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 500;
         }
-        .status-active { background-color: #d1fae5; color: #065f46; }
-        .status-inactive { background-color: #fee2e2; color: #991b1b; }
-        .status-suspended { background-color: #fef3c7; color: #92400e; }
+        .status-active { background-color: #ecfdf5; color: #059669; }
+        .status-inactive { background-color: #fef2f2; color: #dc2626; }
+        .status-suspended { background-color: #fffbeb; color: #d97706; }
 
+        /* Role Badge - Minimal */
         .role-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.375rem;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 500;
         }
-        .role-admin { background-color: #dbeafe; color: #1e40af; }
-        .role-staff { background-color: #e0e7ff; color: #4338ca; }
-        .role-user { background-color: #f3f4f6; color: #374151; }
+        .role-admin { background-color: #eff6ff; color: #2563eb; }
+        .role-staff { background-color: #f5f3ff; color: #7c3aed; }
+        .role-user { background-color: #f9fafb; color: #6b7280; }
 
-        /* Table Styling */
+        /* Clean Table */
         #usersTable {
             width: 100%;
             border-collapse: collapse;
         }
 
         #usersTable thead {
-            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-            color: white;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         #usersTable th {
-            padding: 12px 16px;
+            padding: 0.875rem 1rem;
             text-align: left;
             font-weight: 600;
-            font-size: 0.875rem;
-            letter-spacing: 0.5px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #usersTable th i {
+            display: none;
         }
 
         #usersTable tbody tr {
-            border-bottom: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.15s ease;
         }
 
         #usersTable tbody tr:hover {
-            background-color: #f0fdfa;
-            box-shadow: inset 0 1px 2px rgba(13, 148, 136, 0.1);
+            background-color: #f9fafb;
         }
 
         #usersTable td {
-            padding: 14px 16px;
+            padding: 1rem;
             font-size: 0.875rem;
+            color: #374151;
         }
 
-        #usersTable td:first-child {
-            font-weight: 500;
-            color: #0d9488;
+        /* User avatar - simple circle */
+        .user-avatar {
+            width: 2.25rem;
+            height: 2.25rem;
+            min-width: 2.25rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            overflow: hidden;
         }
 
-        /* Action buttons */
+        img.user-avatar {
+            object-fit: cover;
+        }
+
+        /* Action buttons - Minimal */
         .action-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            margin-right: 4px;
-            transition: all 0.2s ease;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.375rem;
+            transition: all 0.15s ease;
             cursor: pointer;
             border: none;
-            background: none;
+            background: transparent;
+            color: #9ca3af;
         }
 
-        .action-btn-view {
-            color: #0369a1;
+        .action-btn:hover {
+            background-color: #f3f4f6;
         }
 
-        .action-btn-view:hover {
-            background-color: #ecf0ff;
-            color: #0284c7;
-        }
+        .action-btn-view:hover { color: #3b82f6; }
+        .action-btn-edit:hover { color: #009933; }
+        .action-btn-delete:hover { color: #ef4444; background-color: #fef2f2; }
 
-        .action-btn-edit {
-            color: #059669;
-        }
-
-        .action-btn-edit:hover {
-            background-color: #ecfdf5;
-            color: #10b981;
-        }
-
-        .action-btn-delete {
-            color: #dc2626;
-        }
-
-        .action-btn-delete:hover {
-            background-color: #fef2f2;
-            color: #ef4444;
-        }
-
-        /* Pagination Styling */
+        /* Pagination - Clean */
         .pagination {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
-            margin-top: 24px;
-            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 1.5rem;
         }
 
         .pagination a, .pagination span {
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 0.5rem 0.875rem;
+            border-radius: 0.375rem;
             font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .pagination a {
-            background-color: #f3f4f6;
-            color: #0d9488;
+            background-color: transparent;
+            color: #6b7280;
             text-decoration: none;
-            cursor: pointer;
             border: 1px solid #e5e7eb;
         }
 
         .pagination a:hover {
-            background-color: #0d9488;
-            color: white;
-            border-color: #0d9488;
+            background-color: #f9fafb;
+            border-color: #d1d5db;
+            color: #374151;
         }
 
         .pagination span.current {
-            background-color: #0d9488;
+            background-color: #009933;
             color: white;
-            border: 1px solid #0d9488;
-            font-weight: 600;
+            border: 1px solid #009933;
         }
 
         .pagination span.info {
-            color: #6b7280;
-            padding: 0 12px;
+            color: #9ca3af;
+            border: none;
         }
 
+        /* Table Info - Simple */
         .table-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-            padding: 12px 16px;
-            background-color: #f0fdfa;
-            border-radius: 8px;
-            border-left: 4px solid #0d9488;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .table-info-text {
-            color: #065f46;
+            color: #6b7280;
             font-size: 0.875rem;
-            font-weight: 500;
         }
 
-        /* Modal Styles */
+        /* Modal - Clean */
         .modal {
             display: none;
             position: fixed;
@@ -243,136 +246,131 @@ include 'admin-layout/topbar.php';
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0);
-            transition: background-color 0.3s ease;
+            transition: background-color 0.2s ease;
         }
 
         .modal.active {
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.4);
         }
 
         .modal-content {
             background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 90%;
-            max-width: 600px;
+            max-width: 560px;
             max-height: 85vh;
             overflow-y: auto;
-            padding: 32px;
-            animation: slideIn 0.3s ease;
+            padding: 1.5rem;
+            animation: modalSlide 0.2s ease;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .modal-content::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .modal-content::-webkit-scrollbar-track {
-            background: #f3f4f6;
-            border-radius: 10px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb {
-            background: #0d9488;
-            border-radius: 10px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb:hover {
-            background: #0f766e;
-        }
-
-        /* Form Styles */
+        /* Form - Clean */
         .form-group {
             margin-bottom: 0;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             font-weight: 500;
             color: #374151;
             font-size: 0.875rem;
+        }
+
+        .form-group label i {
+            color: #9ca3af;
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 10px 12px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 8px;
+            padding: 0.625rem 0.875rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
-            transition: all 0.2s ease;
-            font-family: inherit;
+            transition: all 0.15s ease;
+            background-color: #fff;
         }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #0d9488;
-            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
-            background-color: #f0fdfa;
+            border-color: #009933;
+            box-shadow: 0 0 0 3px rgba(0, 153, 51, 0.1);
         }
 
         .form-group input::placeholder {
-            color: #9ca3af;
+            color: #d1d5db;
         }
 
         .form-group p {
-            margin-top: 6px;
-            color: #6b7280;
+            margin-top: 0.375rem;
+            color: #9ca3af;
             font-size: 0.75rem;
         }
 
-        /* Button Styles */
+        /* Buttons - Clean */
         .btn {
-            padding: 10px 20px;
+            padding: 0.625rem 1.25rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 0.5rem;
         }
 
         .btn-primary {
-            background-color: #0d9488;
+            background-color: #009933;
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #0f766e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
+            background-color: #007a29;
         }
 
         .btn-secondary {
-            background-color: #e5e7eb;
+            background-color: #f3f4f6;
             color: #374151;
         }
 
         .btn-secondary:hover {
-            background-color: #d1d5db;
+            background-color: #e5e7eb;
+        }
+
+        /* Stats Cards - Clean */
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+            padding: 1.25rem;
+            transition: box-shadow 0.15s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .w-full {
@@ -382,173 +380,147 @@ include 'admin-layout/topbar.php';
 
     <!-- Content -->
     <div>
-        <!-- Statistic Cards -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                <i class="fas fa-users text-teal-600 mr-3"></i>จัดการผู้ใช้งาน
-            </h1>
-            <p class="text-gray-600">ระบบจัดการข้อมูลผู้ใช้งานทั้งหมด</p>
+        <!-- Page Header - Clean -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold text-gray-800">จัดการผู้ใช้งาน</h1>
+            <p class="text-gray-500 text-sm mt-1">จัดการข้อมูลผู้ใช้งานทั้งหมดในระบบ</p>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
-                        <i class="fas fa-users text-blue-600 text-2xl"></i>
+        <!-- Statistics Cards - Clean Minimal -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">ทั้งหมด</p>
+                        <p class="text-2xl font-semibold text-gray-800 mt-1"><?php echo number_format($stats['total_users']); ?></p>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-600">ผู้ใช้งานทั้งหมด</p>
-                        <p class="text-2xl font-bold text-gray-800"><?php echo number_format($stats['total_users']); ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
-                        <i class="fas fa-user-check text-green-600 text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-600">ใช้งานอยู่</p>
-                        <p class="text-2xl font-bold text-gray-800"><?php echo number_format($stats['active_count']); ?></p>
+                    <div class="stat-icon bg-blue-50">
+                        <i class="fas fa-users text-blue-500"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
-                        <i class="fas fa-user-shield text-purple-600 text-2xl"></i>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">ใช้งานอยู่</p>
+                        <p class="text-2xl font-semibold text-green-600 mt-1"><?php echo number_format($stats['active_count']); ?></p>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-600">ผู้ดูแลระบบ</p>
-                        <p class="text-2xl font-bold text-gray-800"><?php echo number_format($stats['admin_count']); ?></p>
+                    <div class="stat-icon bg-green-50">
+                        <i class="fas fa-user-check text-green-500"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-orange-100 rounded-lg p-3">
-                        <i class="fas fa-user-friends text-orange-600 text-2xl"></i>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">ผู้ดูแล</p>
+                        <p class="text-2xl font-semibold text-blue-600 mt-1"><?php echo number_format($stats['admin_count']); ?></p>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-600">เจ้าหน้าที่</p>
-                        <p class="text-2xl font-bold text-gray-800"><?php echo number_format($stats['staff_count']); ?></p>
+                    <div class="stat-icon bg-purple-50">
+                        <i class="fas fa-user-shield text-purple-500"></i>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Filters and Actions -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                    <input type="text" id="searchInput" placeholder="🔍 ค้นหา (ชื่อ, email, username...)"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                </div>
-                <div>
-                    <select id="filterRole" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        <option value="">ทุกบทบาท</option>
-                        <option value="admin">ผู้ดูแลระบบ</option>
-                        <option value="staff">เจ้าหน้าที่</option>
-                        <option value="user">ผู้ใช้ทั่วไป</option>
-                    </select>
-                </div>
-                <div>
-                    <select id="filterStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        <option value="">ทุกสถานะ</option>
-                        <option value="active">ใช้งานอยู่</option>
-                        <option value="inactive">ไม่ใช้งาน</option>
-                        <option value="suspended">ระงับการใช้งาน</option>
-                    </select>
-                </div>
-                <div>
-                    <button onclick="openAddUserModal()" class="w-full btn btn-primary">
-                        <i class="fas fa-plus mr-2"></i>เพิ่มผู้ใช้ใหม่
-                    </button>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">เจ้าหน้าที่</p>
+                        <p class="text-2xl font-semibold text-orange-600 mt-1"><?php echo number_format($stats['staff_count']); ?></p>
+                    </div>
+                    <div class="stat-icon bg-orange-50">
+                        <i class="fas fa-user-tie text-orange-500"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Users Table -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-            <!-- Table Info Bar -->
+        <!-- Users Table Card -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <!-- Table Header with Search & Filters -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <!-- Search -->
+                    <div class="relative flex-1 max-w-md">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="searchInput" placeholder="ค้นหาผู้ใช้..."
+                               class="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                    </div>
+                    <!-- Filters & Action -->
+                    <div class="flex items-center gap-3">
+                        <select id="filterRole" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                            <option value="">ทุกบทบาท</option>
+                            <option value="admin">ผู้ดูแล</option>
+                            <option value="staff">เจ้าหน้าที่</option>
+                            <option value="user">ผู้ใช้</option>
+                        </select>
+                        <select id="filterStatus" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                            <option value="">ทุกสถานะ</option>
+                            <option value="active">ใช้งาน</option>
+                            <option value="inactive">ไม่ใช้งาน</option>
+                            <option value="suspended">ระงับ</option>
+                        </select>
+                        <button onclick="openAddUserModal()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span class="hidden sm:inline">เพิ่มผู้ใช้</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Info -->
             <div class="table-info">
-                <div class="table-info-text">
-                    <i class="fas fa-users mr-2"></i>
-                    แสดง <strong><?= $users_result->num_rows ?></strong> จาก <strong><?= $total_users ?></strong> ผู้ใช้
-                </div>
-                <div class="text-sm text-gray-600">
-                    หน้า <strong><?= $current_page_num ?></strong> จาก <strong><?= $total_pages ?></strong>
-                </div>
+                <span class="table-info-text">แสดง <?= $users_result->num_rows ?> จาก <?= $total_users ?> รายการ</span>
+                <span class="table-info-text">หน้า <?= $current_page_num ?>/<?= $total_pages ?></span>
             </div>
 
+            <!-- Table -->
             <div class="overflow-x-auto">
                 <table id="usersTable">
                     <thead>
                         <tr>
-                            <th style="width: 8%;">
-                                <i class="fas fa-hashtag mr-1"></i>ID
-                            </th>
-                            <th style="width: 15%;">
-                                <i class="fas fa-user mr-1"></i>ชื่อผู้ใช้
-                            </th>
-                            <th style="width: 20%;">
-                                <i class="fas fa-id-card mr-1"></i>ชื่อ-นามสกุล
-                            </th>
-                            <th style="width: 18%;">
-                                <i class="fas fa-envelope mr-1"></i>Email
-                            </th>
-                            <th style="width: 12%;">
-                                <i class="fas fa-building mr-1"></i>หน่วยงาน
-                            </th>
-                            <th style="width: 8%;">
-                                <i class="fas fa-shield-alt mr-1"></i>บทบาท
-                            </th>
-                            <th style="width: 8%;">
-                                <i class="fas fa-check-circle mr-1"></i>สถานะ
-                            </th>
-                            <th style="width: 10%;">
-                                <i class="fas fa-tools mr-1"></i>การจัดการ
-                            </th>
+                            <th>ID</th>
+                            <th>ผู้ใช้</th>
+                            <th>ชื่อ-นามสกุล</th>
+                            <th>Email</th>
+                            <th>หน่วยงาน</th>
+                            <th>บทบาท</th>
+                            <th>สถานะ</th>
+                            <th class="text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($users_result->num_rows > 0): ?>
                             <?php while ($user = $users_result->fetch_assoc()): ?>
                             <tr data-role="<?php echo $user['role']; ?>" data-status="<?php echo $user['status']; ?>" data-user-id="<?php echo $user['user_id']; ?>">
-                                <td class="font-mono">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 bg-teal-100 rounded text-teal-700 font-bold text-xs">
-                                        <?php echo $user['user_id']; ?>
-                                    </span>
+                                <td>
+                                    <span class="text-gray-500 text-sm">#<?php echo $user['user_id']; ?></span>
                                 </td>
                                 <td>
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center">
-                                            <span class="text-white font-bold text-sm">
+                                    <div class="flex items-center gap-3">
+                                        <?php if (!empty($user['profile_image']) && file_exists('../' . $user['profile_image'])): ?>
+                                            <img src="../<?php echo htmlspecialchars($user['profile_image']); ?>"
+                                                 alt="<?php echo htmlspecialchars($user['username']); ?>"
+                                                 class="user-avatar object-cover">
+                                        <?php else: ?>
+                                            <div class="user-avatar bg-gray-100 text-gray-600">
                                                 <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
-                                            </span>
-                                        </div>
+                                            </div>
+                                        <?php endif; ?>
                                         <span class="font-medium text-gray-900"><?php echo htmlspecialchars($user['username']); ?></span>
                                     </div>
                                 </td>
+                                <td><?php echo htmlspecialchars($user['full_name']); ?></td>
                                 <td>
-                                    <span class="text-gray-700">
-                                        <?php echo htmlspecialchars($user['full_name']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="text-gray-600 text-sm"><?php echo htmlspecialchars($user['email']); ?></span>
+                                    <span class="text-gray-500 text-sm"><?php echo htmlspecialchars($user['email']); ?></span>
                                 </td>
                                 <td>
                                     <?php if ($user['department_name']): ?>
-                                        <span class="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                            <?php echo htmlspecialchars($user['department_name']); ?>
-                                        </span>
+                                        <span class="text-sm text-gray-600"><?php echo htmlspecialchars($user['department_name']); ?></span>
                                     <?php else: ?>
-                                        <span class="text-gray-400 text-sm italic">ไม่ระบุ</span>
+                                        <span class="text-gray-400 text-sm">-</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -561,7 +533,6 @@ include 'admin-layout/topbar.php';
                                 </td>
                                 <td>
                                     <span class="status-badge status-<?php echo $user['status']; ?>">
-                                        <i class="fas fa-circle text-xs mr-1"></i>
                                         <?php
                                         $status_text = ['active' => 'ใช้งาน', 'inactive' => 'ไม่ใช้งาน', 'suspended' => 'ระงับ'];
                                         echo $status_text[$user['status']];
@@ -569,19 +540,16 @@ include 'admin-layout/topbar.php';
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="flex items-center space-x-1">
-                                        <button class="action-btn action-btn-view" onclick="viewUser(<?php echo $user['user_id']; ?>)" 
-                                                title="ดูรายละเอียด" data-bs-toggle="tooltip">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <button class="action-btn action-btn-view" onclick="viewUser(<?php echo $user['user_id']; ?>)" title="ดู">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="action-btn action-btn-edit" onclick="editUser(<?php echo $user['user_id']; ?>)"
-                                                title="แก้ไข" data-bs-toggle="tooltip">
-                                            <i class="fas fa-edit"></i>
+                                        <button class="action-btn action-btn-edit" onclick="editUser(<?php echo $user['user_id']; ?>)" title="แก้ไข">
+                                            <i class="fas fa-pen"></i>
                                         </button>
                                         <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
-                                        <button class="action-btn action-btn-delete" onclick="deleteUser(<?php echo $user['user_id']; ?>)"
-                                                title="ลบ" data-bs-toggle="tooltip">
-                                            <i class="fas fa-trash-alt"></i>
+                                        <button class="action-btn action-btn-delete" onclick="deleteUser(<?php echo $user['user_id']; ?>)" title="ลบ">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                         <?php endif; ?>
                                     </div>
@@ -590,9 +558,9 @@ include 'admin-layout/topbar.php';
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-inbox text-3xl mb-2 block opacity-50"></i>
-                                    ไม่พบข้อมูลผู้ใช้งาน
+                                <td colspan="8" class="text-center py-12 text-gray-400">
+                                    <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
+                                    <p>ไม่พบข้อมูลผู้ใช้งาน</p>
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -659,18 +627,10 @@ include 'admin-layout/topbar.php';
     <!-- Add/Edit User Modal -->
     <div id="userModal" class="modal">
         <div class="modal-content">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-start mb-8">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-user-plus text-white"></i>
-                        </div>
-                        <span id="modalTitle">เพิ่มผู้ใช้ใหม่</span>
-                    </h2>
-                    <p class="text-sm text-gray-500 mt-1">กรอกข้อมูลผู้ใช้งานใหม่ในระบบ</p>
-                </div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition text-2xl">
+            <!-- Modal Header - Clean -->
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-800" id="modalTitle">เพิ่มผู้ใช้ใหม่</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition p-1">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -680,27 +640,21 @@ include 'admin-layout/topbar.php';
                 <input type="hidden" id="userId" name="user_id">
                 <input type="hidden" id="formAction" name="action" value="add">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
-                        <label for="username">
-                            <i class="fas fa-user text-teal-600 mr-1"></i>ชื่อผู้ใช้ <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="username">ชื่อผู้ใช้ <span class="text-red-500">*</span></label>
                         <input type="text" id="username" name="username" required
                                pattern="[a-zA-Z0-9_]{4,20}"
-                               placeholder="4-20 ตัวอักษร (a-z, 0-9, _)">
+                               placeholder="4-20 ตัวอักษร">
                     </div>
 
                     <div class="form-group">
-                        <label for="email">
-                            <i class="fas fa-envelope text-teal-600 mr-1"></i>Email <span style="color: #dc2626;">*</span>
-                        </label>
-                        <input type="email" id="email" name="email" required placeholder="example@domain.com">
+                        <label for="email">Email <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="email@example.com">
                     </div>
 
                     <div class="form-group md:col-span-2">
-                        <label for="prefix_id">
-                            <i class="fas fa-tag text-teal-600 mr-1"></i>คำนำหน้า <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="prefix_id">คำนำหน้า <span class="text-red-500">*</span></label>
                         <select id="prefix_id" name="prefix_id" required>
                             <option value="">-- เลือกคำนำหน้า --</option>
                             <?php
@@ -730,30 +684,22 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="first_name">
-                            <i class="fas fa-user-tag text-teal-600 mr-1"></i>ชื่อ <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="first_name">ชื่อ <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name="first_name" required placeholder="ชื่อจริง">
                     </div>
 
                     <div class="form-group">
-                        <label for="last_name">
-                            <i class="fas fa-user-tag text-teal-600 mr-1"></i>นามสกุล <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="last_name">นามสกุล <span class="text-red-500">*</span></label>
                         <input type="text" id="last_name" name="last_name" required placeholder="นามสกุล">
                     </div>
 
                     <div class="form-group">
-                        <label for="phone">
-                            <i class="fas fa-phone text-teal-600 mr-1"></i>เบอร์โทรศัพท์
-                        </label>
+                        <label for="phone">เบอร์โทรศัพท์</label>
                         <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="0891234567">
                     </div>
 
                     <div class="form-group">
-                        <label for="department_id">
-                            <i class="fas fa-building text-teal-600 mr-1"></i>หน่วยงาน
-                        </label>
+                        <label for="department_id">หน่วยงาน</label>
                         <select id="department_id" name="department_id">
                             <option value="">-- ไม่ระบุ --</option>
                             <?php
@@ -768,16 +714,12 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="position">
-                            <i class="fas fa-briefcase text-teal-600 mr-1"></i>ตำแหน่ง
-                        </label>
+                        <label for="position">ตำแหน่ง</label>
                         <input type="text" id="position" name="position" placeholder="ตำแหน่งงาน">
                     </div>
 
                     <div class="form-group">
-                        <label for="role">
-                            <i class="fas fa-shield-alt text-teal-600 mr-1"></i>บทบาท <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="role">บทบาท <span class="text-red-500">*</span></label>
                         <select id="role" name="role" required>
                             <option value="user">ผู้ใช้ทั่วไป</option>
                             <option value="staff">เจ้าหน้าที่</option>
@@ -786,36 +728,25 @@ include 'admin-layout/topbar.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="status">
-                            <i class="fas fa-check-circle text-teal-600 mr-1"></i>สถานะ <span style="color: #dc2626;">*</span>
-                        </label>
+                        <label for="status">สถานะ <span class="text-red-500">*</span></label>
                         <select id="status" name="status" required>
                             <option value="active">ใช้งาน</option>
                             <option value="inactive">ไม่ใช้งาน</option>
-                            <option value="suspended">ระงับการใช้งาน</option>
+                            <option value="suspended">ระงับ</option>
                         </select>
                     </div>
 
                     <div class="form-group md:col-span-2">
-                        <label for="password">
-                            <i class="fas fa-lock text-teal-600 mr-1"></i>รหัสผ่าน <span id="passwordRequired" style="color: #dc2626;">*</span>
-                        </label>
-                        <input type="password" id="password" name="password" placeholder="กรอกรหัสผ่านเพื่อเพิ่มผู้ใช้">
-                        <p>
-                            <i class="fas fa-info-circle text-teal-600 mr-1"></i>
-                            <span id="passwordHint">ต้องมีความยาวอย่างน้อย 6 ตัวอักษร</span>
-                        </p>
+                        <label for="password">รหัสผ่าน <span id="passwordRequired" class="text-red-500">*</span></label>
+                        <input type="password" id="password" name="password" placeholder="อย่างน้อย 6 ตัวอักษร">
+                        <p id="passwordHint">ต้องมีความยาวอย่างน้อย 6 ตัวอักษร</p>
                     </div>
                 </div>
 
-                <!-- Modal Footer -->
-                <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
-                    <button type="button" onclick="closeModal()" class="btn btn-secondary">
-                        <i class="fas fa-times"></i>ยกเลิก
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i>บันทึกข้อมูล
-                    </button>
+                <!-- Modal Footer - Clean -->
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
                 </div>
             </form>
         </div>

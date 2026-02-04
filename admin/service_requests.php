@@ -72,12 +72,55 @@ if ($check_result && $check_result->num_rows > 0) {
     }
 }
 
-// Get users for assignment
+// Get users for assignment (legacy - keep for backwards compatibility)
 $users_query = "SELECT user_id, first_name, last_name FROM users WHERE role IN ('admin', 'staff') ORDER BY first_name";
 $users_result = $conn->query($users_query);
 $users = [];
 while ($row = $users_result->fetch_assoc()) {
     $users[] = $row;
+}
+
+// Get roles for task assignment
+$roles_query = "SELECT * FROM roles WHERE is_active = 1 AND can_be_assigned = 1 ORDER BY display_order ASC";
+$roles_result = $conn->query($roles_query);
+$roles = [];
+if ($roles_result) {
+    while ($row = $roles_result->fetch_assoc()) {
+        $roles[] = $row;
+    }
+}
+
+// Check if current user can assign tasks
+$can_assign_tasks = false;
+if ($_SESSION['role'] === 'admin') {
+    $can_assign_tasks = true;
+} else {
+    $check_assign = $conn->prepare("
+        SELECT COUNT(*) as cnt FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 AND r.can_assign = 1
+    ");
+    $check_assign->bind_param('i', $_SESSION['user_id']);
+    $check_assign->execute();
+    $assign_result = $check_assign->get_result()->fetch_assoc();
+    $can_assign_tasks = $assign_result['cnt'] > 0;
+}
+
+// Get task assignments count per request
+$task_counts_query = "
+    SELECT request_id,
+           COUNT(*) as total_assignments,
+           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
+           SUM(CASE WHEN status IN ('pending', 'accepted', 'in_progress') THEN 1 ELSE 0 END) as active_count
+    FROM task_assignments
+    GROUP BY request_id
+";
+$task_counts_result = $conn->query($task_counts_query);
+$task_counts = [];
+if ($task_counts_result) {
+    while ($row = $task_counts_result->fetch_assoc()) {
+        $task_counts[$row['request_id']] = $row;
+    }
 }
 
 // Helper function to get service name from code
@@ -219,7 +262,7 @@ include 'admin-layout/topbar.php';
         <!-- Page Title -->
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900">
-                <i class="fas fa-tasks text-teal-600"></i> จัดการคำขอบริการ
+                <i class="fas fa-tasks text-green-600"></i> จัดการคำขอบริการ
             </h1>
             <p class="mt-2 text-gray-600">ดูแลและจัดการคำขอบริการต่างๆ จากผู้ใช้งาน</p>
         </div>
@@ -378,10 +421,25 @@ include 'admin-layout/topbar.php';
                                     </span>
                                 </td>
                                 <td>
-                                    <?php if ($req['assigned_to']): ?>
+                                    <?php
+                                    $req_task_count = $task_counts[$req['request_id']] ?? null;
+                                    if ($req_task_count && $req_task_count['total_assignments'] > 0):
+                                    ?>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-users mr-1"></i>
+                                                <?= $req_task_count['total_assignments'] ?> งาน
+                                            </span>
+                                            <?php if ($req_task_count['completed_count'] > 0): ?>
+                                                <span class="text-xs text-gray-500">
+                                                    (เสร็จ <?= $req_task_count['completed_count'] ?>)
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php elseif ($req['assigned_to']): ?>
                                         <?= htmlspecialchars($req['assigned_full_name'] ?? $req['assigned_to']) ?>
                                     <?php else: ?>
-                                        <span class="text-gray-400">Unassigned</span>
+                                        <span class="text-gray-400">ยังไม่มอบหมาย</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-sm"><?= date('d/m/Y H:i', strtotime($req['created_at'])) ?></td>
@@ -419,8 +477,89 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
+    <!-- Task Assignment Modal -->
+    <div id="assignModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeAssignModal()">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">
+                <i class="fas fa-user-tag text-green-600"></i> มอบหมายงาน
+                <span id="assignRequestCode" class="text-gray-500 text-lg"></span>
+            </h2>
+
+            <!-- Current Assignments -->
+            <div id="currentAssignments" class="mb-6">
+                <h3 class="font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-tasks"></i> งานที่มอบหมายแล้ว
+                </h3>
+                <div id="assignmentsList" class="space-y-2">
+                    <!-- Assignments will be loaded here -->
+                </div>
+            </div>
+
+            <!-- New Assignment Form -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-plus-circle"></i> มอบหมายงานใหม่
+                </h3>
+                <input type="hidden" id="assignRequestId">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกบทบาท</label>
+                        <select id="assignRole" onchange="loadAssignableUsers()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">-- เลือกบทบาท --</option>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= $role['role_id'] ?>" data-icon="<?= $role['role_icon'] ?>" data-color="<?= $role['role_color'] ?>">
+                                    <?= htmlspecialchars($role['role_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกผู้รับผิดชอบ</label>
+                        <select id="assignUser" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">-- เลือกบทบาทก่อน --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ความสำคัญ</label>
+                        <select id="assignPriority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="normal">ปกติ (Normal)</option>
+                            <option value="low">ต่ำ (Low)</option>
+                            <option value="high">สูง (High)</option>
+                            <option value="urgent">เร่งด่วน (Urgent)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กำหนดส่ง</label>
+                        <input type="datetime-local" id="assignDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                    <textarea id="assignNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeAssignModal()" class="px-4 py-2 text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        ยกเลิก
+                    </button>
+                    <button onclick="submitAssignment()" class="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-check mr-1"></i> มอบหมายงาน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const users = <?= json_encode($users) ?>;
+        const roles = <?= json_encode($roles) ?>;
+        const canAssignTasks = <?= $can_assign_tasks ? 'true' : 'false' ?>;
 
         // Service name mapping
         const serviceNames = {
@@ -635,8 +774,214 @@ include 'admin-layout/topbar.php';
             }
         }
 
-        // Assign Request
+        // Assign Request - Open Modal
         async function assignRequest(id) {
+            if (!canAssignTasks) {
+                Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ในการมอบหมายงาน', 'warning');
+                return;
+            }
+
+            document.getElementById('assignRequestId').value = id;
+            document.getElementById('assignRequestCode').textContent = '#' + String(id).padStart(4, '0');
+            document.getElementById('assignRole').value = '';
+            document.getElementById('assignUser').innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
+            document.getElementById('assignPriority').value = 'normal';
+            document.getElementById('assignDueDate').value = '';
+            document.getElementById('assignNotes').value = '';
+
+            // Load current assignments
+            await loadCurrentAssignments(id);
+
+            document.getElementById('assignModal').style.display = 'block';
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignModal').style.display = 'none';
+        }
+
+        // Load current assignments for a request
+        async function loadCurrentAssignments(requestId) {
+            const container = document.getElementById('assignmentsList');
+            container.innerHTML = '<p class="text-gray-500 text-sm"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</p>';
+
+            try {
+                const response = await fetch(`api/task_assignments_api.php?action=list_by_request&request_id=${requestId}`);
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    let html = '';
+                    result.data.forEach(task => {
+                        const statusClass = {
+                            'pending': 'bg-yellow-100 text-yellow-800',
+                            'accepted': 'bg-blue-100 text-blue-800',
+                            'in_progress': 'bg-purple-100 text-purple-800',
+                            'completed': 'bg-green-100 text-green-800',
+                            'cancelled': 'bg-red-100 text-red-800'
+                        }[task.status] || 'bg-gray-100 text-gray-800';
+
+                        const priorityClass = {
+                            'low': 'bg-gray-100 text-gray-700',
+                            'normal': 'bg-blue-100 text-blue-700',
+                            'high': 'bg-orange-100 text-orange-700',
+                            'urgent': 'bg-red-100 text-red-700'
+                        }[task.priority] || 'bg-gray-100 text-gray-700';
+
+                        html += `
+                            <div class="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <i class="fas ${task.role_icon || 'fa-user'}" style="color: ${task.role_color || '#6b7280'}"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">${task.assigned_to_name || task.assigned_to_username}</p>
+                                        <p class="text-xs text-gray-500">
+                                            ${task.assigned_role_name || 'ไม่ระบุบทบาท'}
+                                            <span class="mx-1">•</span>
+                                            มอบหมายโดย ${task.assigned_by_name || task.assigned_by_username}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 text-xs rounded-full ${priorityClass}">${task.priority}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${task.status}</span>
+                                    <button onclick="cancelAssignment(${task.assignment_id})" class="p-1 text-red-500 hover:bg-red-50 rounded" title="ยกเลิก">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-gray-500 text-sm py-2">ยังไม่มีการมอบหมายงาน</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-red-500 text-sm">ไม่สามารถโหลดข้อมูลได้</p>';
+            }
+        }
+
+        // Load assignable users by role
+        async function loadAssignableUsers() {
+            const roleId = document.getElementById('assignRole').value;
+            const userSelect = document.getElementById('assignUser');
+
+            if (!roleId) {
+                userSelect.innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
+                return;
+            }
+
+            userSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+
+            try {
+                const response = await fetch(`api/task_assignments_api.php?action=get_assignable_users&role_id=${roleId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    let options = '<option value="">-- เลือกผู้รับผิดชอบ --</option>';
+                    result.data.forEach(user => {
+                        const name = user.prefix_name ?
+                            `${user.prefix_name}${user.first_name} ${user.last_name}` :
+                            `${user.first_name} ${user.last_name}`;
+                        const dept = user.department_name ? ` (${user.department_name})` : '';
+                        options += `<option value="${user.user_id}">${name}${dept}</option>`;
+                    });
+                    userSelect.innerHTML = options;
+                } else {
+                    userSelect.innerHTML = '<option value="">ไม่พบผู้ใช้</option>';
+                }
+            } catch (error) {
+                userSelect.innerHTML = '<option value="">เกิดข้อผิดพลาด</option>';
+            }
+        }
+
+        // Submit new assignment
+        async function submitAssignment() {
+            const requestId = document.getElementById('assignRequestId').value;
+            const roleId = document.getElementById('assignRole').value;
+            const userId = document.getElementById('assignUser').value;
+            const priority = document.getElementById('assignPriority').value;
+            const dueDate = document.getElementById('assignDueDate').value;
+            const notes = document.getElementById('assignNotes').value;
+
+            if (!userId) {
+                Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกผู้รับผิดชอบ', 'warning');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'assign');
+                formData.append('request_id', requestId);
+                formData.append('assigned_to', userId);
+                formData.append('assigned_as_role', roleId);
+                formData.append('priority', priority);
+                formData.append('due_date', dueDate);
+                formData.append('notes', notes);
+
+                const response = await fetch('api/task_assignments_api.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire('สำเร็จ', result.message, 'success');
+                    // Reload assignments
+                    await loadCurrentAssignments(requestId);
+                    // Clear form
+                    document.getElementById('assignRole').value = '';
+                    document.getElementById('assignUser').innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
+                    document.getElementById('assignNotes').value = '';
+                } else {
+                    Swal.fire('ผิดพลาด', result.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายงานได้', 'error');
+            }
+        }
+
+        // Cancel assignment
+        async function cancelAssignment(assignmentId) {
+            const result = await Swal.fire({
+                title: 'ยืนยันการยกเลิก',
+                text: 'ต้องการยกเลิกการมอบหมายงานนี้?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ยกเลิกงาน',
+                cancelButtonText: 'ไม่ใช่'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'cancel');
+                    formData.append('assignment_id', assignmentId);
+
+                    const response = await fetch('api/task_assignments_api.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire('ยกเลิกสำเร็จ', data.message, 'success');
+                        const requestId = document.getElementById('assignRequestId').value;
+                        await loadCurrentAssignments(requestId);
+                    } else {
+                        Swal.fire('ผิดพลาด', data.message, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถยกเลิกได้', 'error');
+                }
+            }
+        }
+
+        // Legacy Assign Request (simple assignment to service_requests.assigned_to)
+        async function legacyAssignRequest(id) {
             const usersOptions = users.map(u =>
                 `<option value="${u.user_id}">${u.first_name} ${u.last_name}</option>`
             ).join('');
@@ -872,9 +1217,13 @@ include 'admin-layout/topbar.php';
 
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('detailsModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            const detailsModal = document.getElementById('detailsModal');
+            const assignModal = document.getElementById('assignModal');
+            if (event.target == detailsModal) {
+                detailsModal.style.display = 'none';
+            }
+            if (event.target == assignModal) {
+                assignModal.style.display = 'none';
             }
         }
     </script>
