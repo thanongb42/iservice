@@ -194,6 +194,12 @@ include 'admin-layout/topbar.php';
         background-color: #c7d2fe;
         border-color: #6366f1;
         color: #312e81;
+        animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     .timeline-content {
@@ -518,12 +524,22 @@ include 'admin-layout/topbar.php';
 
                     <?php if ($task['started_at']): ?>
                     <div class="timeline-item">
-                        <div class="timeline-dot in_progress">
+                        <div class="timeline-dot completed">
                             <i class="fas fa-spinner"></i>
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">เริ่มดำเนินการ</div>
                             <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['started_at'])) ?></div>
+                        </div>
+                    </div>
+                    <?php elseif ($task['status'] === 'in_progress'): ?>
+                    <div class="timeline-item">
+                        <div class="timeline-dot in_progress">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-label">กำลังดำเนินการ</div>
+                            <div class="timeline-time text-orange-600 font-semibold">กำลังดำเนินการ...</div>
                         </div>
                     </div>
                     <?php endif; ?>
