@@ -177,6 +177,10 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
 
                 <nav class="hidden lg:flex space-x-1 items-center">
                     <?php echo $nav_html; ?>
+                    <a href="track.php" class="ml-2 flex items-center text-teal-700 hover:text-teal-900 font-medium px-3 py-2 rounded-md transition-colors border-b-2 border-transparent hover:border-teal-700">
+                        <i class="fas fa-tracking mr-2"></i>
+                        <span>ติดตามงาน</span>
+                    </a>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                         <a href="admin/admin_dashboard.php" class="ml-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
@@ -206,6 +210,11 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
             <nav id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200 py-4 absolute top-full left-0 right-0 shadow-lg px-4 z-50">
                 <div class="flex flex-col space-y-2">
                     <?php echo str_replace('flex items-center text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors', 'block text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100', $nav_html); ?>
+                    
+                    <a href="track.php" class="block text-teal-700 hover:text-teal-900 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100">
+                        <i class="fas fa-tracking mr-2"></i>
+                        <span>ติดตามงาน</span>
+                    </a>
 
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>

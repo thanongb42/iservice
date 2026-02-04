@@ -239,6 +239,10 @@ include __DIR__ . '/includes/header_public.php';
                             <i class="fas fa-rocket mr-2"></i>
                             เริ่มใช้บริการ
                         </a>
+                        <a href="track.php" class="inline-flex items-center bg-gradient-to-r from-green-400 to-emerald-500 text-white px-8 py-4 rounded-xl font-bold hover:from-green-500 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-tracking mr-2"></i>
+                            ติดตามงาน
+                        </a>
                         <a href="admin/my_service.php" class="inline-flex items-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
                             <i class="fas fa-play-circle mr-2"></i>
                             ดูวิธีใช้งาน
