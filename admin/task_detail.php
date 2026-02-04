@@ -551,23 +551,50 @@ include 'admin-layout/topbar.php';
                     </button>
                 </div>
 
-                <?php if ($task['status'] === 'pending'): ?>
-                <div class="action-buttons">
-                    <button class="btn-action btn-accept" onclick="updateTaskStatus('accepted')">
-                        <i class="fas fa-check-circle"></i> รับงาน
-                    </button>
+                <!-- Status Change Dropdown -->
+                <?php if ($task['status'] !== 'completed' && $task['status'] !== 'cancelled'): ?>
+                <div class="mt-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-exchange-alt text-blue-600 mr-1"></i> เปลี่ยนสถานะงาน
+                    </label>
+                    <div class="flex gap-2">
+                        <select id="statusSelect" class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 font-medium">
+                            <option value="">-- เลือกสถานะ --</option>
+                            <?php if ($task['status'] === 'pending'): ?>
+                                <option value="accepted">✓ รับงาน</option>
+                            <?php endif; ?>
+                            <?php if ($task['status'] === 'pending' || $task['status'] === 'accepted'): ?>
+                                <option value="in_progress">▶ เริ่มดำเนินการ</option>
+                            <?php endif; ?>
+                            <option value="completed">✓✓ เสร็จสิ้น</option>
+                            <option value="cancelled">✕ ยกเลิก</option>
+                        </select>
+                        <button class="btn-action bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2" onclick="changeStatus()">
+                            <i class="fas fa-save"></i> บันทึก
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">
+                        สถานะปัจจุบัน: 
+                        <span class="font-semibold text-gray-800">
+                            <?php 
+                            $status_labels = [
+                                'pending' => 'รอการรับงาน',
+                                'accepted' => 'รับงานแล้ว',
+                                'in_progress' => 'กำลังดำเนินการ',
+                                'completed' => 'เสร็จสิ้น',
+                                'cancelled' => 'ยกเลิก'
+                            ];
+                            echo $status_labels[$task['status']] ?? $task['status'];
+                            ?>
+                        </span>
+                    </p>
                 </div>
-                <?php elseif ($task['status'] === 'accepted'): ?>
-                <div class="action-buttons">
-                    <button class="btn-action btn-start" onclick="updateTaskStatus('in_progress')">
-                        <i class="fas fa-play-circle"></i> เริ่มดำเนินการ
-                    </button>
-                </div>
-                <?php elseif ($task['status'] === 'in_progress'): ?>
-                <div class="action-buttons">
-                    <button class="btn-action btn-complete" onclick="updateTaskStatus('completed')">
-                        <i class="fas fa-check-double"></i> เสร็จสิ้น
-                    </button>
+                <?php else: ?>
+                <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-green-800 font-semibold flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        งานนี้<?php echo $task['status'] === 'completed' ? 'เสร็จสิ้นแล้ว' : 'ถูกยกเลิกแล้ว'; ?>
+                    </p>
                 </div>
                 <?php endif; ?>
             </div>
@@ -576,11 +603,20 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
-    async function updateTaskStatus(newStatus) {
+    async function changeStatus() {
+        const select = document.getElementById('statusSelect');
+        const newStatus = select.value;
+
+        if (!newStatus) {
+            Swal.fire('กรุณาเลือกสถานะ', 'โปรดเลือกสถานะที่ต้องการเปลี่ยน', 'warning');
+            return;
+        }
+
         const statusLabels = {
             'accepted': 'รับงาน',
             'in_progress': 'เริ่มดำเนินการ',
-            'completed': 'เสร็จสิ้น'
+            'completed': 'เสร็จสิ้น',
+            'cancelled': 'ยกเลิกงาน'
         };
 
         const result = await Swal.fire({
