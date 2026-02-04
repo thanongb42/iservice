@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `task_history` (
 -- =====================================================
 -- ข้อมูลเริ่มต้น - บทบาทพื้นฐาน
 -- =====================================================
-INSERT INTO `roles` (`role_code`, `role_name`, `role_icon`, `role_color`, `description`, `can_assign`, `can_be_assigned`, `display_order`) VALUES
+INSERT IGNORE INTO `roles` (`role_code`, `role_name`, `role_icon`, `role_color`, `description`, `can_assign`, `can_be_assigned`, `display_order`) VALUES
 ('all', 'ทำได้ทุกอย่าง', 'fa-star', '#eab308', 'สามารถรับและมอบหมายงานได้ทุกประเภท', 1, 1, 1),
 ('manager', 'ผู้จัดการ', 'fa-user-tie', '#3b82f6', 'ผู้จัดการที่สามารถมอบหมายงานให้ทีมได้', 1, 1, 2),
 ('it_support', 'IT Support', 'fa-desktop', '#10b981', 'ดูแลระบบ IT และซ่อมบำรุง', 0, 1, 3),
