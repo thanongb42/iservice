@@ -57,16 +57,16 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
                 extend: {
                     colors: {
                         primary: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            200: '#99f6e4',
-                            300: '#5eead4',
-                            400: '#2dd4bf',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            700: '#0f766e',
-                            800: '#115e59',
-                            900: '#134e4a',
+                            50: '#e6fff0',
+                            100: '#ccffe0',
+                            200: '#99ffc2',
+                            300: '#66ffa3',
+                            400: '#33cc70',
+                            500: '#009933',
+                            600: '#007a29',
+                            700: '#006622',
+                            800: '#00521b',
+                            900: '#003d14',
                         }
                     }
                 }
@@ -74,6 +74,38 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
         }
     </script>
     <style>
+        /* Custom Green Button Styles */
+        .btn-primary {
+            background-color: #009933 !important;
+            border-color: #009933 !important;
+            color: white !important;
+        }
+        .btn-primary:hover {
+            background-color: #007a29 !important;
+            border-color: #007a29 !important;
+        }
+        .bg-primary-500, .bg-teal-500, .bg-teal-600 {
+            background-color: #009933 !important;
+        }
+        .bg-primary-600, .bg-teal-700 {
+            background-color: #007a29 !important;
+        }
+        .hover\:bg-primary-600:hover, .hover\:bg-teal-600:hover, .hover\:bg-teal-700:hover {
+            background-color: #007a29 !important;
+        }
+        .text-primary-500, .text-primary-600, .text-teal-500, .text-teal-600 {
+            color: #009933 !important;
+        }
+        .border-primary-500, .border-teal-500, .border-teal-600 {
+            border-color: #009933 !important;
+        }
+        .ring-primary-500, .ring-teal-500 {
+            --tw-ring-color: #009933 !important;
+        }
+        .focus\:ring-primary-500:focus, .focus\:ring-teal-500:focus {
+            --tw-ring-color: #009933 !important;
+        }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -129,25 +161,25 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
             overflow: visible;
         }
 
-        /* Tooltip for collapsed sidebar */
+        /* Tooltip for collapsed sidebar - Clean Style */
         .sidebar-tooltip {
             position: absolute;
             left: calc(100% + 12px);
             top: 50%;
             transform: translateY(-50%);
-            background-color: #0f766e;
+            background-color: #1f2937;
             color: white;
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             white-space: nowrap;
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
             z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar-tooltip::before {
@@ -156,8 +188,8 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
             right: 100%;
             top: 50%;
             transform: translateY(-50%);
-            border: 6px solid transparent;
-            border-right-color: #0f766e;
+            border: 5px solid transparent;
+            border-right-color: #1f2937;
         }
 
         .sidebar-item {

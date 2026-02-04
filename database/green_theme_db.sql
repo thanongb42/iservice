@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 05, 2026 at 09:53 AM
+-- Generation Time: Feb 02, 2026 at 11:43 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -114,7 +114,12 @@ INSERT INTO `departments` (`department_id`, `parent_department_id`, `department_
 (28, 14, 'D028', 'งานสนับสนุนกิจการท่องเที่ยว', NULL, 4, 'งาน', NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2025-10-18 03:54:25', '2025-10-18 03:54:25'),
 (29, 3, '53603.1', 'ส่วนควบคุมการก่อสร้างอาคารและผังเมือง', NULL, 2, 'ส่วน', NULL, 'เลขที่ 151 ถนนรังสิต-ปทุมธานี ตำบลประชาธิปัตย์ อำเภอธัญบุรี จังหวัดปทุมธานี 12130', '9', '0910109174', '', '', 'active', '2025-10-19 05:26:07', '2025-10-19 05:26:07'),
 (30, 3, '53603.2', 'ส่วนการโยธา', NULL, 2, 'ส่วน', NULL, 'เลขที่ 151 ถนนรังสิต-ปทุมธานี ตำบลประชาธิปัตย์ อำเภอธัญบุรี จังหวัดปทุมธานี 12130', '9', '0813902531', '', '', 'active', '2025-10-19 05:27:09', '2025-10-19 05:27:09'),
-(31, 3, '53603.3', 'ฝ่ายบริหารงานทั่วไป', NULL, 3, 'ฝ่าย', NULL, '', '', '', '', '', 'active', '2025-10-19 05:28:11', '2025-10-19 05:28:11');
+(31, 3, '53603.3', 'ฝ่ายบริหารงานทั่วไป', NULL, 3, 'ฝ่าย', NULL, '', '', '', '', '', 'active', '2025-10-19 05:28:11', '2025-10-19 05:28:11'),
+(32, NULL, 'ฝ่ายบริหาร', 'ฝ่ายบริหาร', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-01-05 09:45:24', '2026-01-05 09:45:24'),
+(33, NULL, 'ฝ่ายการเงิน', 'ฝ่ายการเงิน', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-01-05 09:45:24', '2026-01-05 09:45:24'),
+(34, NULL, 'ฝ่ายประชาสัมพันธ์', 'ฝ่ายประชาสัมพันธ์', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-01-05 09:45:24', '2026-01-05 09:45:24'),
+(35, NULL, 'งานพัฒนาและส่งเสริมก', 'งานพัฒนาและส่งเสริมการท่องเที่ยว', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-01-05 09:45:24', '2026-01-05 09:45:24'),
+(36, NULL, 'สำนักช่าง', 'สำนักช่าง', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-01-05 09:45:24', '2026-01-05 09:45:24');
 
 -- --------------------------------------------------------
 
@@ -147,10 +152,10 @@ CREATE TABLE `learning_resources` (
 --
 
 INSERT INTO `learning_resources` (`id`, `title`, `description`, `resource_type`, `resource_url`, `cover_image`, `category`, `author`, `duration`, `file_size`, `tags`, `view_count`, `is_featured`, `is_active`, `display_order`, `created_at`, `updated_at`) VALUES
-(1, 'คู่มือการใช้งานอีเมลเทศบาล', 'คู่มือฉบับสมบูรณ์สำหรับการใช้งานระบบอีเมลของเทศบาล รวมถึงการตั้งค่าบนมือถือและคอมพิวเตอร์', 'pdf', 'uploads/resources/1767061449_695337c9a646b.pdf', 'uploads/covers/1767061449_695337c9a7036.jpg', 'คู่มือ', 'ฝ่าย IT', '', '2.5 MB', 'email,คู่มือ,การใช้งาน', 3, 1, 1, 1, '2025-12-29 08:11:02', '2025-12-30 02:24:09'),
-(2, 'คู่มือการเชื่อมต่อ WiFi', 'วิธีการเชื่อมต่อ WiFi เทศบาล พร้อมการแก้ไขปัญหาเบื้องต้น', 'pdf', 'uploads/resources/1767022541_69529fcdab396.pdf', 'uploads/covers/1767022567_69529fe7c8d26.jpg', 'คู่มือ', 'ฝ่าย IT', '', '1.8 MB', 'wifi,internet,การเชื่อมต่อ', 2, 0, 1, 2, '2025-12-29 08:11:02', '2025-12-29 15:49:37'),
+(1, 'คู่มือการใช้งานอีเมลเทศบาล', 'คู่มือฉบับสมบูรณ์สำหรับการใช้งานระบบอีเมลของเทศบาล รวมถึงการตั้งค่าบนมือถือและคอมพิวเตอร์', 'pdf', 'uploads/resources/1767061449_695337c9a646b.pdf', 'uploads/covers/1767061449_695337c9a7036.jpg', 'คู่มือ', 'ฝ่าย IT', '', '2.5 MB', 'email,คู่มือ,การใช้งาน', 5, 1, 1, 1, '2025-12-29 08:11:02', '2026-02-02 09:02:26'),
+(2, 'คู่มือการเชื่อมต่อ WiFi', 'วิธีการเชื่อมต่อ WiFi เทศบาล พร้อมการแก้ไขปัญหาเบื้องต้น', 'pdf', 'uploads/resources/1767022541_69529fcdab396.pdf', 'uploads/covers/1767022567_69529fe7c8d26.jpg', 'คู่มือ', 'ฝ่าย IT', '', '1.8 MB', 'wifi,internet,การเชื่อมต่อ', 3, 0, 1, 2, '2025-12-29 08:11:02', '2026-02-02 09:04:44'),
 (3, 'วิธีการใช้งาน NAS Storage', 'สอนการใช้งานระบบ NAS เพื่อจัดเก็บและแชร์ไฟล์ภายในองค์กร', 'video', 'uploads/resources/1767022603_6952a00beb1df.pdf', 'uploads/covers/1767022603_6952a00beb737.jpg', 'หลักสูตร', 'ทีม IT Support', '15:30', '', 'nas,storage,tutorial', 0, 1, 1, 3, '2025-12-29 08:11:02', '2025-12-29 15:36:43'),
-(4, 'การสร้าง QR Code ด้วยระบบของเทศบาล', 'คลิปสอนการใช้งานระบบสร้าง QR Code สำหรับประชาสัมพันธ์โครงการ', 'video', 'uploads/resources/1767022924_6952a14ccd04a.pdf', 'uploads/covers/1767022924_6952a14ccd90e.jpg', 'หลักสูตร', 'ฝ่ายประชาสัมพันธ์', '8:45', '', 'qrcode,tutorial,วิธีใช้', 0, 0, 1, 4, '2025-12-29 08:11:02', '2025-12-29 15:42:04'),
+(4, 'การสร้าง QR Code ด้วยระบบของเทศบาล', 'คลิปสอนการใช้งานระบบสร้าง QR Code สำหรับประชาสัมพันธ์โครงการ', 'video', 'uploads/resources/1767022924_6952a14ccd04a.pdf', 'uploads/covers/1767022924_6952a14ccd90e.jpg', 'หลักสูตร', 'ฝ่ายประชาสัมพันธ์', '8:45', '', 'qrcode,tutorial,วิธีใช้', 2, 0, 1, 4, '2025-12-29 08:11:02', '2026-02-02 09:02:11'),
 (5, 'PHP Programming สำหรับมือใหม่', 'หลักสูตร PHP เบื้องต้นสำหรับพัฒนาเว็บไซต์', 'youtube', 'https://www.youtube.com/watch?v=AAPI_yfi0uU', 'uploads/covers/1767064426_6953436a8141c.jpg', 'หลักสูตร', 'Code Academy', '2:30:00', '', 'php,programming,course', 3, 1, 1, 5, '2025-12-29 08:11:02', '2025-12-30 03:13:46'),
 (6, 'IT Talk: เทคนิคการรักษาความปลอดภัยข้อมูล', 'Podcast เกี่ยวกับการรักษาความปลอดภัยของข้อมูลในยุคดิจิทัล', 'podcast', 'podcasts/security-tips.mp3', 'uploads/covers/1767064713_6953448988b7f.jpg', 'Podcast', 'ฝ่าย IT Security', '25:15', '45 MB', 'security,podcast,ความปลอดภัย', 0, 0, 1, 6, '2025-12-29 08:11:02', '2025-12-30 03:18:33'),
 (7, '10 เคล็ดลับการใช้คอมพิวเตอร์อย่างปลอดภัย', 'บทความแนะนำวิธีการใช้งานคอมพิวเตอร์ให้ปลอดภัยจากมัลแวร์และแฮกเกอร์', 'blog', 'uploads/resources/1767065118_6953461e71b9a.pdf', 'uploads/covers/1767065065_695345e93d874.jpg', 'บทความ', 'Admin IT', '', '', 'security,tips,คอมพิวเตอร์', 0, 0, 1, 7, '2025-12-29 08:11:02', '2025-12-30 03:25:18'),
@@ -230,6 +235,55 @@ INSERT INTO `nav_menu` (`id`, `parent_id`, `menu_name`, `menu_name_en`, `menu_ur
 (9, 6, 'Internet', 'Internet', 'manual-internet.php', 'fas fa-globe', 3, 1, '_self', NULL, '2025-12-29 06:35:11', '2025-12-29 06:35:11'),
 (10, NULL, 'ติดต่อเรา', 'Contact Us', 'contact.php', NULL, 4, 1, '_self', NULL, '2025-12-29 06:35:11', '2025-12-29 06:35:11'),
 (11, 10, 'แผนที่ที่ตั้ง', 'map', 'my-location.php', 'fas fa-map', 1, 1, '0', '', '2025-12-29 06:37:20', '2025-12-29 06:37:20');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_reset`
+--
+
+CREATE TABLE `password_reset` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `token_hash` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `password_reset`
+--
+
+INSERT INTO `password_reset` (`id`, `user_id`, `token_hash`, `expires_at`, `created_at`) VALUES
+(1, 1, '5b550b4f9347f9902ab1837b2e9951bd9a70ccb27358ef4a5cfba61137af1719', '2026-02-02 08:12:37', '2026-02-02 06:12:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pm25_data`
+--
+
+CREATE TABLE `pm25_data` (
+  `id` int(11) NOT NULL,
+  `cid` varchar(32) NOT NULL,
+  `pm25` int(11) NOT NULL,
+  `co2` int(11) DEFAULT NULL,
+  `pm1` int(11) DEFAULT NULL,
+  `pm10` int(11) DEFAULT NULL,
+  `pm4` int(11) DEFAULT NULL,
+  `sensor_timestamp` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pm25_data`
+--
+
+INSERT INTO `pm25_data` (`id`, `cid`, `pm25`, `co2`, `pm1`, `pm10`, `pm4`, `sensor_timestamp`, `created_at`) VALUES
+(1, 'E465B875ADCC', 5, 455, 4, 5, -1, 1769765768, '2026-01-30 10:02:32'),
+(2, 'E86BEAF6EB60', 7, 500, 5, 7, -1, 1769765667, '2026-01-30 10:02:32'),
+(3, 'E465B875ADCC', 5, 455, 4, 5, -1, 1769765768, '2026-01-30 10:04:25'),
+(4, 'E86BEAF6EB60', 7, 500, 5, 7, -1, 1769765667, '2026-01-30 10:04:25');
 
 -- --------------------------------------------------------
 
@@ -328,29 +382,19 @@ INSERT INTO `prefixes` (`prefix_id`, `prefix_name`, `prefix_short`, `prefix_type
 -- --------------------------------------------------------
 
 --
--- Table structure for table `request_email_details`
+-- Table structure for table `related_agencies`
 --
 
-CREATE TABLE `request_email_details` (
+CREATE TABLE `related_agencies` (
   `id` int(11) NOT NULL,
-  `request_id` int(11) NOT NULL COMMENT 'FK to service_requests',
-  `requested_username` varchar(100) NOT NULL COMMENT 'Username ที่ต้องการ',
-  `email_format` varchar(100) DEFAULT NULL COMMENT 'รูปแบบอีเมล เช่น firstname.lastname@domain',
-  `quota_mb` int(11) DEFAULT 1024 COMMENT 'พื้นที่จดหมาย (MB)',
-  `purpose` text DEFAULT NULL COMMENT 'วัตถุประสงค์การใช้งาน',
-  `is_new_account` tinyint(1) DEFAULT 1 COMMENT '1=สร้างใหม่, 0=ขอเพิ่ม quota/reset password',
-  `existing_email` varchar(100) DEFAULT NULL COMMENT 'อีเมลเดิม (กรณี reset/เพิ่ม quota)',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `name` varchar(255) NOT NULL COMMENT 'Organization Name',
+  `link` varchar(255) NOT NULL COMMENT 'Web URL',
+  `image` varchar(255) DEFAULT NULL COMMENT 'Logo URL',
+  `display_order` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `request_email_details`
---
-
-INSERT INTO `request_email_details` (`id`, `request_id`, `requested_username`, `email_format`, `quota_mb`, `purpose`, `is_new_account`, `existing_email`, `created_at`) VALUES
-(1, 1, 'somchai.j', 'somchai.j@rangsit.go.th', 2048, 'ใช้งานราชการทั่วไป ติดต่อประสานงาน', 1, NULL, '2025-12-29 08:26:54'),
-(2, 4, 'thanongb42', '', 2048, 'wwwwwwwwwwwwwwwww', 1, '', '2025-12-30 04:05:03'),
-(3, 5, 'thanongb42', 'thanongb42@gmail.com', 2048, 'eeeeee', 1, '', '2025-12-30 08:01:10');
 
 -- --------------------------------------------------------
 
@@ -522,8 +566,14 @@ CREATE TABLE `request_webdesign_details` (
 
 CREATE TABLE `service_requests` (
   `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL COMMENT 'FK to users',
   `request_code` varchar(50) NOT NULL COMMENT 'รหัสคำขอ เช่น REQ-2025-0001',
   `service_code` varchar(50) NOT NULL COMMENT 'รหัสบริการ (FK to my_service)',
+  `service_name` varchar(100) DEFAULT NULL,
+  `subject` varchar(255) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `department_id` int(11) DEFAULT NULL,
+  `requester_prefix_id` int(11) DEFAULT NULL,
   `requester_name` varchar(100) NOT NULL COMMENT 'ชื่อผู้ขอ',
   `requester_email` varchar(100) DEFAULT NULL COMMENT 'อีเมลผู้ขอ',
   `requester_phone` varchar(20) DEFAULT NULL COMMENT 'เบอร์โทรผู้ขอ',
@@ -532,6 +582,7 @@ CREATE TABLE `service_requests` (
   `status` enum('pending','in_progress','completed','rejected','cancelled') NOT NULL DEFAULT 'pending' COMMENT 'สถานะคำขอ',
   `priority` enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium' COMMENT 'ความสำคัญ',
   `assigned_to` varchar(100) DEFAULT NULL COMMENT 'เจ้าหน้าที่ผู้รับผิดชอบ',
+  `assigned_to_user_id` int(11) DEFAULT NULL,
   `requested_date` date NOT NULL COMMENT 'วันที่ยื่นคำขอ',
   `target_date` date DEFAULT NULL COMMENT 'วันที่ต้องการให้เสร็จ',
   `completed_date` date DEFAULT NULL COMMENT 'วันที่ดำเนินการเสร็จสิ้น',
@@ -546,12 +597,89 @@ CREATE TABLE `service_requests` (
 -- Dumping data for table `service_requests`
 --
 
-INSERT INTO `service_requests` (`id`, `request_code`, `service_code`, `requester_name`, `requester_email`, `requester_phone`, `department`, `position`, `status`, `priority`, `assigned_to`, `requested_date`, `target_date`, `completed_date`, `notes`, `admin_notes`, `rejection_reason`, `created_at`, `updated_at`) VALUES
+INSERT INTO `service_requests` (`id`, `user_id`, `request_code`, `service_code`, `service_name`, `subject`, `description`, `department_id`, `requester_prefix_id`, `requester_name`, `requester_email`, `requester_phone`, `department`, `position`, `status`, `priority`, `assigned_to`, `assigned_to_user_id`, `requested_date`, `target_date`, `completed_date`, `notes`, `admin_notes`, `rejection_reason`, `created_at`, `updated_at`) VALUES
+(1, NULL, 'REQ-2025-0001', 'EMAIL', 'ขอใช้บริการ Email', 'ขอใช้บริการ Email - สมชาย ใจดี', 'ต้องการอีเมลสำหรับงานราชการ', 32, NULL, 'สมชาย ใจดี', 'somchai@temp.mail', '081-234-5678', 'ฝ่ายบริหาร', 'เจ้าหน้าที่', 'pending', 'medium', 'นายสมชาย ใจดี', 2, '2025-01-02', NULL, NULL, 'ต้องการอีเมลสำหรับงานราชการ', NULL, NULL, '2025-12-29 08:26:54', '2026-01-05 09:53:36'),
+(2, 9, 'REQ-2025-0002', 'PRINTER', 'ขอใช้เครื่องพิมพ์', 'ขอใช้เครื่องพิมพ์ - วิภา สุขสันต์', 'เครื่องพิมพ์เอกสารไม่ออก', 33, NULL, 'วิภา สุขสันต์', 'wipa@rangsit.go.th', '089-876-5432', 'ฝ่ายการเงิน', NULL, 'in_progress', 'high', 'นายทนงค์ บุญเติม', 7, '2025-01-03', NULL, NULL, 'เครื่องพิมพ์เอกสารไม่ออก', NULL, NULL, '2025-12-29 08:26:54', '2026-01-05 09:53:43'),
+(3, 8, 'REQ-2025-0003', 'PHOTOGRAPHY', 'ขอถ่ายภาพกิจกรรม', 'ขอถ่ายภาพกิจกรรม - ประสิทธิ์ วงศ์ดี', 'งานประชุมคณะกรรมการ', 34, NULL, 'ประสิทธิ์ วงศ์ดี', 'prasit@rangsit.go.th', NULL, 'ฝ่ายประชาสัมพันธ์', NULL, 'pending', 'medium', 'นายทนงค์ บุญเติม', 7, '2025-01-03', '2025-01-15', NULL, 'งานประชุมคณะกรรมการ', NULL, NULL, '2025-12-29 08:26:54', '2026-01-05 09:53:49'),
+(4, 7, 'REQ-2025-0004', 'EMAIL', 'ขอใช้บริการ Email', 'ขอใช้บริการ Email - ทนงค์ บุญเติม', '', 35, NULL, 'ทนงค์ บุญเติม', 'thanongb42@gmail.com', '0910109174', 'งานพัฒนาและส่งเสริมการท่องเที่ยว', 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', 'pending', 'low', 'นายผู้ดูแลระบบ เทศบาล', 1, '2025-12-30', NULL, NULL, '', NULL, NULL, '2025-12-30 04:05:03', '2026-01-05 09:53:29'),
+(5, 7, 'REQ-2025-0005', 'EMAIL', 'ขอใช้บริการ Email', 'ขอใช้บริการ Email - ทนงค์ บุญเติม', 'eeeeeeeeeeeeeee', 3, NULL, 'ทนงค์ บุญเติม', 'thanongb42@gmail.com', '0910109174', 'สำนักช่าง', 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', 'pending', 'low', 'นายทนงค์ บุญเติม', 7, '2025-12-30', '2025-12-31', NULL, 'eeeeeeeeeeeeeee', NULL, NULL, '2025-12-30 08:01:10', '2026-01-05 09:53:22');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_requests_backup`
+--
+
+CREATE TABLE `service_requests_backup` (
+  `id` int(11) NOT NULL DEFAULT 0,
+  `request_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสคำขอ เช่น REQ-2025-0001',
+  `service_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'รหัสบริการ (FK to my_service)',
+  `requester_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อผู้ขอ',
+  `requester_email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'อีเมลผู้ขอ',
+  `requester_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'เบอร์โทรผู้ขอ',
+  `department` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'แผนก/หน่วยงาน',
+  `position` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ตำแหน่ง',
+  `status` enum('pending','in_progress','completed','rejected','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT 'สถานะคำขอ',
+  `priority` enum('low','medium','high','urgent') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'medium' COMMENT 'ความสำคัญ',
+  `assigned_to` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'เจ้าหน้าที่ผู้รับผิดชอบ',
+  `requested_date` date NOT NULL COMMENT 'วันที่ยื่นคำขอ',
+  `target_date` date DEFAULT NULL COMMENT 'วันที่ต้องการให้เสร็จ',
+  `completed_date` date DEFAULT NULL COMMENT 'วันที่ดำเนินการเสร็จสิ้น',
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'หมายเหตุจากผู้ขอ',
+  `admin_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'หมายเหตุจาก Admin/เจ้าหน้าที่',
+  `rejection_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'เหตุผลในการปฏิเสธ',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `service_requests_backup`
+--
+
+INSERT INTO `service_requests_backup` (`id`, `request_code`, `service_code`, `requester_name`, `requester_email`, `requester_phone`, `department`, `position`, `status`, `priority`, `assigned_to`, `requested_date`, `target_date`, `completed_date`, `notes`, `admin_notes`, `rejection_reason`, `created_at`, `updated_at`) VALUES
 (1, 'REQ-2025-0001', 'EMAIL', 'สมชาย ใจดี', 'somchai@temp.mail', '081-234-5678', 'ฝ่ายบริหาร', 'เจ้าหน้าที่', 'pending', 'medium', NULL, '2025-01-02', NULL, NULL, 'ต้องการอีเมลสำหรับงานราชการ', NULL, NULL, '2025-12-29 08:26:54', '2025-12-29 08:26:54'),
 (2, 'REQ-2025-0002', 'PRINTER', 'วิภา สุขสันต์', 'wipa@rangsit.go.th', '089-876-5432', 'ฝ่ายการเงิน', NULL, 'in_progress', 'high', 'ช่าง IT: นายสมศักดิ์', '2025-01-03', NULL, NULL, 'เครื่องพิมพ์เอกสารไม่ออก', NULL, NULL, '2025-12-29 08:26:54', '2025-12-29 08:26:54'),
 (3, 'REQ-2025-0003', 'PHOTOGRAPHY', 'ประสิทธิ์ วงศ์ดี', 'prasit@rangsit.go.th', NULL, 'ฝ่ายประชาสัมพันธ์', NULL, 'pending', 'medium', NULL, '2025-01-03', '2025-01-15', NULL, 'งานประชุมคณะกรรมการ', NULL, NULL, '2025-12-29 08:26:54', '2025-12-29 08:26:54'),
 (4, 'REQ-2025-0004', 'EMAIL', 'ทนงค์ บุญเติม', 'thanongb42@gmail.com', '0910109174', 'งานพัฒนาและส่งเสริมการท่องเที่ยว', 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', 'pending', 'low', NULL, '2025-12-30', NULL, NULL, '', NULL, NULL, '2025-12-30 04:05:03', '2025-12-30 04:05:03'),
 (5, 'REQ-2025-0005', 'EMAIL', 'ทนงค์ บุญเติม', 'thanongb42@gmail.com', '0910109174', 'สำนักช่าง', 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', 'pending', 'low', NULL, '2025-12-30', '2025-12-31', NULL, 'eeeeeeeeeeeeeee', NULL, NULL, '2025-12-30 08:01:10', '2025-12-30 08:01:10');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_settings`
+--
+
+CREATE TABLE `system_settings` (
+  `id` int(11) NOT NULL,
+  `setting_key` varchar(255) NOT NULL,
+  `setting_value` longtext DEFAULT NULL,
+  `setting_type` varchar(50) DEFAULT 'text',
+  `description` text DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `system_settings`
+--
+
+INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `setting_type`, `description`, `updated_at`, `created_at`) VALUES
+(1, 'organization_name', 'iService', 'text', 'ชื่อองค์กร', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(2, 'organization_phone', '+66-2-XXX-XXXX', 'text', 'เบอร์โทรศัพท์', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(3, 'organization_address', '', 'text', 'ที่อยู่', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(4, 'logo_image', 'storage/logos/logo_1770017764.png', 'text', 'โลโกขององค์กร (path)', '2026-02-02 07:36:04', '2026-02-02 07:04:01'),
+(5, 'email_from_name', 'iService', 'text', 'ชื่อผู้ส่งอีเมล', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(6, 'email_from_address', 'noreply@rangsitcity.go.th', 'text', 'อีเมลผู้ส่ง', '2026-02-02 07:33:31', '2026-02-02 07:04:01'),
+(7, 'smtp_host', 'localhost', 'text', 'SMTP Server Host', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(8, 'smtp_port', '587', 'text', 'SMTP Server Port', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(9, 'smtp_username', 'thanong@rangsitcity.go.th', 'text', 'SMTP Username', '2026-02-02 07:33:31', '2026-02-02 07:04:01'),
+(10, 'smtp_password', 'Heep@t00', 'password', 'SMTP Password', '2026-02-02 07:33:31', '2026-02-02 07:04:01'),
+(11, 'smtp_encryption', 'ssl', 'text', 'Encryption (tls/ssl)', '2026-02-02 07:33:31', '2026-02-02 07:04:01'),
+(12, 'backup_enable', '1', 'boolean', 'เปิดใช้งาน Automatic Backup', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(13, 'backup_schedule', 'daily', 'text', 'ตารางเวลา Backup (daily/weekly/monthly)', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(14, 'backup_path', '/backups/', 'text', 'Path สำหรับเก็บ Backup', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(15, 'app_name', 'iService System', 'text', 'ชื่อแอปพลิเคชัน', '2026-02-02 07:04:01', '2026-02-02 07:04:01'),
+(16, 'app_description', 'Integrated Service Management System', 'text', 'คำอธิบาย', '2026-02-02 07:04:01', '2026-02-02 07:04:01');
 
 -- --------------------------------------------------------
 
@@ -622,13 +750,14 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `prefix_id`, `username`, `first_name`, `last_name`, `email`, `phone`, `password`, `role`, `status`, `department_id`, `position`, `profile_image`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, 1, 'admin', 'ผู้ดูแลระบบ', 'เทศบาล', 'admin@rangsit.go.th', NULL, '$2y$10$21ozRFqVm0kw811hygspk.s0GhsIPd6QutKxy8wffhT6RZl7SeL8i', 'admin', 'active', NULL, NULL, NULL, '2025-12-30 15:31:37', '2025-12-30 14:16:04', '2025-12-30 15:31:37'),
+(1, 1, 'admin', 'ผู้ดูแลระบบ', 'เทศบาล', 'thanong@rangsit.go.th', '', '$2y$10$Yyfs83Wv0/wc2UMjppGW2e50dg/ZVEET4csv8d0nmPhwqDkfk.Dtu', 'admin', 'active', NULL, '', NULL, '2026-02-02 17:00:05', '2025-12-30 14:16:04', '2026-02-02 17:00:05'),
 (2, 1, 'somchai', 'สมชาย', 'ใจดี', 'somchai@rangsit.go.th', '0812345678', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'staff', 'active', NULL, NULL, NULL, NULL, '2025-12-30 14:16:04', '2025-12-30 14:16:04'),
-(3, 2, 'somsri', 'สมศรี', 'รักดี', 'somsri@rangsit.go.th', '0823456789', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2025-12-30 14:16:04', '2025-12-30 14:16:04'),
+(3, 2, 'somsri', 'สมศรี', 'รักดี', 'somsri@rangsit.go.th', '0823456789', '$2y$10$FxRaZJS/iaE1y1Ug4bfMH.iipoEmjTE/3mH9a9jwlRUYW1UXSKjm2', 'user', 'active', NULL, '', NULL, NULL, '2025-12-30 14:16:04', '2026-01-14 17:32:53'),
 (4, 3, 'suree', 'สุรีย์', 'สว่างใจ', 'suree@rangsit.go.th', '0834567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2025-12-30 14:16:04', '2025-12-30 14:16:04'),
-(5, 6, 'military_user', 'ธนพล', 'มั่นคง', 'thanaphon@rangsit.go.th', '0845678901', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2025-12-30 14:16:04', '2025-12-30 14:16:04'),
-(6, 65, 'doctor_user', 'วิชัย', 'ปัญญา', 'wichai@rangsit.go.th', '0856789012', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2025-12-30 14:16:04', '2025-12-30 14:16:04'),
-(7, 1, 'thanong', 'ทนงค์', 'บุญเติม', 'thanongb42@gmail.com', '0910109174', '$2y$10$6FW1HGA7OZ3NmZJuCRf3e.YWsCj3Yt5NKaJ5XgRn3hdMpl0umNb4q', 'admin', 'active', NULL, 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', NULL, '2025-12-30 14:17:39', '2025-12-30 14:17:33', '2025-12-30 15:24:04');
+(7, 1, 'thanong', 'ทนงค์', 'บุญเติม', 'thanongb42@gmail.com', '0910109174', '$2y$10$6FW1HGA7OZ3NmZJuCRf3e.YWsCj3Yt5NKaJ5XgRn3hdMpl0umNb4q', 'admin', 'active', NULL, 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', NULL, '2026-01-30 13:46:59', '2025-12-30 14:17:33', '2026-01-30 13:46:59'),
+(8, NULL, 'prasit', 'ประสิทธิ์', 'วงศ์ดี', 'prasit@rangsit.go.th', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2026-01-05 16:45:23', '2026-01-05 16:45:23'),
+(9, NULL, 'wipa', 'วิภา', 'สุขสันต์', 'wipa@rangsit.go.th', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', 'active', NULL, NULL, NULL, NULL, '2026-01-05 16:45:23', '2026-01-05 16:45:23'),
+(11, 1, 'chidnarong', 'chidnarong', 'BOONTERM', 'chidnarongB42@gmail.com', '0910109174', '$2y$10$b9CNW/IU8STJLvd8b0ar3.gkL9juc/vhId1EwzISwjUo6rAghCpHC', 'staff', 'active', 5, 'นักวิชาการคอมพิวเตอร์ปฏิบัติการ', NULL, '2026-01-05 21:09:59', '2026-01-05 16:57:48', '2026-01-05 21:09:59');
 
 --
 -- Triggers `users`
@@ -651,25 +780,31 @@ DELIMITER ;
 --
 CREATE TABLE `v_service_requests_full` (
 `request_id` int(11)
-,`service_code` varchar(50)
-,`service_name` varchar(15)
 ,`request_code` varchar(50)
+,`service_code` varchar(50)
+,`service_name` varchar(100)
+,`subject` varchar(255)
+,`description` text
 ,`status` enum('pending','in_progress','completed','rejected','cancelled')
 ,`priority` enum('low','medium','high','urgent')
+,`user_id` int(11)
+,`username` varchar(50)
+,`user_email` varchar(255)
+,`user_full_name` varchar(301)
+,`department_id` int(11)
+,`department_name` varchar(255)
+,`department_code` varchar(20)
+,`requester_name` varchar(100)
+,`requester_email` varchar(100)
+,`requester_phone` varchar(20)
+,`assigned_to` varchar(100)
+,`assigned_full_name` varchar(100)
+,`assigned_to_user_id` int(11)
+,`admin_notes` text
 ,`created_at` timestamp
 ,`updated_at` timestamp
-,`assigned_to` varchar(100)
-,`admin_notes` text
+,`requested_date` date
 ,`completed_date` date
-,`username` binary(0)
-,`user_email` binary(0)
-,`first_name` binary(0)
-,`last_name` binary(0)
-,`user_full_name` binary(0)
-,`department_name` binary(0)
-,`department_code` binary(0)
-,`assigned_username` varchar(50)
-,`assigned_full_name` varchar(302)
 );
 
 -- --------------------------------------------------------
@@ -707,7 +842,7 @@ CREATE TABLE `v_users_full` (
 --
 DROP TABLE IF EXISTS `v_service_requests_full`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_service_requests_full`  AS SELECT `sr`.`id` AS `request_id`, `sr`.`service_code` AS `service_code`, 'Unknown Service' AS `service_name`, `sr`.`request_code` AS `request_code`, `sr`.`status` AS `status`, `sr`.`priority` AS `priority`, `sr`.`created_at` AS `created_at`, `sr`.`updated_at` AS `updated_at`, `sr`.`assigned_to` AS `assigned_to`, `sr`.`admin_notes` AS `admin_notes`, `sr`.`completed_date` AS `completed_date`, NULL AS `username`, NULL AS `user_email`, NULL AS `first_name`, NULL AS `last_name`, NULL AS `user_full_name`, NULL AS `department_name`, NULL AS `department_code`, `au`.`username` AS `assigned_username`, concat(ifnull(`ap`.`prefix_name`,''),' ',`au`.`first_name`,' ',`au`.`last_name`) AS `assigned_full_name` FROM ((`service_requests` `sr` left join `users` `au` on(`sr`.`assigned_to` = `au`.`user_id`)) left join `prefixes` `ap` on(`au`.`prefix_id` = `ap`.`prefix_id`)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_service_requests_full`  AS SELECT `sr`.`id` AS `request_id`, `sr`.`request_code` AS `request_code`, `sr`.`service_code` AS `service_code`, `sr`.`service_name` AS `service_name`, `sr`.`subject` AS `subject`, `sr`.`description` AS `description`, `sr`.`status` AS `status`, `sr`.`priority` AS `priority`, `sr`.`user_id` AS `user_id`, `u`.`username` AS `username`, `u`.`email` AS `user_email`, concat(coalesce(`up`.`prefix_name`,''),`u`.`first_name`,' ',`u`.`last_name`) AS `user_full_name`, `sr`.`department_id` AS `department_id`, `d`.`department_name` AS `department_name`, `d`.`department_code` AS `department_code`, `sr`.`requester_name` AS `requester_name`, `sr`.`requester_email` AS `requester_email`, `sr`.`requester_phone` AS `requester_phone`, `sr`.`assigned_to` AS `assigned_to`, `sr`.`assigned_to` AS `assigned_full_name`, `sr`.`assigned_to_user_id` AS `assigned_to_user_id`, `sr`.`admin_notes` AS `admin_notes`, `sr`.`created_at` AS `created_at`, `sr`.`updated_at` AS `updated_at`, `sr`.`requested_date` AS `requested_date`, `sr`.`completed_date` AS `completed_date` FROM (((`service_requests` `sr` left join `users` `u` on(`sr`.`user_id` = `u`.`user_id`)) left join `prefixes` `up` on(`u`.`prefix_id` = `up`.`prefix_id`)) left join `departments` `d` on(`sr`.`department_id` = `d`.`department_id`)) ;
 
 -- --------------------------------------------------------
 
@@ -763,17 +898,29 @@ ALTER TABLE `nav_menu`
   ADD KEY `menu_order` (`menu_order`);
 
 --
+-- Indexes for table `password_reset`
+--
+ALTER TABLE `password_reset`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `pm25_data`
+--
+ALTER TABLE `pm25_data`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `prefixes`
 --
 ALTER TABLE `prefixes`
   ADD PRIMARY KEY (`prefix_id`);
 
 --
--- Indexes for table `request_email_details`
+-- Indexes for table `related_agencies`
 --
-ALTER TABLE `request_email_details`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `request_id` (`request_id`);
+ALTER TABLE `related_agencies`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `request_internet_details`
@@ -836,6 +983,13 @@ ALTER TABLE `service_requests`
   ADD KEY `requested_date` (`requested_date`);
 
 --
+-- Indexes for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `setting_key` (`setting_key`);
+
+--
 -- Indexes for table `tech_news`
 --
 ALTER TABLE `tech_news`
@@ -869,7 +1023,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'รหัสหน่วยงาน/แผนก', AUTO_INCREMENT=32;
+  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'รหัสหน่วยงาน/แผนก', AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `learning_resources`
@@ -890,16 +1044,28 @@ ALTER TABLE `nav_menu`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
+-- AUTO_INCREMENT for table `password_reset`
+--
+ALTER TABLE `password_reset`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `pm25_data`
+--
+ALTER TABLE `pm25_data`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `prefixes`
 --
 ALTER TABLE `prefixes`
   MODIFY `prefix_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
--- AUTO_INCREMENT for table `request_email_details`
+-- AUTO_INCREMENT for table `related_agencies`
 --
-ALTER TABLE `request_email_details`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `related_agencies`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `request_internet_details`
@@ -950,6 +1116,12 @@ ALTER TABLE `service_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
 -- AUTO_INCREMENT for table `tech_news`
 --
 ALTER TABLE `tech_news`
@@ -959,17 +1131,17 @@ ALTER TABLE `tech_news`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'รหัสผู้ใช้', AUTO_INCREMENT=8;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'รหัสผู้ใช้', AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `request_email_details`
+-- Constraints for table `password_reset`
 --
-ALTER TABLE `request_email_details`
-  ADD CONSTRAINT `fk_email_request` FOREIGN KEY (`request_id`) REFERENCES `service_requests` (`id`) ON DELETE CASCADE;
+ALTER TABLE `password_reset`
+  ADD CONSTRAINT `password_reset_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `request_internet_details`

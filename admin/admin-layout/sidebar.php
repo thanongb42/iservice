@@ -1,12 +1,7 @@
 <?php
 /**
  * Admin Layout - Sidebar
- * เมนูด้านซ้ายแบบ responsive
- *
- * ตัวแปรที่ต้องกำหนดก่อน include:
- * - $current_page: หน้าปัจจุบัน (dashboard, users, departments, requests, services, learning, news, menu)
- * - $user: ข้อมูลผู้ใช้ ['full_name', 'email', 'username']
- * - $pending_requests: จำนวนคำขอที่รอดำเนินการ (optional, default: 0)
+ * เมนูด้านซ้ายแบบ responsive - Clean Minimal Style
  */
 
 $current_page = $current_page ?? 'dashboard';
@@ -27,161 +22,224 @@ $sidebar_app_name = !empty($system_settings['app_name']) ? $system_settings['app
 $sidebar_org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'ระบบบริการดิจิทัล';
 $sidebar_logo = !empty($system_settings['logo_image']) && file_exists('../' . $system_settings['logo_image']) ? $system_settings['logo_image'] : null;
 
-// Menu items configuration
-$menu_items = [
-    [
-        'id' => 'dashboard',
-        'icon' => 'fa-home',
-        'label' => 'แดชบอร์ด',
-        'url' => 'admin_dashboard.php',
-        'badge' => null
+// Menu items configuration - grouped
+$menu_groups = [
+    'main' => [
+        'label' => '',
+        'items' => [
+            ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+            ['id' => 'users', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
+            ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
+        ]
     ],
-    [
-        'id' => 'users',
-        'icon' => 'fa-users',
-        'label' => 'จัดการผู้ใช้งาน',
-        'url' => 'user-manager.php',
-        'badge' => null
+    'services' => [
+        'label' => 'บริการ',
+        'items' => [
+            ['id' => 'requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+            ['id' => 'services', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
+        ]
     ],
-    [
-        'id' => 'departments',
-        'icon' => 'fa-sitemap',
-        'label' => 'จัดการหน่วยงาน',
-        'url' => 'departments.php',
-        'badge' => null
+    'content' => [
+        'label' => 'เนื้อหา',
+        'items' => [
+            ['id' => 'learning', 'icon' => 'fa-book-open', 'label' => 'ศูนย์การเรียนรู้', 'url' => 'learning_resources.php'],
+            ['id' => 'news', 'icon' => 'fa-newspaper', 'label' => 'ข่าวสารเทคโนโลยี', 'url' => 'tech_news.php'],
+            ['id' => 'menu', 'icon' => 'fa-bars', 'label' => 'จัดการเมนู', 'url' => 'nav_menu.php'],
+            ['id' => 'related_agencies', 'icon' => 'fa-building', 'label' => 'หน่วยงานที่เกี่ยวข้อง', 'url' => 'related_agencies.php'],
+        ]
     ],
-    [
-        'id' => 'requests',
-        'icon' => 'fa-tasks',
-        'label' => 'คำขอบริการ',
-        'url' => 'service_requests.php',
-        'badge' => $pending_requests > 0 ? $pending_requests : null
-    ],
-    [
-        'id' => 'services',
-        'icon' => 'fa-concierge-bell',
-        'label' => 'บริการของเรา',
-        'url' => 'my_service.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'learning',
-        'icon' => 'fa-book-open',
-        'label' => 'ศูนย์การเรียนรู้',
-        'url' => 'learning_resources.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'news',
-        'icon' => 'fa-newspaper',
-        'label' => 'ข่าวสารเทคโนโลยี',
-        'url' => 'tech_news.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'menu',
-        'icon' => 'fa-bars',
-        'label' => 'จัดการเมนู',
-        'url' => 'nav_menu.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'related_agencies',
-        'icon' => 'fa-building',
-        'label' => 'หน่วยงานที่เกี่ยวข้อง',
-        'url' => 'related_agencies.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'reports',
-        'icon' => 'fa-chart-bar',
-        'label' => 'รายงาน',
-        'url' => 'admin_report.php',
-        'badge' => null
-    ],
-    [
-        'id' => 'system_setting',
-        'icon' => 'fa-cog',
-        'label' => 'ตั้งค่าระบบ',
-        'url' => 'system_setting.php',
-        'badge' => null
+    'system' => [
+        'label' => 'ระบบ',
+        'items' => [
+            ['id' => 'reports', 'icon' => 'fa-chart-bar', 'label' => 'รายงาน', 'url' => 'admin_report.php'],
+            ['id' => 'system_setting', 'icon' => 'fa-cog', 'label' => 'ตั้งค่าระบบ', 'url' => 'system_setting.php'],
+        ]
     ]
 ];
 ?>
 
+<style>
+/* Clean Minimal Sidebar Theme */
+:root {
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e5e7eb;
+    --sidebar-text: #1f2937;
+    --sidebar-text-muted: #6b7280;
+    --sidebar-hover: #f3f4f6;
+    --sidebar-active-bg: #ecfdf5;
+    --sidebar-active-text: #009933;
+    --sidebar-active-border: #009933;
+    --sidebar-section-text: #9ca3af;
+}
+
+#sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+}
+
+/* Menu item styles */
+.sidebar-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 1rem;
+    margin: 0.125rem 0.5rem;
+    border-radius: 0.5rem;
+    color: var(--sidebar-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-menu-item:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text);
+}
+
+.sidebar-menu-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    border-left-color: var(--sidebar-active-border);
+}
+
+.sidebar-menu-item i {
+    width: 1.25rem;
+    text-align: center;
+    font-size: 1rem;
+    color: var(--sidebar-text-muted);
+    transition: color 0.15s ease;
+}
+
+.sidebar-menu-item:hover i,
+.sidebar-menu-item.active i {
+    color: var(--sidebar-active-text);
+}
+
+/* Section label */
+.sidebar-section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sidebar-section-text);
+    padding: 1rem 1rem 0.5rem 1.25rem;
+}
+
+/* Badge */
+.sidebar-badge {
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    margin-left: auto;
+}
+
+/* Logo area */
+.sidebar-logo-area {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+/* Collapsed state */
+#sidebar.sidebar-collapsed .sidebar-menu-item {
+    justify-content: center;
+    padding: 0.75rem;
+    margin: 0.25rem;
+}
+
+#sidebar.sidebar-collapsed .sidebar-menu-item span:not(.sidebar-badge):not(.sidebar-tooltip) {
+    display: none;
+}
+
+#sidebar.sidebar-collapsed .sidebar-section-label {
+    display: none;
+}
+
+#sidebar.sidebar-collapsed .sidebar-logo-text {
+    display: none;
+}
+
+#sidebar.sidebar-collapsed .sidebar-badge {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.6rem;
+}
+
+#sidebar.sidebar-collapsed .sidebar-menu-item {
+    position: relative;
+}
+</style>
+
 <!-- Sidebar -->
-<aside id="sidebar" class="fixed top-0 left-0 h-screen bg-gradient-to-b from-teal-800 to-teal-700 text-white sidebar-expanded sidebar-transition z-50 shadow-2xl sidebar-mobile">
+<aside id="sidebar" class="fixed top-0 left-0 h-screen sidebar-expanded sidebar-transition z-50 shadow-sm sidebar-mobile">
     <div class="flex flex-col h-full">
-        <!-- Sidebar Header -->
-        <div class="sidebar-header flex items-center justify-between p-3 border-b border-teal-600">
+        <!-- Logo Area -->
+        <div class="sidebar-logo-area flex items-center">
             <div class="flex items-center space-x-3">
                 <?php if ($sidebar_logo): ?>
-                    <img src="../<?php echo htmlspecialchars($sidebar_logo); ?>" alt="Logo" class="w-10 h-10 object-contain bg-white rounded-lg flex-shrink-0">
+                    <img src="../<?php echo htmlspecialchars($sidebar_logo); ?>" alt="Logo" class="w-9 h-9 object-contain rounded-lg flex-shrink-0">
                 <?php else: ?>
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-headset text-lg"></i>
+                    <div class="w-9 h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-headset text-white text-sm"></i>
                     </div>
                 <?php endif; ?>
-                <div id="sidebarLogo" class="sidebar-transition">
-                    <h1 class="text-lg font-bold truncate" style="max-width: 140px;"><?php echo htmlspecialchars($sidebar_app_name); ?></h1>
-                    <p class="text-xs text-teal-200 truncate" style="max-width: 140px;"><?php echo htmlspecialchars($sidebar_org_name); ?></p>
+                <div class="sidebar-logo-text sidebar-transition">
+                    <h1 class="text-base font-bold text-gray-800 truncate" style="max-width: 160px;"><?php echo htmlspecialchars($sidebar_app_name); ?></h1>
+                    <p class="text-xs text-gray-400 truncate" style="max-width: 160px;"><?php echo htmlspecialchars($sidebar_org_name); ?></p>
                 </div>
             </div>
-            <button id="sidebarToggle" onclick="toggleMobileSidebar()" class="lg:hidden text-white hover:bg-teal-600 p-2 rounded">
+            <button id="sidebarToggle" onclick="toggleMobileSidebar()" class="lg:hidden ml-auto text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <!-- User Info -->
-        <div class="sidebar-user p-3 border-b border-teal-600">
-            <div class="flex items-center space-x-3">
-                <div class="user-avatar w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-user text-base"></i>
-                </div>
-                <div id="userInfo" class="sidebar-transition overflow-hidden">
-                    <p class="font-semibold truncate text-sm"><?php echo htmlspecialchars($user['full_name'] ?? 'Admin'); ?></p>
-                    <p class="text-xs text-teal-200 truncate"><?php echo htmlspecialchars($user['email'] ?? ''); ?></p>
-                </div>
-            </div>
-        </div>
-
         <!-- Navigation Menu -->
-        <nav class="flex-1 overflow-y-auto p-2">
-            <div class="space-y-1">
-                <?php foreach ($menu_items as $item): ?>
-                <a href="<?php echo $item['url']; ?>" class="flex items-center space-x-3 px-3 py-2 rounded-lg <?php echo $current_page === $item['id'] ? 'bg-teal-600' : 'hover:bg-teal-600'; ?> transition sidebar-item group">
-                    <i class="fas <?php echo $item['icon']; ?> w-5 text-center text-lg"></i>
-                    <span class="menu-text sidebar-transition text-sm"><?php echo $item['label']; ?></span>
-                    <?php if ($item['badge']): ?>
-                    <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-auto"><?php echo $item['badge']; ?></span>
-                    <?php endif; ?>
-                    <span class="sidebar-tooltip"><?php echo $item['label']; ?></span>
-                </a>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <?php foreach ($menu_groups as $groupKey => $group): ?>
+                <?php if (!empty($group['label'])): ?>
+                    <div class="sidebar-section-label"><?php echo $group['label']; ?></div>
+                <?php endif; ?>
+
+                <?php foreach ($group['items'] as $item): ?>
+                    <a href="<?php echo $item['url']; ?>"
+                       class="sidebar-menu-item sidebar-item <?php echo $current_page === $item['id'] ? 'active' : ''; ?>">
+                        <i class="fas <?php echo $item['icon']; ?> mr-3"></i>
+                        <span class="menu-text sidebar-transition"><?php echo $item['label']; ?></span>
+                        <?php if (!empty($item['badge'])): ?>
+                            <span class="sidebar-badge"><?php echo $item['badge']; ?></span>
+                        <?php endif; ?>
+                        <span class="sidebar-tooltip"><?php echo $item['label']; ?></span>
+                    </a>
                 <?php endforeach; ?>
-            </div>
+            <?php endforeach; ?>
 
-            <div class="nav-section pt-2 mt-2 border-t border-teal-600 space-y-1">
-                <!-- Back to Site -->
-                <a href="../index.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-teal-600 transition sidebar-item group">
-                    <i class="fas fa-external-link-alt w-5 text-center text-lg"></i>
-                    <span class="menu-text sidebar-transition text-sm">กลับหน้าเว็บไซต์</span>
-                    <span class="sidebar-tooltip">กลับหน้าเว็บไซต์</span>
-                </a>
+            <!-- Divider -->
+            <div class="my-4 mx-4 border-t border-gray-200"></div>
 
-                <!-- Logout -->
-                <a href="../logout.php" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-red-600 transition sidebar-item group">
-                    <i class="fas fa-sign-out-alt w-5 text-center text-lg"></i>
-                    <span class="menu-text sidebar-transition text-sm">ออกจากระบบ</span>
-                    <span class="sidebar-tooltip">ออกจากระบบ</span>
-                </a>
-            </div>
+            <!-- Back to Site -->
+            <a href="../index.php" class="sidebar-menu-item sidebar-item">
+                <i class="fas fa-external-link-alt mr-3"></i>
+                <span class="menu-text sidebar-transition">กลับหน้าเว็บไซต์</span>
+                <span class="sidebar-tooltip">กลับหน้าเว็บไซต์</span>
+            </a>
+
+            <!-- Logout -->
+            <a href="../logout.php" class="sidebar-menu-item sidebar-item hover:!bg-red-50 hover:!text-red-600 group">
+                <i class="fas fa-sign-out-alt mr-3 group-hover:!text-red-500"></i>
+                <span class="menu-text sidebar-transition">ออกจากระบบ</span>
+                <span class="sidebar-tooltip">ออกจากระบบ</span>
+            </a>
         </nav>
 
-        <!-- Sidebar Footer -->
-        <div class="sidebar-footer p-2 border-t border-teal-600">
-            <button id="collapseBtn" onclick="toggleSidebar()" class="w-full flex items-center justify-center space-x-1 p-1 rounded-md hover:bg-teal-600 transition">
-                <i class="fas fa-chevron-left text-xs" id="collapseIcon" style="line-height:1;"></i>
-                <span id="collapseText" class="sidebar-transition text-xs leading-none">ย่อเมนู</span>
+        <!-- Sidebar Footer - Collapse Button -->
+        <div class="p-3 border-t border-gray-200">
+            <button id="collapseBtn" onclick="toggleSidebar()" class="w-full flex items-center justify-center space-x-2 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+                <i class="fas fa-chevron-left text-xs" id="collapseIcon"></i>
+                <span id="collapseText" class="sidebar-transition text-xs font-medium">ย่อเมนู</span>
             </button>
         </div>
     </div>

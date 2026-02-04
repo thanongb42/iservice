@@ -16,9 +16,10 @@ if (empty($request_code)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ส่งคำขอสำเร็จ</title>
+    <title>ส่งคำขอสำเร็จ - เทศบาลนครรังสิต</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; }
@@ -30,133 +31,171 @@ if (empty($request_code)) {
         .checkmark {
             animation: checkmark 0.6s ease-in-out;
         }
+        
+        /* Fixed green header */
+        header.bg-teal-700 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            width: 100%;
+        }
+        
+        body {
+            padding-top: 80px; /* Adjust based on header height */
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-teal-50 to-blue-50 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <!-- Success Header -->
-        <div class="bg-gradient-to-r from-teal-600 to-blue-600 text-white text-center py-12">
-            <div class="w-24 h-24 bg-white rounded-full mx-auto mb-6 flex items-center justify-center checkmark">
-                <i class="fas fa-check text-teal-600 text-5xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold mb-2">ส่งคำขอสำเร็จ!</h1>
-            <p class="text-teal-100 text-lg">คำขอของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
-        </div>
-
-        <!-- Content -->
-        <div class="p-8">
-            <!-- Request Code -->
-            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6 mb-8 text-center">
-                <p class="text-gray-600 text-sm mb-2">รหัสคำขอของคุณ</p>
-                <div class="flex items-center justify-center gap-2">
-                    <p class="text-3xl font-mono font-bold text-orange-700"><?= $request_code ?></p>
-                    <button onclick="copyCode()" class="bg-orange-200 hover:bg-orange-300 text-orange-700 px-3 py-1 rounded-lg transition text-sm" title="คัดลอก">
-                        <i class="fas fa-copy"></i>
-                    </button>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-teal-700 text-white shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <div class="flex items-center space-x-4">
+                    <img src="public/assets/images/logo/rangsit-small-logo.png" alt="Rangsit Logo" class="h-14 w-auto">
+                    <div>
+                        <h1 class="text-lg font-bold">เทศบาลนครรังสิต</h1>
+                        <p class="text-xs text-teal-100">ระบบบริการสาธารณะออนไลน์</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">
-                    <i class="fas fa-info-circle"></i> กรุณาเก็บรหัสนี้ไว้เพื่อติดตามสถานะคำขอ
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+        <div class="max-w-3xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Success Header -->
+            <div class="bg-teal-600 text-white text-center py-10 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10">
+                    <i class="fas fa-check-circle text-[15rem] absolute -top-10 -right-10 transform rotate-45"></i>
+                </div>
+                
+                <div class="relative z-10">
+                    <div class="w-24 h-24 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg checkmark">
+                        <i class="fas fa-check text-teal-600 text-5xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold mb-2">ส่งคำขอสำเร็จ!</h1>
+                    <p class="text-teal-100 text-lg">ระบบได้รับแจ้งเรื่องของท่านเรียบร้อยแล้ว</p>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <div class="flex flex-col md:flex-row gap-8 items-center justify-center mb-10">
+                    <!-- Request Code Box -->
+                    <div class="flex-1 w-full">
+                        <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-6 text-center h-full flex flex-col justify-center relative shadow-sm">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                เลขที่อ้างอิง
+                            </div>
+                            
+                            <p class="text-gray-500 text-sm mb-2 pt-2">รหัสติดตามเรื่องของคุณคือ</p>
+                            <div class="group relative inline-block">
+                                <span class="text-4xl font-bold text-orange-600 font-mono tracking-wider select-all cursor-pointer" onclick="copyCode(this)" title="คลิกเพื่อคัดลอก">
+                                    <?php echo $request_code; ?>
+                                </span>
+                            </div>
+                             <p class="text-xs text-gray-400 mt-2"><i class="fas fa-info-circle mr-1"></i>ใช้รหัสนี้สำหรับติดตามสถานะการดำเนินการ</p>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Code Box -->
+                    <div class="flex-shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-md text-center">
+                            <div id="qrcode" class="flex justify-center mb-2"></div>
+                            <p class="text-xs text-gray-500 font-medium">สแกนเพื่อติดตามสถานะ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Steps -->
+                <div class="border-t border-gray-100 pt-8 pb-4 mb-6">
+                    <h3 class="font-bold text-gray-800 mb-6 flex items-center">
+                        <i class="fas fa-tasks text-teal-600 mr-2"></i>ขันตอนการดำเนินการต่อไป
+                    </h3>
+                    
+                    <div class="relative">
+                        <!-- Connecting Line -->
+                        <div class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-100 -translate-y-1/2 z-0"></div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                            <!-- Step 1 -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
+                                <div class="w-10 h-10 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-teal-50">1</div>
+                                <h4 class="font-bold text-gray-800 text-sm">รับเรื่องและตรวจสอบ</h4>
+                                <p class="text-xs text-gray-500 mt-1">เจ้าหน้าที่จะตรวจสอบข้อมูลความถูกต้องเบื้องต้น</p>
+                            </div>
+                            
+                            <!-- Step 2 -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
+                                <div class="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-blue-50">2</div>
+                                <h4 class="font-bold text-gray-800 text-sm">ดำเนินการแก้ไข/บริการ</h4>
+                                <p class="text-xs text-gray-500 mt-1">ส่งต่อหน่วยงานที่เกี่ยวข้องเพื่อดำเนินการ</p>
+                            </div>
+                            
+                            <!-- Step 3 -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
+                                <div class="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-green-50">3</div>
+                                <h4 class="font-bold text-gray-800 text-sm">แจ้งผลการดำเนินการ</h4>
+                                <p class="text-xs text-gray-500 mt-1">แจ้งผลให้ท่านทราบเมื่อดำเนินการเสร็จสิ้น</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                    <a href="index.php" class="flex items-center justify-center px-6 py-4 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-teal-700 font-semibold transition bg-white shadow-sm group">
+                        <i class="fas fa-home mr-2 group-hover:scale-110 transition-transform"></i> กลับหน้าหลัก
+                    </a>
+                    <a href="tracking.php?req=<?= $request_code ?>" class="flex items-center justify-center px-6 py-4 rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-200 font-bold transition transform hover:-translate-y-0.5 group">
+                        <i class="fas fa-search mr-2 group-hover:scale-110 transition-transform"></i> ติดตามสถานะ
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Footer Note -->
+            <div class="bg-gray-50 px-8 py-4 text-center border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                    หากมีข้อสงสัยเพิ่มเติม โปรดติดต่อ 02-567-xxxx ต่อ 1234 หรือ Line Official
                 </p>
             </div>
-
-            <!-- Next Steps -->
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                    <i class="fas fa-list-check text-teal-600 mr-2"></i>
-                    ขั้นตอนต่อไป
-                </h2>
-
-                <div class="space-y-4">
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span class="text-blue-600 font-bold">1</span>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-900">ตรวจสอบคำขอ</h3>
-                            <p class="text-sm text-gray-600">ทีมงานจะตรวจสอบคำขอของคุณภายใน 24 ชั่วโมง</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                            <span class="text-orange-600 font-bold">2</span>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-900">ดำเนินการ</h3>
-                            <p class="text-sm text-gray-600">เจ้าหน้าที่จะดำเนินการตามคำขอของคุณ</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <span class="text-green-600 font-bold">3</span>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-900">แจ้งผลลัพธ์</h3>
-                            <p class="text-sm text-gray-600">คุณจะได้รับการแจ้งผลลัพธ์ผ่านอีเมลหรือโทรศัพท์</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contact Info -->
-            <div class="bg-gray-50 rounded-xl p-6 mb-8">
-                <h3 class="font-bold text-gray-900 mb-3 flex items-center">
-                    <i class="fas fa-headset text-teal-600 mr-2"></i>
-                    ต้องการความช่วยเหลือ?
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-phone text-gray-500"></i>
-                        <span class="text-gray-700">โทร: 02-123-4567</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-envelope text-gray-500"></i>
-                        <span class="text-gray-700">it.support@rangsit.go.th</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-clock text-gray-500"></i>
-                        <span class="text-gray-700">จันทร์-ศุกร์ 8:30-16:30</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-building text-gray-500"></i>
-                        <span class="text-gray-700">อาคาร IT ชั้น 2</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="index.php" class="block bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white text-center py-4 px-6 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-home mr-2"></i>กลับหน้าแรก
-                </a>
-                <a href="request-form.php?service=<?= $_GET['service'] ?? '' ?>" class="block bg-gray-200 hover:bg-gray-300 text-gray-700 text-center py-4 px-6 rounded-xl font-semibold transition">
-                    <i class="fas fa-plus mr-2"></i>ส่งคำขออื่น
-                </a>
-            </div>
         </div>
-
-        <!-- Footer -->
-        <div class="bg-gray-50 border-t px-8 py-6 text-center">
-            <p class="text-sm text-gray-600">
-                <i class="fas fa-shield-alt text-teal-600 mr-1"></i>
-                ข้อมูลของคุณได้รับการปกป้องและรักษาความปลอดภัยตามมาตรฐาน
-            </p>
-        </div>
-    </div>
+    </main>
 
     <script>
-        function copyCode() {
+        // Generate QR Code
+        var trackingUrl = window.location.origin + window.location.pathname.replace('request-success.php', 'tracking.php') + '?req=<?= $request_code ?>';
+        
+        new QRCode(document.getElementById("qrcode"), {
+            text: trackingUrl,
+            width: 100,
+            height: 100,
+            colorDark : "#0f766e", // Teal-700
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+        
+        // Copy Code Function
+        function copyCode(element) {
             const code = '<?= $request_code ?>';
             navigator.clipboard.writeText(code).then(() => {
-                alert('คัดลอกรหัสคำขอแล้ว: ' + code);
+                // Visual feedback
+                const originalText = element.innerText;
+                const originalColor = element.className;
+                
+                element.innerText = 'Copied!';
+                element.classList.remove('text-orange-600');
+                element.classList.add('text-green-600');
+                
+                setTimeout(() => {
+                    element.innerText = originalText;
+                    element.classList.remove('text-green-600');
+                    element.classList.add('text-orange-600');
+                }, 1000);
             });
         }
-
-        // Auto redirect after 30 seconds (optional)
-        // setTimeout(() => {
-        //     window.location.href = 'index.php';
-        // }, 30000);
     </script>
 </body>
 </html>

@@ -6,6 +6,7 @@
 
 session_start();
 require_once '../../config/database.php';
+require_once '../../includes/email_helper.php'; // Add Email Helper
 
 // Check if user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -101,7 +102,7 @@ try {
                     rejection_reason = ?,
                     completion_notes = ?,
                     updated_at = NOW()
-                    WHERE id = ?");
+                    WHERE request_id = ?");
 
                 $stmt->bind_param("ssssssi",
                     $status, $priority, $assigned_to_text, $admin_notes,
@@ -115,7 +116,7 @@ try {
                     admin_notes = ?,
                     rejection_reason = ?,
                     updated_at = NOW()
-                    WHERE id = ?");
+                    WHERE request_id = ?");
 
                 $stmt->bind_param("sssssi",
                     $status, $priority, $assigned_to_text, $admin_notes,
@@ -124,6 +125,9 @@ try {
             }
 
             if ($stmt->execute()) {
+                // Send Email Notification
+                send_status_update_notification($request_id, $conn, $status, $admin_notes);
+                
                 $response['success'] = true;
                 $response['message'] = 'อัปเดตข้อมูลคำขอเรียบร้อยแล้ว';
             } else {
@@ -161,12 +165,15 @@ try {
                 }
             }
 
-            $sql .= " WHERE id = ?";
+            $sql .= " WHERE request_id = ?";
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ssi", $status, $admin_notes, $id);
 
             if ($stmt->execute()) {
+                // Send Email Notification
+                send_status_update_notification($id, $conn, $status, $admin_notes);
+
                 $response['success'] = true;
                 $response['message'] = 'อัปเดตสถานะเรียบร้อยแล้ว';
             } else {
@@ -202,10 +209,10 @@ try {
 
                     // Update both assigned_to (text) and assigned_to_user_id (if exists)
                     if ($has_user_id_column) {
-                        $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = ?, assigned_to_user_id = ?, updated_at = NOW() WHERE id = ?");
+                        $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = ?, assigned_to_user_id = ?, updated_at = NOW() WHERE request_id = ?");
                         $stmt->bind_param("sii", $full_name, $user_id, $id);
                     } else {
-                        $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = ?, updated_at = NOW() WHERE id = ?");
+                        $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = ?, updated_at = NOW() WHERE request_id = ?");
                         $stmt->bind_param("si", $full_name, $id);
                     }
                 } else {
@@ -214,9 +221,9 @@ try {
             } else {
                 // Unassign - set to NULL
                 if ($has_user_id_column) {
-                    $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = NULL, assigned_to_user_id = NULL, updated_at = NOW() WHERE id = ?");
+                    $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = NULL, assigned_to_user_id = NULL, updated_at = NOW() WHERE request_id = ?");
                 } else {
-                    $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = NULL, updated_at = NOW() WHERE id = ?");
+                    $stmt = $conn->prepare("UPDATE service_requests SET assigned_to = NULL, updated_at = NOW() WHERE request_id = ?");
                 }
                 $stmt->bind_param("i", $id);
             }
@@ -242,7 +249,7 @@ try {
                 throw new Exception('ระดับความสำคัญไม่ถูกต้อง');
             }
 
-            $stmt = $conn->prepare("UPDATE service_requests SET priority = ?, updated_at = NOW() WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE service_requests SET priority = ?, updated_at = NOW() WHERE request_id = ?");
             $stmt->bind_param("si", $priority, $id);
 
             if ($stmt->execute()) {
@@ -261,7 +268,7 @@ try {
             }
 
             // Check if request exists
-            $check_stmt = $conn->prepare("SELECT id FROM service_requests WHERE id = ?");
+            $check_stmt = $conn->prepare("SELECT request_id FROM service_requests WHERE request_id = ?");
             $check_stmt->bind_param("i", $id);
             $check_stmt->execute();
 
@@ -270,7 +277,7 @@ try {
             }
 
             // Delete request (CASCADE will handle related records)
-            $stmt = $conn->prepare("DELETE FROM service_requests WHERE id = ?");
+            $stmt = $conn->prepare("DELETE FROM service_requests WHERE request_id = ?");
             $stmt->bind_param("i", $id);
 
             if ($stmt->execute()) {
@@ -307,7 +314,7 @@ try {
                     $stmt = $conn->prepare("UPDATE service_requests SET
                         status = ?,
                         updated_at = NOW()
-                        WHERE id = ?");
+                        WHERE request_id = ?");
 
                     $stmt->bind_param("si", $status, $id);
 

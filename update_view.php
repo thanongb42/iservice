@@ -9,6 +9,25 @@ require_once 'config/database.php';
 echo "<h2>🔄 Update v_users_full View</h2>";
 echo "<hr>";
 
+// First, check and add missing columns to users table
+$columns_to_add = [
+    'profile_image' => "ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL AFTER position",
+    'position' => "ALTER TABLE users ADD COLUMN position VARCHAR(100) NULL AFTER department_id",
+    'last_login' => "ALTER TABLE users ADD COLUMN last_login DATETIME NULL AFTER profile_image"
+];
+
+foreach ($columns_to_add as $column => $alter_sql) {
+    $check = $conn->query("SHOW COLUMNS FROM users LIKE '$column'");
+    if ($check->num_rows == 0) {
+        if ($conn->query($alter_sql)) {
+            echo "✅ เพิ่มคอลัมน์ <strong>$column</strong> สำเร็จ<br>";
+        } else {
+            echo "⚠️ ไม่สามารถเพิ่มคอลัมน์ $column: " . $conn->error . "<br>";
+        }
+    }
+}
+echo "<hr>";
+
 // Drop and recreate the view
 $sql = "CREATE OR REPLACE VIEW v_users_full AS
 SELECT

@@ -1,12 +1,20 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
-            Username ที่ต้องการ <span class="text-red-500">*</span>
+            ชื่อจริง (ภาษาอังกฤษ) <span class="text-red-500">*</span>
         </label>
-        <input type="text" name="requested_username" required
-               placeholder="เช่น somchai.j"
+        <input type="text" name="firstname_en" required
+               placeholder="เช่น Somchai"
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-        <p class="text-xs text-gray-500 mt-1">รูปแบบ: ชื่อ.นามสกุลย่อ</p>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+            นามสกุล (ภาษาอังกฤษ) <span class="text-red-500">*</span>
+        </label>
+        <input type="text" name="lastname_en" required
+               placeholder="เช่น Jaidee"
+               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
     </div>
 
     <div class="md:col-span-2">
