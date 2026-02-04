@@ -444,7 +444,7 @@ include 'admin-layout/topbar.php';
                                 </td>
                                 <td class="text-sm"><?= date('d/m/Y H:i', strtotime($req['created_at'])) ?></td>
                                 <td>
-                                    <button onclick="viewDetails(<?= $req['request_id'] ?>)" class="action-btn text-blue-600 hover:bg-blue-50" title="View Details">
+                                    <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="Update Status">

@@ -113,7 +113,7 @@ CREATE OR REPLACE VIEW v_task_assignments AS
 SELECT
     ta.assignment_id,
     ta.request_id,
-    sr.tracking_number,
+    sr.request_code,
     sr.service_name,
     sr.requester_name,
     ta.assigned_to,
