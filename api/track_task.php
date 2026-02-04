@@ -24,7 +24,7 @@ try {
     if (!empty($ticket)) {
         $stmt = $conn->prepare("
             SELECT 
-                sr.id,
+                sr.request_id,
                 sr.request_code,
                 sr.service_code,
                 sr.subject,
@@ -35,20 +35,20 @@ try {
                 sr.requester_name,
                 sr.requester_phone,
                 sr.requester_email,
-                ta.id as assignment_id,
+                ta.assignment_id,
                 ta.assigned_to,
-                ta.assigned_at,
+                ta.created_at AS assigned_at,
                 ta.status AS task_status,
                 ta.accepted_at,
                 ta.started_at,
                 ta.completed_at,
-                u.full_name as assigned_staff_name,
+                CONCAT(u.first_name, ' ', u.last_name) as assigned_staff_name,
                 r.role_name
             FROM service_requests sr
-            LEFT JOIN task_assignments ta ON sr.id = ta.request_id
-            LEFT JOIN users u ON ta.assigned_to = u.id
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
-            LEFT JOIN roles r ON ur.role_id = r.id AND ur.is_primary = 1
+            LEFT JOIN task_assignments ta ON sr.request_id = ta.request_id
+            LEFT JOIN users u ON ta.assigned_to = u.user_id
+            LEFT JOIN user_roles ur ON u.user_id = ur.user_id AND ur.is_primary = 1
+            LEFT JOIN roles r ON ur.role_id = r.role_id
             WHERE sr.request_code = ?
             LIMIT 1
         ");
@@ -90,7 +90,7 @@ try {
             
             $details_stmt = $conn->prepare("SELECT * FROM " . $details_table . " WHERE request_id = ?");
             if ($details_stmt) {
-                $details_stmt->bind_param('i', $task_data['id']);
+                $details_stmt->bind_param('i', $task_data['request_id']);
                 $details_stmt->execute();
                 $details_result = $details_stmt->get_result();
                 if ($details_result && $details_result->num_rows > 0) {
@@ -111,7 +111,7 @@ try {
     if (!empty($assignment_id)) {
         $stmt = $conn->prepare("
             SELECT 
-                sr.id,
+                sr.request_id,
                 sr.request_code,
                 sr.service_code,
                 sr.subject,
@@ -122,21 +122,21 @@ try {
                 sr.requester_name,
                 sr.requester_phone,
                 sr.requester_email,
-                ta.id as assignment_id,
+                ta.assignment_id,
                 ta.assigned_to,
-                ta.assigned_at,
+                ta.created_at AS assigned_at,
                 ta.status AS task_status,
                 ta.accepted_at,
                 ta.started_at,
                 ta.completed_at,
-                u.full_name as assigned_staff_name,
+                CONCAT(u.first_name, ' ', u.last_name) as assigned_staff_name,
                 r.role_name
             FROM task_assignments ta
-            LEFT JOIN service_requests sr ON ta.request_id = sr.id
-            LEFT JOIN users u ON ta.assigned_to = u.id
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
-            LEFT JOIN roles r ON ur.role_id = r.id AND ur.is_primary = 1
-            WHERE ta.id = ?
+            LEFT JOIN service_requests sr ON ta.request_id = sr.request_id
+            LEFT JOIN users u ON ta.assigned_to = u.user_id
+            LEFT JOIN user_roles ur ON u.user_id = ur.user_id AND ur.is_primary = 1
+            LEFT JOIN roles r ON ur.role_id = r.role_id
+            WHERE ta.assignment_id = ?
             LIMIT 1
         ");
 
@@ -173,7 +173,7 @@ try {
         if (isset($service_details_map[$service_code])) {
             $details_stmt = $conn->prepare("SELECT * FROM " . $service_details_map[$service_code] . " WHERE request_id = ?");
             if ($details_stmt) {
-                $details_stmt->bind_param('i', $task_data['id']);
+                $details_stmt->bind_param('i', $task_data['request_id']);
                 $details_stmt->execute();
                 $details_result = $details_stmt->get_result();
                 if ($details_result && $details_result->num_rows > 0) {
