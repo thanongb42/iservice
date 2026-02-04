@@ -4,15 +4,14 @@
  * Role-based task assignment API
  * 
  * Service Code to Role Mapping:
- * - EMAIL => (none required)
+ * - EMAIL => it_support
  * - NAS => it_support
+ * - INTERNET => it_support
  * - IT_SUPPORT => it_support
- * - INTERNET => network_admin
+ * - WEB_DESIGN => it_support
+ * - PRINTER => it_support
  * - QR_CODE => graphic_designer
  * - PHOTOGRAPHY => photographer
- * - WEB_DESIGN => graphic_designer
- * - PRINTER => it_support
- * - (DEFAULT) => manager / all
  */
 
 session_start();
@@ -29,14 +28,14 @@ require_once '../../config/database.php';
 
 // Service code to required role mapping
 $SERVICE_ROLE_MAPPING = [
+    'EMAIL' => ['it_support'],
     'NAS' => ['it_support'],
+    'INTERNET' => ['it_support'],
     'IT_SUPPORT' => ['it_support'],
-    'INTERNET' => ['network_admin', 'it_support'],  // Can be assigned to either
     'QR_CODE' => ['graphic_designer'],
     'PHOTOGRAPHY' => ['photographer'],
-    'WEB_DESIGN' => ['graphic_designer'],
+    'WEB_DESIGN' => ['it_support'],  // Changed to it_support
     'PRINTER' => ['it_support'],
-    'EMAIL' => ['manager', 'all'],  // General request, can assign to any
 ];
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
