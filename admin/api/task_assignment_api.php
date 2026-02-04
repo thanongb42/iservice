@@ -228,6 +228,73 @@ if ($action === 'assign_task') {
     exit();
 }
 
+// ========================================
+// POST: Update task assignment status
+// ========================================
+if ($action === 'update_status') {
+    $assignment_id = intval($_POST['assignment_id'] ?? 0);
+    $new_status = $_POST['new_status'] ?? '';
+    
+    if (!$assignment_id || !in_array($new_status, ['accepted', 'in_progress', 'completed', 'cancelled'])) {
+        echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
+        exit();
+    }
+    
+    // Get assignment to verify it belongs to current user
+    $get_query = "SELECT assigned_to FROM task_assignments WHERE assignment_id = ?";
+    $get_stmt = $conn->prepare($get_query);
+    $get_stmt->bind_param('i', $assignment_id);
+    $get_stmt->execute();
+    $get_result = $get_stmt->get_result()->fetch_assoc();
+    
+    if (!$get_result || $get_result['assigned_to'] != $_SESSION['user_id']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+        exit();
+    }
+    
+    // Build column updates based on new status
+    $update_fields = 'status = ?';
+    $params = [$new_status];
+    $types = 's';
+    
+    if ($new_status === 'accepted') {
+        $update_fields .= ', accepted_at = NOW()';
+    } elseif ($new_status === 'in_progress') {
+        $update_fields .= ', started_at = NOW()';
+    } elseif ($new_status === 'completed') {
+        $update_fields .= ', completed_at = NOW()';
+    }
+    
+    // Update assignment status
+    $update_query = "UPDATE task_assignments SET $update_fields WHERE assignment_id = ?";
+    $params[] = $assignment_id;
+    $types .= 'i';
+    
+    $update_stmt = $conn->prepare($update_query);
+    $update_stmt->bind_param($types, ...$params);
+    
+    if ($update_stmt->execute()) {
+        $status_labels = [
+            'accepted' => 'รับงานแล้ว',
+            'in_progress' => 'เริ่มดำเนินการแล้ว',
+            'completed' => 'ดำเนินการเสร็จสิ้นแล้ว',
+            'cancelled' => 'ยกเลิกงานแล้ว'
+        ];
+        
+        echo json_encode([
+            'success' => true,
+            'message' => $status_labels[$new_status]
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to update status: ' . $conn->error
+        ]);
+    }
+    exit();
+}
+
 // Invalid action
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Invalid action']);

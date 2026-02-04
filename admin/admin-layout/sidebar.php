@@ -2,10 +2,26 @@
 /**
  * Admin Layout - Sidebar
  * เมนูด้านซ้ายแบบ responsive - Clean Minimal Style
+ * Role-based menu visibility
  */
 
 $current_page = $current_page ?? 'dashboard';
 $pending_requests = $pending_requests ?? 0;
+
+// Check if user is admin/manager (has 'manager' or 'all' role)
+$is_manager = false;
+if (isset($_SESSION['user_id']) && isset($conn)) {
+    $check_role = $conn->prepare("
+        SELECT COUNT(*) as cnt FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE ur.user_id = ? AND r.role_code IN ('manager', 'all')
+        AND ur.is_active = 1 AND r.is_active = 1
+    ");
+    $check_role->bind_param('i', $_SESSION['user_id']);
+    $check_role->execute();
+    $role_result = $check_role->get_result()->fetch_assoc();
+    $is_manager = $role_result['cnt'] > 0;
+}
 
 // Fetch system settings for sidebar
 $system_settings = [];
@@ -23,42 +39,58 @@ $sidebar_org_name = !empty($system_settings['organization_name']) ? $system_sett
 $sidebar_logo = !empty($system_settings['logo_image']) && file_exists('../' . $system_settings['logo_image']) ? $system_settings['logo_image'] : null;
 
 // Menu items configuration - grouped
-// IDs must match $current_page values set in each PHP file
-$menu_groups = [
-    'main' => [
-        'label' => '',
-        'items' => [
-            ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
-            ['id' => 'user-manager', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
-            ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
-            ['id' => 'roles_manager', 'icon' => 'fa-user-tag', 'label' => 'จัดการบทบาท', 'url' => 'roles_manager.php'],
-            ['id' => 'user_roles', 'icon' => 'fa-id-badge', 'label' => 'กำหนดบทบาทผู้ใช้', 'url' => 'user_roles.php'],
+// Show admin menu only for managers/all roles
+// Show my_tasks for all staff
+$menu_groups = [];
+
+// For managers - show all menus
+if ($is_manager) {
+    $menu_groups = [
+        'main' => [
+            'label' => '',
+            'items' => [
+                ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+                ['id' => 'user-manager', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
+                ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
+                ['id' => 'roles_manager', 'icon' => 'fa-user-tag', 'label' => 'จัดการบทบาท', 'url' => 'roles_manager.php'],
+                ['id' => 'user_roles', 'icon' => 'fa-id-badge', 'label' => 'กำหนดบทบาทผู้ใช้', 'url' => 'user_roles.php'],
+            ]
+        ],
+        'services' => [
+            'label' => 'บริการ',
+            'items' => [
+                ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+                ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
+            ]
+        ],
+        'content' => [
+            'label' => 'เนื้อหา',
+            'items' => [
+                ['id' => 'learning_resources', 'icon' => 'fa-book-open', 'label' => 'ศูนย์การเรียนรู้', 'url' => 'learning_resources.php'],
+                ['id' => 'tech_news', 'icon' => 'fa-newspaper', 'label' => 'ข่าวสารเทคโนโลยี', 'url' => 'tech_news.php'],
+                ['id' => 'nav_menu', 'icon' => 'fa-bars', 'label' => 'จัดการเมนู', 'url' => 'nav_menu.php'],
+                ['id' => 'related_agencies', 'icon' => 'fa-building', 'label' => 'หน่วยงานที่เกี่ยวข้อง', 'url' => 'related_agencies.php'],
+            ]
+        ],
+        'system' => [
+            'label' => 'ระบบ',
+            'items' => [
+                ['id' => 'reports', 'icon' => 'fa-chart-bar', 'label' => 'รายงาน', 'url' => 'admin_report.php'],
+                ['id' => 'system_setting', 'icon' => 'fa-cog', 'label' => 'ตั้งค่าระบบ', 'url' => 'system_setting.php'],
+            ]
         ]
-    ],
-    'services' => [
-        'label' => 'บริการ',
-        'items' => [
-            ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
-            ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
+    ];
+} else {
+    // For non-managers - show only my_tasks
+    $menu_groups = [
+        'main' => [
+            'label' => '',
+            'items' => [
+                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+            ]
         ]
-    ],
-    'content' => [
-        'label' => 'เนื้อหา',
-        'items' => [
-            ['id' => 'learning_resources', 'icon' => 'fa-book-open', 'label' => 'ศูนย์การเรียนรู้', 'url' => 'learning_resources.php'],
-            ['id' => 'tech_news', 'icon' => 'fa-newspaper', 'label' => 'ข่าวสารเทคโนโลยี', 'url' => 'tech_news.php'],
-            ['id' => 'nav_menu', 'icon' => 'fa-bars', 'label' => 'จัดการเมนู', 'url' => 'nav_menu.php'],
-            ['id' => 'related_agencies', 'icon' => 'fa-building', 'label' => 'หน่วยงานที่เกี่ยวข้อง', 'url' => 'related_agencies.php'],
-        ]
-    ],
-    'system' => [
-        'label' => 'ระบบ',
-        'items' => [
-            ['id' => 'reports', 'icon' => 'fa-chart-bar', 'label' => 'รายงาน', 'url' => 'admin_report.php'],
-            ['id' => 'system_setting', 'icon' => 'fa-cog', 'label' => 'ตั้งค่าระบบ', 'url' => 'system_setting.php'],
-        ]
-    ]
-];
+    ];
+}
 ?>
 
 <style>

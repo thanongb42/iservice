@@ -6,3 +6,10 @@ To: thanongb42@gmail.com
 Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0003)
 Link: http://localhost/iservice/tracking.php?req=REQ-2026-0003
 
+----------------------------------------
+UPDATE NOTIFICATION
+To: thanongb42@gmail.com
+Subject: อัปเดตสถานะคำร้อง: อินเทอร์เน็ต / WiFi (REQ-2026-0003)
+Status: กำลังดำเนินการ
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0003
+
