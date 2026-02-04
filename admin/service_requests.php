@@ -502,23 +502,34 @@ include 'admin-layout/topbar.php';
                     <i class="fas fa-plus-circle"></i> มอบหมายงานใหม่
                 </h3>
                 <input type="hidden" id="assignRequestId">
+                <input type="hidden" id="assignServiceCode">
+
+                <!-- Service Type and Required Roles Info -->
+                <div id="serviceRoleInfo" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>บทบาท/หน้าที่ที่สามารถรับมอบหมายได้:</strong>
+                        <span id="requiredRolesText"></span>
+                    </p>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกบทบาท</label>
-                        <select id="assignRole" onchange="loadAssignableUsers()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="">-- เลือกบทบาท --</option>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
+                        <select id="assignUser" onchange="updateSelectedUserRoles()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">-- กำลังโหลด --</option>
+                        </select>
+                        <p id="userRolesInfo" class="text-xs text-gray-500 mt-1"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">บทบาท</label>
+                        <select id="assignRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">-- เลือกบทบาท (ไม่บังคับ) --</option>
                             <?php foreach ($roles as $role): ?>
                                 <option value="<?= $role['role_id'] ?>" data-icon="<?= $role['role_icon'] ?>" data-color="<?= $role['role_color'] ?>">
                                     <?= htmlspecialchars($role['role_name']) ?>
                                 </option>
                             <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกผู้รับผิดชอบ</label>
-                        <select id="assignUser" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="">-- เลือกบทบาทก่อน --</option>
                         </select>
                     </div>
                 </div>
@@ -774,7 +785,7 @@ include 'admin-layout/topbar.php';
             }
         }
 
-        // Assign Request - Open Modal
+        // Assign Request - Open Modal with Role-Based Filtering
         async function assignRequest(id) {
             if (!canAssignTasks) {
                 Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ในการมอบหมายงาน', 'warning');
@@ -784,15 +795,90 @@ include 'admin-layout/topbar.php';
             document.getElementById('assignRequestId').value = id;
             document.getElementById('assignRequestCode').textContent = '#' + String(id).padStart(4, '0');
             document.getElementById('assignRole').value = '';
-            document.getElementById('assignUser').innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
             document.getElementById('assignPriority').value = 'normal';
             document.getElementById('assignDueDate').value = '';
             document.getElementById('assignNotes').value = '';
 
-            // Load current assignments
-            await loadCurrentAssignments(id);
+            // Get service code and load available users
+            try {
+                // Find the row with this request ID
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                if (!row) {
+                    Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคำขอ', 'error');
+                    return;
+                }
 
-            document.getElementById('assignModal').style.display = 'block';
+                const serviceCode = row.dataset.service;
+                document.getElementById('assignServiceCode').value = serviceCode;
+
+                // Load available users based on service code
+                await loadAvailableUsers(id, serviceCode);
+
+                // Load current assignments
+                await loadCurrentAssignments(id);
+
+                document.getElementById('assignModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+            }
+        }
+
+        // Load available users based on service code and required roles
+        async function loadAvailableUsers(requestId, serviceCode) {
+            const userSelect = document.getElementById('assignUser');
+            const serviceRoleInfo = document.getElementById('serviceRoleInfo');
+            const requiredRolesText = document.getElementById('requiredRolesText');
+
+            userSelect.innerHTML = '<option value="">-- กำลังโหลค --</option>';
+
+            try {
+                const response = await fetch(`api/task_assignment_api.php?action=get_available_users&service_code=${serviceCode}&request_id=${requestId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show required roles info
+                    requiredRolesText.textContent = data.required_roles.join(', ');
+                    serviceRoleInfo.classList.remove('hidden');
+
+                    // Populate user select
+                    userSelect.innerHTML = '<option value="">-- เลือกผู้รับผิดชอบ --</option>';
+                    
+                    if (data.users.length === 0) {
+                        userSelect.innerHTML += '<option disabled>ไม่มีผู้ใช้ที่เหมาะสม</option>';
+                        Swal.fire('แจ้งเตือน', data.message || 'ไม่มีผู้ใช้ที่มีบทบาท: ' + data.required_roles.join(', '), 'warning');
+                        return;
+                    }
+
+                    data.users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.user_id;
+                        option.textContent = `${user.first_name} ${user.last_name} (${user.roles})`;
+                        option.dataset.roles = user.roles;
+                        userSelect.appendChild(option);
+                    });
+                } else {
+                    userSelect.innerHTML += `<option disabled>${data.message}</option>`;
+                    Swal.fire('แจ้งเตือน', data.message, 'warning');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                userSelect.innerHTML += '<option disabled>เกิดข้อผิดพลาด</option>';
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลผู้ใช้ได้', 'error');
+            }
+        }
+
+        // Update user roles display when user is selected
+        function updateSelectedUserRoles() {
+            const userSelect = document.getElementById('assignUser');
+            const userRolesInfo = document.getElementById('userRolesInfo');
+            
+            const selectedOption = userSelect.options[userSelect.selectedIndex];
+            if (selectedOption && selectedOption.dataset.roles) {
+                userRolesInfo.textContent = 'บทบาท: ' + selectedOption.dataset.roles;
+            } else {
+                userRolesInfo.textContent = '';
+            }
         }
 
         function closeAssignModal() {
@@ -902,6 +988,7 @@ include 'admin-layout/topbar.php';
             const priority = document.getElementById('assignPriority').value;
             const dueDate = document.getElementById('assignDueDate').value;
             const notes = document.getElementById('assignNotes').value;
+            const serviceCode = document.getElementById('assignServiceCode').value;
 
             if (!userId) {
                 Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกผู้รับผิดชอบ', 'warning');
@@ -910,7 +997,7 @@ include 'admin-layout/topbar.php';
 
             try {
                 const formData = new FormData();
-                formData.append('action', 'assign');
+                formData.append('action', 'assign_task');
                 formData.append('request_id', requestId);
                 formData.append('assigned_to', userId);
                 formData.append('assigned_as_role', roleId);
@@ -918,7 +1005,7 @@ include 'admin-layout/topbar.php';
                 formData.append('due_date', dueDate);
                 formData.append('notes', notes);
 
-                const response = await fetch('api/task_assignments_api.php', {
+                const response = await fetch('api/task_assignment_api.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -931,12 +1018,14 @@ include 'admin-layout/topbar.php';
                     await loadCurrentAssignments(requestId);
                     // Clear form
                     document.getElementById('assignRole').value = '';
-                    document.getElementById('assignUser').innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
+                    document.getElementById('assignUser').value = '';
+                    document.getElementById('userRolesInfo').textContent = '';
                     document.getElementById('assignNotes').value = '';
                 } else {
                     Swal.fire('ผิดพลาด', result.message, 'error');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายงานได้', 'error');
             }
         }
