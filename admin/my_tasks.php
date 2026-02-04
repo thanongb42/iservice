@@ -68,7 +68,7 @@ $stats_stmt->execute();
 $stats = $stats_stmt->get_result()->fetch_assoc();
 
 // Get assigned tasks
-$tasks_query = "SELECT ta.*, sr.request_code, sr.service_name, sr.requester_name, sr.contact_info,
+$tasks_query = "SELECT ta.*, sr.request_code, sr.service_name, sr.requester_name, sr.requester_phone, sr.requester_email,
                 u_by.username as assigned_by_username,
                 CONCAT(p_by.prefix_name, u_by.first_name, ' ', u_by.last_name) as assigned_by_name,
                 r.role_name as assigned_role_name
@@ -336,7 +336,15 @@ include 'admin-layout/topbar.php';
                             </div>
                             <div class="task-detail-item">
                                 <div class="task-detail-label">ติดต่อ</div>
-                                <div class="task-detail-value"><?= htmlspecialchars($task['contact_info'] ?? '-') ?></div>
+                                <div class="task-detail-value">
+                                    <?php if ($task['requester_phone']): ?>
+                                        <?= htmlspecialchars($task['requester_phone']) ?>
+                                    <?php elseif ($task['requester_email']): ?>
+                                        <?= htmlspecialchars($task['requester_email']) ?>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="task-detail-item">
                                 <div class="task-detail-label">มอบหมายโดย</div>
