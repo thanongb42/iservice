@@ -532,14 +532,26 @@ include 'admin-layout/topbar.php';
                             <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['started_at'])) ?></div>
                         </div>
                     </div>
-                    <?php elseif ($task['status'] === 'in_progress'): ?>
+                    
+                    <?php if ($task['status'] === 'in_progress'): ?>
                     <div class="timeline-item">
                         <div class="timeline-dot in_progress">
-                            <i class="fas fa-spinner fa-spin"></i>
+                            <i class="fas fa-spinner"></i>
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">กำลังดำเนินการ</div>
-                            <div class="timeline-time text-orange-600 font-semibold">กำลังดำเนินการ...</div>
+                            <div class="timeline-time text-orange-600 font-semibold">⏳ กำลังดำเนินการ...</div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    <?php elseif ($task['status'] === 'in_progress'): ?>
+                    <div class="timeline-item">
+                        <div class="timeline-dot in_progress">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-label">กำลังดำเนินการ</div>
+                            <div class="timeline-time text-orange-600 font-semibold">⏳ กำลังดำเนินการ...</div>
                         </div>
                     </div>
                     <?php endif; ?>
