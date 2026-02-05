@@ -718,40 +718,8 @@ include __DIR__ . '/includes/header_public.php';
     </footer>
 
     <script>
-        // Start Session only if not already started
-        <?php if (session_status() === PHP_SESSION_NONE) echo "/* session not started in JS context */"; ?>
-        
-        // Mobile Menu Toggle logic
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const mobileMenu = document.getElementById('mobileMenu');
-
-        if (mobileMenuBtn && mobileMenu) {
-            mobileMenuBtn.addEventListener('click', function() {
-                mobileMenu.classList.toggle('hidden');
-
-                // Toggle icon between bars and times
-                const icon = this.querySelector('i');
-                if (mobileMenu.classList.contains('hidden')) {
-                    icon.classList.remove('fa-times');
-                    icon.classList.add('fa-bars');
-                } else {
-                    icon.classList.remove('fa-bars');
-                    icon.classList.add('fa-times');
-                }
-            });
-
-            // Close mobile menu when clicking outside
-            document.addEventListener('click', function(event) {
-                const isClickInsideMenu = mobileMenu.contains(event.target);
-                const isClickOnButton = mobileMenuBtn.contains(event.target);
-
-                if (!isClickInsideMenu && !isClickOnButton && !mobileMenu.classList.contains('hidden')) {
-                    mobileMenu.classList.add('hidden');
-                    mobileMenuBtn.querySelector('i').classList.remove('fa-times');
-                    mobileMenuBtn.querySelector('i').classList.add('fa-bars');
-                }
-            });
-        }
+        // Extra scripts can go here if needed
+        <?php echo isset($extra_scripts) ? $extra_scripts : ''; ?>
     </script>
 </body>
 </html>
