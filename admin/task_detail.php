@@ -22,7 +22,8 @@ if (!$assignment_id) {
 }
 
 // Get task assignment with verification
-$task_query = "SELECT ta.*, sr.*, 
+$task_query = "SELECT ta.assignment_id, ta.request_id, ta.assigned_to, ta.assigned_as_role, ta.assigned_by, ta.status, ta.priority, ta.due_date, ta.notes, ta.accepted_at, ta.started_at, ta.completed_at, ta.completion_notes, ta.created_at, ta.updated_at, ta.start_time, ta.end_time,
+                sr.*, 
                 u_by.username as assigned_by_username,
                 CONCAT(p_by.prefix_name, u_by.first_name, ' ', u_by.last_name) as assigned_by_name,
                 r.role_name as assigned_role_name, r.role_icon, r.role_color

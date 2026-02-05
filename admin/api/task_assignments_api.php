@@ -115,8 +115,58 @@ function assignTask() {
         throw new Exception('ผู้ใช้นี้ได้รับมอบหมายงานนี้แล้ว');
     }
 
-    $stmt = $conn->prepare("INSERT INTO task_assignments (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param('iiiisss', $request_id, $assigned_to, $assigned_as_role, $assigned_by, $priority, $due_date, $notes);
+    // Get service code and fetch event times
+    $service_query = "SELECT service_code FROM service_requests WHERE request_id = ?";
+    $service_stmt = $conn->prepare($service_query);
+    $service_stmt->bind_param('i', $request_id);
+    $service_stmt->execute();
+    $service_result = $service_stmt->get_result()->fetch_assoc();
+    
+    if (!$service_result) {
+        throw new Exception('ไม่พบรายการขอใช้บริการ');
+    }
+    
+    $service_code = $service_result['service_code'];
+    
+    // Initialize time variables
+    $start_time = null;
+    $end_time = null;
+    
+    // Fetch start_time and end_time from service-specific details if available
+    if ($service_code === 'PHOTOGRAPHY') {
+        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_photography_details WHERE request_id = ?";
+        $detail_stmt = $conn->prepare($detail_query);
+        $detail_stmt->bind_param('i', $request_id);
+        $detail_stmt->execute();
+        $detail_result = $detail_stmt->get_result()->fetch_assoc();
+        
+        if ($detail_result) {
+            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+            }
+            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+            }
+        }
+    } elseif ($service_code === 'MC') {
+        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_mc_details WHERE request_id = ?";
+        $detail_stmt = $conn->prepare($detail_query);
+        $detail_stmt->bind_param('i', $request_id);
+        $detail_stmt->execute();
+        $detail_result = $detail_stmt->get_result()->fetch_assoc();
+        
+        if ($detail_result) {
+            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+            }
+            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+            }
+        }
+    }
+
+    $stmt = $conn->prepare("INSERT INTO task_assignments (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('iiiissss', $request_id, $assigned_to, $assigned_as_role, $assigned_by, $priority, $due_date, $notes, $start_time, $end_time);
 
     if ($stmt->execute()) {
         $assignment_id = $conn->insert_id;
