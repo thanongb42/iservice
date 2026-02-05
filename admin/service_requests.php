@@ -450,7 +450,7 @@ include 'admin-layout/topbar.php';
                                     <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="Update Status">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="Assign">
+                                    <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="มอบหมายงาน">
                                         <i class="fas fa-user-tag"></i>
                                     </button>
                                     <button onclick="updatePriority(<?= $req['request_id'] ?>)" class="action-btn text-orange-600 hover:bg-orange-50" title="Update Priority">
