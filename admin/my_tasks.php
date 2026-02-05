@@ -835,18 +835,10 @@ include 'admin-layout/topbar.php';
         tasksData.forEach(task => {
             let matchesDate = false;
             
-            // Check start_time first (for PHOTOGRAPHY, MC events with actual event dates)
+            // Only use start_time for calendar display (for PHOTOGRAPHY, MC events with actual event dates)
             if (task.start_time) {
                 const startDate = new Date(task.start_time);
                 const taskDateStr = startDate.toISOString().split('T')[0];
-                if (taskDateStr === dateStr) {
-                    matchesDate = true;
-                }
-            }
-            // Only check due_date if no start_time (to avoid duplicates)
-            else if (task.due_date) {
-                const dueDate = new Date(task.due_date);
-                const taskDateStr = dueDate.toISOString().split('T')[0];
                 if (taskDateStr === dateStr) {
                     matchesDate = true;
                 }
