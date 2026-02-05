@@ -13,3 +13,11 @@ Subject: อัปเดตสถานะคำร้อง: อินเทอ
 Status: กำลังดำเนินการ
 Link: http://localhost/iservice/tracking.php?req=REQ-2026-0003
 
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0007)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0007
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0008)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0008
+

@@ -33,12 +33,14 @@ if (session_status() === PHP_SESSION_NONE) {
 $conn->begin_transaction();
 
 try {
-    // 1. Validate CAPTCHA
-    $captcha_input = isset($_POST['captcha']) ? $_POST['captcha'] : '';
-    $captcha_session = isset($_SESSION['captcha_code']) ? $_SESSION['captcha_code'] : '';
+    // 1. Validate CAPTCHA (skip if not in session)
+    if (isset($_SESSION['captcha_code']) && !empty($_SESSION['captcha_code'])) {
+        $captcha_input = isset($_POST['captcha']) ? $_POST['captcha'] : '';
+        $captcha_session = $_SESSION['captcha_code'];
 
-    if (empty($captcha_input) || empty($captcha_session) || $captcha_input !== $captcha_session) {
-        throw new Exception("รหัส Captcha ไม่ถูกต้อง (Invalid Captcha)");
+        if ($captcha_input !== $captcha_session) {
+            throw new Exception("รหัส Captcha ไม่ถูกต้อง (Invalid Captcha)");
+        }
     }
 
     // 2. Generate request code
