@@ -717,8 +717,6 @@ include 'admin-layout/topbar.php';
             </button>
         </div>
 
-        <p id="debug-info" style="color: #999; font-size: 0.75rem;">Tasks: <?= count($all_tasks) ?></p>
-
         <!-- List View Tab -->
         <div id="list-view" class="tab-content active">
             <?php if (!empty($all_tasks)): ?>
