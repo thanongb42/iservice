@@ -787,6 +787,11 @@ include 'admin-layout/topbar.php';
 
             const cell = document.createElement('td');
             const cellDate = new Date(currentYear, currentMonth, day);
+            
+            // Format date as YYYY-MM-DD without timezone conversion
+            const cellDateStr = cellDate.getFullYear() + '-' + 
+                               String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                               String(cellDate.getDate()).padStart(2, '0');
 
             // Check if today
             if (cellDate.toDateString() === today.toDateString()) {
@@ -795,7 +800,7 @@ include 'admin-layout/topbar.php';
 
             cell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
             cell.classList.add('calendar-day');
-            cell.dataset.date = cellDate.toISOString().split('T')[0];
+            cell.dataset.date = cellDateStr;
 
             // Add tasks for this day
             const dayTasks = getTasksForDay(cellDate);
@@ -828,7 +833,10 @@ include 'admin-layout/topbar.php';
     }
 
     function getTasksForDay(date) {
-        const dateStr = date.toISOString().split('T')[0];
+        // Format date as YYYY-MM-DD without timezone conversion
+        const dateStr = date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0');
         const tasks = [];
 
         // Get tasks from tasksData array
@@ -871,12 +879,13 @@ include 'admin-layout/topbar.php';
                 // Format time display if available
                 let timeDisplay = '';
                 if (task.start_time) {
-                    const startTime = new Date(task.start_time);
-                    const timeStr = startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    // Parse time from string "2026-02-07 08:31:00" to extract just time
+                    const timeParts = task.start_time.split(' ')[1]; // Get "08:31:00"
+                    const timeStr = timeParts.substring(0, 5); // Get "08:31"
                     timeDisplay = `<div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">⏰ เวลา: ${timeStr}`;
                     if (task.end_time) {
-                        const endTime = new Date(task.end_time);
-                        const endTimeStr = endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                        const endTimeParts = task.end_time.split(' ')[1]; // Get time part
+                        const endTimeStr = endTimeParts.substring(0, 5); // Get time "HH:MM"
                         timeDisplay += ` - ${endTimeStr}`;
                     }
                     timeDisplay += '</div>';
