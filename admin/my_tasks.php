@@ -529,28 +529,36 @@ include 'admin-layout/topbar.php';
         padding: 2rem;
     }
 
-    /* DataTable Styles */
+    /* Table Styles - Custom minimal design */
+    .tasks-table-container {
+        background: white;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
     #tasksTable {
-        border-collapse: collapse;
         width: 100%;
+        border-collapse: collapse;
     }
 
     #tasksTable thead {
-        background-color: #f3f4f6;
-        border-bottom: 2px solid #e5e7eb;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     #tasksTable th {
-        padding: 0.75rem 1rem;
+        padding: 0.875rem 1rem;
         text-align: left;
         font-weight: 600;
-        color: #1f2937;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     #tasksTable tbody tr {
-        border-bottom: 1px solid #e5e7eb;
-        transition: background-color 0.2s;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.15s ease;
     }
 
     #tasksTable tbody tr:hover {
@@ -558,70 +566,104 @@ include 'admin-layout/topbar.php';
     }
 
     #tasksTable td {
-        padding: 0.75rem 1rem;
-        color: #1f2937;
+        padding: 1rem;
         font-size: 0.875rem;
+        color: #374151;
     }
 
     .btn-action-small {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         padding: 0.5rem 1rem;
-        background-color: #dbeafe;
-        color: #0c4a6e;
         border: none;
         border-radius: 0.375rem;
         font-size: 0.875rem;
         font-weight: 500;
         cursor: pointer;
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
+        background-color: transparent;
+        color: #9ca3af;
     }
 
     .btn-action-small:hover {
-        background-color: #bfdbfe;
-        color: #0369a1;
+        background-color: #f3f4f6;
+        color: #3b82f6;
     }
 
-    .dataTables_wrapper .dataTables_paginate {
-        text-align: right;
-        margin-top: 1rem;
+    /* Search and Filter Styles */
+    .table-controls {
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
 
-    .dataTables_wrapper .paginate_button {
+    .table-search-box {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: border-color 0.15s;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .table-search-box:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    /* Pagination */
+    .table-pagination {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination-btn {
         padding: 0.5rem 0.75rem;
-        margin: 0 0.25rem;
         border: 1px solid #e5e7eb;
         border-radius: 0.375rem;
         background-color: white;
-        color: #1f2937;
+        color: #374151;
         cursor: pointer;
         font-size: 0.875rem;
-        transition: all 0.2s;
+        transition: all 0.15s;
+        min-width: 2.5rem;
+        text-align: center;
     }
 
-    .dataTables_wrapper .paginate_button:hover {
+    .pagination-btn:hover:not(:disabled) {
         background-color: #f3f4f6;
         border-color: #d1d5db;
     }
 
-    .dataTables_wrapper .paginate_button.current {
+    .pagination-btn.active {
         background-color: #3b82f6;
         color: white;
         border-color: #3b82f6;
+        font-weight: 600;
     }
 
-    .dataTables_wrapper .dataTables_info {
-        padding: 1rem 0;
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .table-info {
+        margin-top: 1rem;
         color: #6b7280;
         font-size: 0.875rem;
     }
 </style>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <div class="p-6">
     <!-- Page Header -->
@@ -677,10 +719,15 @@ include 'admin-layout/topbar.php';
 
         <!-- List View Tab -->
         <div id="list-view" class="tab-content active">
-            <!-- List View (Table) -->
-            <div id="list-view-container">
             <?php if (!empty($all_tasks)): ?>
-                <table id="tasksTable" class="display" style="width:100%">
+            <div class="tasks-table-container">
+                <!-- Search Bar -->
+                <div class="table-controls" style="padding: 1.5rem 1rem 1rem 1rem;">
+                    <input type="text" id="tableSearch" class="table-search-box" placeholder="ค้นหารหัสคำขอ, บริการ, ผู้ขอ...">
+                </div>
+
+                <!-- Table -->
+                <table id="tasksTable">
                     <thead>
                         <tr>
                             <th>รหัสคำขอ</th>
@@ -688,10 +735,10 @@ include 'admin-layout/topbar.php';
                             <th>ผู้ขอ</th>
                             <th>สถานะ</th>
                             <th>กำหนดส่ง</th>
-                            <th>Action</th>
+                            <th>การดำเนินการ</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tableBody">
                     <?php foreach ($all_tasks as $task): ?>
                         <tr>
                             <td>
@@ -732,6 +779,13 @@ include 'admin-layout/topbar.php';
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+
+                <!-- Pagination -->
+                <div style="padding: 1rem;">
+                    <div class="table-pagination" id="tablePagination"></div>
+                    <div class="table-info" id="tableInfo"></div>
+                </div>
+            </div>
             <?php else: ?>
                 <div class="no-tasks">
                     <i class="fas fa-inbox"></i>
@@ -739,7 +793,6 @@ include 'admin-layout/topbar.php';
                     <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
                 </div>
             <?php endif; ?>
-            </div>
 
         <!-- Calendar View Tab -->
         <div id="calendar-view" class="tab-content">
@@ -794,45 +847,95 @@ include 'admin-layout/topbar.php';
         if (tabName === 'calendar-view') {
             renderCalendar();
         } else if (tabName === 'list-view' && !window.tasksTableInitialized) {
-            // Initialize DataTable on first load
-            if (document.getElementById('tasksTable')) {
-                $('#tasksTable').DataTable({
-                    "language": {
-                        "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
-                        "zeroRecords": "ไม่พบรายการ",
-                        "info": "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
-                        "infoEmpty": "ไม่มีรายการ",
-                        "infoFiltered": "(กรองจากทั้งหมด _MAX_ รายการ)",
-                        "search": "ค้นหา:",
-                        "paginate": {
-                            "first": "หน้าแรก",
-                            "last": "หน้าสุดท้าย",
-                            "next": "ถัดไป",
-                            "previous": "ก่อนหน้า"
-                        }
-                    },
-                    "pageLength": 10,
-                    "lengthChange": true,
-                    "searching": true,
-                    "ordering": true,
-                    "order": [[0, 'asc']]
-                });
-                window.tasksTableInitialized = true;
-            }
+            initializeTable();
+            window.tasksTableInitialized = true;
         }
     }
 
-    // List view toggle
-    function switchListView(viewType) {
-        event.target.closest('.view-toggle').querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+    // Table Pagination
+    const ITEMS_PER_PAGE = 10;
+    let allRows = [];
+    let currentPage = 1;
 
-        if (viewType === 'list') {
-            document.getElementById('list-view-container').style.display = 'block';
-            document.getElementById('grid-view-container').style.display = 'none';
+    function initializeTable() {
+        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        setupSearchFilter();
+        renderTablePage(1);
+    }
+
+    function setupSearchFilter() {
+        const searchBox = document.getElementById('tableSearch');
+        if (!searchBox) return;
+
+        searchBox.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredRows = allRows.filter(row => {
+                const text = row.textContent.toLowerCase();
+                return text.includes(searchTerm);
+            });
+            currentPage = 1;
+            renderPaginationAndRows(filteredRows);
+        });
+    }
+
+    function renderPaginationAndRows(rows) {
+        const totalPages = Math.ceil(rows.length / ITEMS_PER_PAGE);
+        
+        // Show/hide rows
+        rows.forEach((row, index) => {
+            const pageNumber = Math.floor(index / ITEMS_PER_PAGE) + 1;
+            row.style.display = pageNumber === currentPage ? '' : 'none';
+        });
+
+        // Render pagination buttons
+        let paginationHTML = '';
+        if (totalPages > 1) {
+            // Previous button
+            paginationHTML += `<button class="pagination-btn" onclick="goToPage(${Math.max(1, currentPage - 1)})" ${currentPage === 1 ? 'disabled' : ''}>ก่อนหน้า</button>`;
+            
+            // Page numbers
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            if (totalPages > 5) {
+                paginationHTML += '<span style="padding: 0 0.5rem;">...</span>';
+                paginationHTML += `<button class="pagination-btn ${totalPages === currentPage ? 'active' : ''}" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Next button
+            paginationHTML += `<button class="pagination-btn" onclick="goToPage(${Math.min(totalPages, currentPage + 1)})" ${currentPage === totalPages ? 'disabled' : ''}>ถัดไป</button>`;
+        }
+        document.getElementById('tablePagination').innerHTML = paginationHTML;
+
+        // Render info text
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+        const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, rows.length);
+        document.getElementById('tableInfo').textContent = `แสดง ${startIndex} ถึง ${endIndex} จากทั้งหมด ${rows.length} รายการ`;
+    }
+
+    function goToPage(pageNum) {
+        currentPage = pageNum;
+        const searchBox = document.getElementById('tableSearch');
+        const searchTerm = searchBox ? searchBox.value.toLowerCase() : '';
+        
+        if (searchTerm) {
+            const filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
+            renderPaginationAndRows(filteredRows);
         } else {
-            document.getElementById('list-view-container').style.display = 'none';
-            document.getElementById('grid-view-container').style.display = 'block';
+            renderPaginationAndRows(allRows);
+        }
+    }
+
+    function renderTablePage(pageNum) {
+        currentPage = pageNum;
+        const searchBox = document.getElementById('tableSearch');
+        const searchTerm = searchBox ? searchBox.value.toLowerCase() : '';
+        
+        if (searchTerm) {
+            const filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
+            renderPaginationAndRows(filteredRows);
+        } else {
+            renderPaginationAndRows(allRows);
         }
     }
 
