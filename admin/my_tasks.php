@@ -709,10 +709,10 @@ include 'admin-layout/topbar.php';
     <!-- Tab Container -->
     <div class="tab-container">
         <div class="tab-buttons">
-            <button class="tab-button active" onclick="switchTab('list-view')">
+            <button class="tab-button active" onclick="switchTab('list-view', this)">
                 <i class="fas fa-list mr-2"></i> รายการ
             </button>
-            <button class="tab-button" onclick="switchTab('calendar-view')">
+            <button class="tab-button" onclick="switchTab('calendar-view', this)">
                 <i class="fas fa-calendar mr-2"></i> ปฏิทิน
             </button>
         </div>
@@ -834,8 +834,8 @@ include 'admin-layout/topbar.php';
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
 
-    // Tab switching
-    function switchTab(tabName) {
+    // Tab switching - pass button element as parameter
+    function switchTab(tabName, buttonElement) {
         console.log('switchTab called with:', tabName);
         
         // Hide all tabs
@@ -844,8 +844,8 @@ include 'admin-layout/topbar.php';
 
         // Show selected tab
         document.getElementById(tabName).classList.add('active');
-        if (event && event.target) {
-            event.target.classList.add('active');
+        if (buttonElement) {
+            buttonElement.classList.add('active');
         }
 
         if (tabName === 'calendar-view') {
