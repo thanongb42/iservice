@@ -837,8 +837,9 @@ include 'admin-layout/topbar.php';
             
             // Only use start_time for calendar display (for PHOTOGRAPHY, MC events with actual event dates)
             if (task.start_time) {
-                const startDate = new Date(task.start_time);
-                const taskDateStr = startDate.toISOString().split('T')[0];
+                // Extract date part directly from string to avoid timezone issues
+                // start_time format: "2026-02-07 08:31:00"
+                const taskDateStr = task.start_time.split(' ')[0]; // Get "2026-02-07" part
                 if (taskDateStr === dateStr) {
                     matchesDate = true;
                 }
