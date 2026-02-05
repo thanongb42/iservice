@@ -202,6 +202,62 @@ include 'admin-layout/topbar.php';
         margin-top: 0.25rem;
     }
 
+    /* Simple List View Styles */
+    .task-simple-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .task-simple-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .task-simple-item:hover {
+        border-color: #d1d5db;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        background-color: #f9fafb;
+    }
+
+    .task-simple-left {
+        flex: 1;
+    }
+
+    .task-code-simple {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.95rem;
+    }
+
+    .task-service-simple {
+        color: #6b7280;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .task-requester-simple {
+        color: #1f2937;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .task-simple-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+        margin-left: 1rem;
+    }
+
     .task-actions {
         display: flex;
         gap: 0.5rem;
@@ -541,13 +597,15 @@ include 'admin-layout/topbar.php';
             <!-- List View -->
             <div id="list-view-container">
             <?php if (!empty($all_tasks)): ?>
+                <div class="task-simple-list">
                 <?php foreach ($all_tasks as $task): ?>
-                    <div class="task-card">
-                        <div class="task-header">
-                            <div>
-                                <div class="task-code"><?= htmlspecialchars($task['request_code']) ?></div>
-                                <div class="task-service"><?= htmlspecialchars($task['service_name']) ?></div>
-                            </div>
+                    <div class="task-simple-item" onclick="window.location.href='task_detail.php?assignment_id=<?= $task['assignment_id'] ?>'">
+                        <div class="task-simple-left">
+                            <div class="task-code-simple"><?= htmlspecialchars($task['request_code']) ?></div>
+                            <div class="task-service-simple"><?= htmlspecialchars($task['service_name']) ?></div>
+                            <div class="task-requester-simple"><?= htmlspecialchars($task['requester_name']) ?></div>
+                        </div>
+                        <div class="task-simple-right">
                             <span class="status-badge status-<?= $task['status'] ?>">
                                 <?php
                                 $status_labels = [
@@ -560,75 +618,15 @@ include 'admin-layout/topbar.php';
                                 echo $status_labels[$task['status']] ?? $task['status'];
                                 ?>
                             </span>
-                        </div>
-
-                        <div class="task-details">
-                            <div class="task-detail-item">
-                                <div class="task-detail-label">ผู้ขอ</div>
-                                <div class="task-detail-value"><?= htmlspecialchars($task['requester_name']) ?></div>
-                            </div>
-                            <div class="task-detail-item">
-                                <div class="task-detail-label">ติดต่อ</div>
-                                <div class="task-detail-value">
-                                    <?php if ($task['requester_phone']): ?>
-                                        <?= htmlspecialchars($task['requester_phone']) ?>
-                                    <?php elseif ($task['requester_email']): ?>
-                                        <?= htmlspecialchars($task['requester_email']) ?>
-                                    <?php else: ?>
-                                        -
-                                    <?php endif; ?>
+                            <?php if ($task['due_date']): ?>
+                                <div class="text-xs text-gray-500">
+                                    📅 <?= date('d/m/Y', strtotime($task['due_date'])) ?>
                                 </div>
-                            </div>
-                            <div class="task-detail-item">
-                                <div class="task-detail-label">มอบหมายโดย</div>
-                                <div class="task-detail-value"><?= htmlspecialchars($task['assigned_by_name']) ?></div>
-                            </div>
-                            <div class="task-detail-item">
-                                <div class="task-detail-label">กำหนดส่ง</div>
-                                <div class="task-detail-value">
-                                    <?php if ($task['due_date']): ?>
-                                        <?= date('d/m/Y H:i', strtotime($task['due_date'])) ?>
-                                    <?php else: ?>
-                                        ไม่มีกำหนด
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <?php if ($task['notes']): ?>
-                            <div style="margin: 1rem 0; padding: 1rem; background-color: #f9fafb; border-left: 4px solid #3b82f6; border-radius: 0.375rem;">
-                                <p class="text-sm font-semibold text-gray-700 mb-1">หมายเหตุ:</p>
-                                <p class="text-sm text-gray-600"><?= nl2br(htmlspecialchars($task['notes'])) ?></p>
-                            </div>
-                        <?php endif; ?>
-
-                        <div class="task-actions">
-                            <?php if ($task['status'] === 'pending'): ?>
-                                <button class="btn-status btn-accept" onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'accepted')">
-                                    <i class="fas fa-check-circle"></i> รับงาน
-                                </button>
-                            <?php endif; ?>
-
-                            <?php if ($task['status'] === 'accepted'): ?>
-                                <button class="btn-status btn-start" onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'in_progress')">
-                                    <i class="fas fa-play-circle"></i> เริ่มดำเนินการ
-                                </button>
-                            <?php endif; ?>
-
-                            <?php if ($task['status'] === 'in_progress'): ?>
-                                <button class="btn-status btn-complete" onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'completed')">
-                                    <i class="fas fa-check-double"></i> ดำเนินการเสร็จ
-                                </button>
-                            <?php endif; ?>
-
-                            <?php if (in_array($task['status'], ['pending', 'accepted', 'in_progress'])): ?>
-                                <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>" class="btn-status" style="background-color: #fee2e2; color: #7f1d1d; text-decoration: none; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-eye"></i> ดูรายละเอียด
-                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
+                </div>
             <?php else: ?>
                 <div class="no-tasks">
                     <i class="fas fa-inbox"></i>
