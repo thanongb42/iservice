@@ -468,6 +468,29 @@ include 'admin-layout/topbar.php';
                         </span>
                     </div>
                 </div>
+
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="detail-label">เวลาเริ่มต้น</span>
+                        <span class="detail-value">
+                            <?php if ($task['start_time']): ?>
+                                <?= date('d/m/Y H:i', strtotime($task['start_time'])) ?>
+                            <?php else: ?>
+                                -
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">เวลาสิ้นสุด</span>
+                        <span class="detail-value">
+                            <?php if ($task['end_time']): ?>
+                                <?= date('d/m/Y H:i', strtotime($task['end_time'])) ?>
+                            <?php else: ?>
+                                -
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <!-- หมายเหตุการมอบหมาย -->
@@ -583,6 +606,28 @@ include 'admin-layout/topbar.php';
                     </button>
                 </div>
 
+                <!-- Time Input Section -->
+                <div class="mt-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-clock text-green-600 mr-1"></i> เวลาทำงาน
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาเริ่มต้น</label>
+                            <input type="datetime-local" id="startTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium" 
+                                value="<?php echo $task['start_time'] ? date('Y-m-d\TH:i', strtotime($task['start_time'])) : ''; ?>">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาสิ้นสุด</label>
+                            <input type="datetime-local" id="endTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium"
+                                value="<?php echo $task['end_time'] ? date('Y-m-d\TH:i', strtotime($task['end_time'])) : ''; ?>">
+                        </div>
+                    </div>
+                    <button class="w-full btn-action bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2" onclick="updateTaskTimes()">
+                        <i class="fas fa-save"></i> บันทึกเวลา
+                    </button>
+                </div>
+
                 <!-- Status Change Dropdown -->
                 <?php if ($task['status'] !== 'completed' && $task['status'] !== 'cancelled'): ?>
                 <div class="mt-4">
@@ -635,6 +680,42 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
+    async function updateTaskTimes() {
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+
+        if (!startTime && !endTime) {
+            Swal.fire('ข้อมูลไม่ครบ', 'กรุณาใส่เวลาเริ่มต้นหรือเวลาสิ้นสุด', 'warning');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('action', 'update_task_times');
+            formData.append('assignment_id', <?= $assignment_id ?>);
+            formData.append('start_time', startTime ? new Date(startTime).toISOString().slice(0, 19).replace('T', ' ') : '');
+            formData.append('end_time', endTime ? new Date(endTime).toISOString().slice(0, 19).replace('T', ' ') : '');
+
+            const response = await fetch('api/task_assignment_api.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire('สำเร็จ', 'บันทึกเวลาทำงานแล้ว', 'success').then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('ผิดพลาด', data.message || 'ไม่สามารถบันทึกเวลาได้', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการบันทึกเวลา', 'error');
+        }
+    }
+
     async function changeStatus() {
         const select = document.getElementById('statusSelect');
         const newStatus = select.value;

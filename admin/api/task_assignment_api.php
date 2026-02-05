@@ -295,6 +295,83 @@ if ($action === 'update_status') {
     exit();
 }
 
+// ========================================
+// POST: Update task assignment times
+// ========================================
+if ($action === 'update_task_times') {
+    $assignment_id = intval($_POST['assignment_id'] ?? 0);
+    $start_time = $_POST['start_time'] ?? '';
+    $end_time = $_POST['end_time'] ?? '';
+    
+    if (!$assignment_id) {
+        echo json_encode(['success' => false, 'message' => 'Invalid assignment ID']);
+        exit();
+    }
+    
+    // Verify assignment belongs to current user or user is admin
+    $get_query = "SELECT assigned_to FROM task_assignments WHERE assignment_id = ?";
+    $get_stmt = $conn->prepare($get_query);
+    $get_stmt->bind_param('i', $assignment_id);
+    $get_stmt->execute();
+    $get_result = $get_stmt->get_result()->fetch_assoc();
+    
+    if (!$get_result) {
+        echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+        exit();
+    }
+    
+    // Allow staff to update their own times, or admin to update any
+    if ($get_result['assigned_to'] != $_SESSION['user_id'] && $_SESSION['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+        exit();
+    }
+    
+    // Update times
+    $update_fields = [];
+    $params = [];
+    $types = '';
+    
+    if (!empty($start_time)) {
+        $update_fields[] = 'start_time = ?';
+        $params[] = $start_time;
+        $types .= 's';
+    }
+    
+    if (!empty($end_time)) {
+        $update_fields[] = 'end_time = ?';
+        $params[] = $end_time;
+        $types .= 's';
+    }
+    
+    if (empty($update_fields)) {
+        echo json_encode(['success' => false, 'message' => 'No times provided']);
+        exit();
+    }
+    
+    $update_fields[] = 'updated_at = NOW()';
+    $params[] = $assignment_id;
+    $types .= 'i';
+    
+    $update_query = "UPDATE task_assignments SET " . implode(', ', $update_fields) . " WHERE assignment_id = ?";
+    
+    $update_stmt = $conn->prepare($update_query);
+    $update_stmt->bind_param($types, ...$params);
+    
+    if ($update_stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'บันทึกเวลาทำงานแล้ว'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to update times: ' . $conn->error
+        ]);
+    }
+    exit();
+}
+
 // Invalid action
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Invalid action']);
