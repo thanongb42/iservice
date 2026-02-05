@@ -830,9 +830,11 @@ include 'admin-layout/topbar.php';
 <script>
     // Get all tasks data from PHP
     const tasksData = <?= json_encode($all_tasks) ?>;
+    console.log('Tasks data loaded:', tasksData.length, 'tasks');
     
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
+    console.log('Initial month/year:', currentMonth, '/', currentYear);
 
     // Tab switching - pass button element as parameter
     function switchTab(tabName, buttonElement) {
