@@ -247,7 +247,7 @@ try {
             $drone = intval($_POST['drone_required']);
             $delivery = clean_input($_POST['delivery_format']);
             $special = clean_input($_POST['special_requirements'] ?? '');
-            $stmt->bind_param("isssssiiiss", $request_id, $event_name, $event_type, $event_date, $time_start, $time_end, $event_loc, $photographers, $video, $drone, $delivery, $special);
+            $stmt->bind_param("isssssiiiiss", $request_id, $event_name, $event_type, $event_date, $time_start, $time_end, $event_loc, $photographers, $video, $drone, $delivery, $special);
             break;
 
         case 'WEB_DESIGN':
