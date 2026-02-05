@@ -280,7 +280,7 @@ if ($action === 'update_status') {
     }
     
     // Get assignment to verify it belongs to current user
-    $get_query = "SELECT assigned_to FROM task_assignments WHERE assignment_id = ?";
+    $get_query = "SELECT assigned_to, status FROM task_assignments WHERE assignment_id = ?";
     $get_stmt = $conn->prepare($get_query);
     $get_stmt->bind_param('i', $assignment_id);
     $get_stmt->execute();
@@ -291,6 +291,11 @@ if ($action === 'update_status') {
         echo json_encode(['success' => false, 'message' => 'Permission denied']);
         exit();
     }
+    
+    $old_status = $get_result['status'];
+    
+    // Get notes if provided
+    $notes = $_POST['notes'] ?? '';
     
     // Build column updates based on new status
     $update_fields = 'status = ?';
@@ -314,6 +319,44 @@ if ($action === 'update_status') {
     $update_stmt->bind_param($types, ...$params);
     
     if ($update_stmt->execute()) {
+        // Log the status change to task history
+        $user_id = $_SESSION['user_id'];
+        $action = 'status_change';
+        $history_insert = "INSERT INTO task_history (assignment_id, action, old_status, new_status, performed_by, notes) 
+                          VALUES (?, ?, ?, ?, ?, ?)";
+        $history_stmt = $conn->prepare($history_insert);
+        // Order: assignment_id(i), action(s), old_status(s), new_status(s), performed_by(i), notes(s)
+        $history_stmt->bind_param('issssi', $assignment_id, $action, $old_status, $new_status, $user_id, $notes);
+        $history_stmt->execute();
+        
+        // If completed, check if all assignments are done and update request status
+        if ($new_status === 'completed') {
+            // Get request_id for this assignment
+            $req_query = "SELECT request_id FROM task_assignments WHERE assignment_id = ?";
+            $req_stmt = $conn->prepare($req_query);
+            $req_stmt->bind_param('i', $assignment_id);
+            $req_stmt->execute();
+            $req_result = $req_stmt->get_result()->fetch_assoc();
+            
+            if ($req_result) {
+                $request_id = $req_result['request_id'];
+                
+                // Check if all assignments are completed
+                $check_query = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed 
+                               FROM task_assignments 
+                               WHERE request_id = ? AND status != 'cancelled'";
+                $check_stmt = $conn->prepare($check_query);
+                $check_stmt->bind_param('i', $request_id);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result()->fetch_assoc();
+                
+                // If all tasks completed, update request status
+                if ($check_result['total'] > 0 && $check_result['total'] == $check_result['completed']) {
+                    $conn->query("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = $request_id");
+                }
+            }
+        }
+        
         $status_labels = [
             'accepted' => 'รับงานแล้ว',
             'in_progress' => 'เริ่มดำเนินการแล้ว',
