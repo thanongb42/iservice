@@ -52,7 +52,13 @@ $service_code = $task['service_code'];
 $detail_tables = [
     'EMAIL' => 'request_email_details',
     'NAS' => 'request_nas_details',
-    'IT_SUPPORT' => 'request_it_support_details'
+    'IT_SUPPORT' => 'request_it_support_details',
+    'INTERNET' => 'request_internet_details',
+    'PHOTOGRAPHY' => 'request_photography_details',
+    'MC' => 'request_mc_details',
+    'WEB_DESIGN' => 'request_webdesign_details',
+    'PRINTER' => 'request_printer_details',
+    'QR_CODE' => 'request_qrcode_details'
 ];
 
 if (isset($detail_tables[$service_code])) {
