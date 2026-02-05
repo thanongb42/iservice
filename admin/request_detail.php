@@ -182,8 +182,8 @@ if ($request['assigned_to']) {
     $assigned_staff = $staff_stmt->get_result()->fetch_assoc();
 }
 
-include '../admin-layout/header.php';
-include '../admin-layout/sidebar.php';
+include __DIR__ . '/admin-layout/header.php';
+include __DIR__ . '/admin-layout/sidebar.php';
 ?>
 
 <main class="ml-64 bg-gray-50 min-h-screen">
@@ -490,4 +490,4 @@ include '../admin-layout/sidebar.php';
     </div>
 </main>
 
-<?php include '../admin-layout/footer.php'; ?>
+<?php include __DIR__ . '/admin-layout/footer.php'; ?>
