@@ -955,11 +955,10 @@ include 'admin-layout/topbar.php';
         calendarBody.innerHTML = '';
 
         let dayCount = 1;
-        let weekRow = null;
+        let weekRow = document.createElement('tr');
 
         // Previous month days
         for (let i = 0; i < startingDayOfWeek; i++) {
-            if (i === 0) weekRow = document.createElement('tr');
             const cell = document.createElement('td');
             cell.classList.add('other-month');
             weekRow.appendChild(cell);
