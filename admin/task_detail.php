@@ -439,17 +439,21 @@ include 'admin-layout/topbar.php';
                                 'low' => '#10b981',
                                 'normal' => '#3b82f6',
                                 'high' => '#f59e0b',
-                                'urgent' => '#ef4444'
+                                'urgent' => '#ef4444',
+                                'medium' => '#8b5cf6'
                             ];
                             $priority_labels = [
                                 'low' => 'ต่ำ',
                                 'normal' => 'ปกติ',
                                 'high' => 'สูง',
-                                'urgent' => 'เร่งด่วน'
+                                'urgent' => 'เร่งด่วน',
+                                'medium' => 'ปานกลาง'
                             ];
+                            $color = $priority_colors[$task['priority']] ?? '#6b7280';
+                            $label = $priority_labels[$task['priority']] ?? $task['priority'];
                             ?>
-                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background-color: <?= $priority_colors[$task['priority']] ?>20; color: <?= $priority_colors[$task['priority']] ?>; border-radius: 0.25rem; font-weight: 500;">
-                                <?= $priority_labels[$task['priority']] ?? $task['priority'] ?>
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background-color: <?= $color ?>20; color: <?= $color ?>; border-radius: 0.25rem; font-weight: 500;">
+                                <?= $label ?>
                             </span>
                         </span>
                     </div>
