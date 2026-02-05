@@ -836,17 +836,23 @@ include 'admin-layout/topbar.php';
 
     // Tab switching
     function switchTab(tabName) {
+        console.log('switchTab called with:', tabName);
+        
         // Hide all tabs
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
 
         // Show selected tab
         document.getElementById(tabName).classList.add('active');
-        event.target.classList.add('active');
+        if (event && event.target) {
+            event.target.classList.add('active');
+        }
 
         if (tabName === 'calendar-view') {
+            console.log('Rendering calendar...');
             renderCalendar();
         } else if (tabName === 'list-view' && !window.tasksTableInitialized) {
+            console.log('Initializing table...');
             initializeTable();
             window.tasksTableInitialized = true;
         }
@@ -941,10 +947,14 @@ include 'admin-layout/topbar.php';
 
     // Calendar functions
     function renderCalendar() {
+        console.log('renderCalendar called, currentMonth:', currentMonth, 'currentYear:', currentYear);
+        
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+        console.log('daysInMonth:', daysInMonth, 'startingDayOfWeek:', startingDayOfWeek);
 
         // Update month/year display
         const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
