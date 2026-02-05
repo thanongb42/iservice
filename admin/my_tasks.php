@@ -914,7 +914,10 @@ include 'admin-layout/topbar.php';
             html += `</div>`;
             dayDetailsDiv.innerHTML = html;
         }
+        
+        // Always show the div and scroll it into view
         dayDetailsDiv.style.display = 'block';
+        dayDetailsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function previousMonth() {
