@@ -92,6 +92,12 @@ $tasks_stmt->bind_param('i', $user_id);
 $tasks_stmt->execute();
 $tasks_result = $tasks_stmt->get_result();
 
+// Fetch all tasks into array for use in both list and calendar views
+$all_tasks = [];
+while ($task = $tasks_result->fetch_assoc()) {
+    $all_tasks[] = $task;
+}
+
 $page_title = 'งานของฉัน';
 $current_page = 'my_tasks';
 $breadcrumb = [
@@ -534,8 +540,8 @@ include 'admin-layout/topbar.php';
 
             <!-- List View -->
             <div id="list-view-container">
-            <?php if ($tasks_result && $tasks_result->num_rows > 0): ?>
-                <?php while ($task = $tasks_result->fetch_assoc()): ?>
+            <?php if (!empty($all_tasks)): ?>
+                <?php foreach ($all_tasks as $task): ?>
                     <div class="task-card">
                         <div class="task-header">
                             <div>
@@ -622,7 +628,7 @@ include 'admin-layout/topbar.php';
                             <?php endif; ?>
                         </div>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-tasks">
                     <i class="fas fa-inbox"></i>
@@ -634,13 +640,9 @@ include 'admin-layout/topbar.php';
 
             <!-- Grid View -->
             <div id="grid-view-container" style="display: none;">
-                <?php
-                // Reset result pointer for grid view
-                if ($tasks_result && $tasks_result->num_rows > 0) {
-                    $tasks_result->data_seek(0);
-                ?>
+                <?php if (!empty($all_tasks)): ?>
                     <div class="task-grid">
-                        <?php while ($task = $tasks_result->fetch_assoc()): ?>
+                        <?php foreach ($all_tasks as $task): ?>
                             <div class="task-grid-card" onclick="window.location.href='task_detail.php?assignment_id=<?= $task['assignment_id'] ?>'">
                                 <div class="task-grid-header">
                                     <div class="text-sm font-semibold text-gray-600"><?= htmlspecialchars($task['request_code']) ?></div>
@@ -669,19 +671,15 @@ include 'admin-layout/topbar.php';
                                     <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </div>
-                <?php
-                } else {
-                ?>
+                <?php else: ?>
                     <div class="no-tasks">
                         <i class="fas fa-inbox"></i>
                         <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
                         <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
                     </div>
-                <?php
-                }
-                ?>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -719,8 +717,8 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
-    // Get all tasks data
-    const tasksData = <?= json_encode($tasks_result ? array_map(fn($task) => $task, array_column(iterator_to_array($tasks_result), null)) : []) ?>;
+    // Get all tasks data from PHP
+    const tasksData = <?= json_encode($all_tasks) ?>;
     
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
@@ -835,15 +833,18 @@ include 'admin-layout/topbar.php';
         const dateStr = date.toISOString().split('T')[0];
         const tasks = [];
 
-        // Get tasks from raw task data
-        const allTasks = document.querySelectorAll('.task-card');
-        allTasks.forEach(taskEl => {
-            const dueDateText = taskEl.querySelector('.task-detail-value')?.textContent;
-            if (dueDateText && dueDateText.includes(dateStr.substring(0, 10))) {
-                tasks.push({
-                    request_code: taskEl.querySelector('.task-code')?.textContent || 'Unknown',
-                    status: taskEl.querySelector('.status-badge')?.className.match(/status-(\w+)/)?.[1] || 'pending'
-                });
+        // Get tasks from tasksData array
+        tasksData.forEach(task => {
+            if (task.due_date) {
+                const dueDate = new Date(task.due_date);
+                const taskDateStr = dueDate.toISOString().split('T')[0];
+                if (taskDateStr === dateStr) {
+                    tasks.push({
+                        assignment_id: task.assignment_id,
+                        request_code: task.request_code,
+                        status: task.status
+                    });
+                }
             }
         });
 
