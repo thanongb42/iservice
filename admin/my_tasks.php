@@ -528,7 +528,100 @@ include 'admin-layout/topbar.php';
         color: #9ca3af;
         padding: 2rem;
     }
+
+    /* DataTable Styles */
+    #tasksTable {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    #tasksTable thead {
+        background-color: #f3f4f6;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    #tasksTable th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.875rem;
+    }
+
+    #tasksTable tbody tr {
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s;
+    }
+
+    #tasksTable tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    #tasksTable td {
+        padding: 0.75rem 1rem;
+        color: #1f2937;
+        font-size: 0.875rem;
+    }
+
+    .btn-action-small {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background-color: #dbeafe;
+        color: #0c4a6e;
+        border: none;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-action-small:hover {
+        background-color: #bfdbfe;
+        color: #0369a1;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        text-align: right;
+        margin-top: 1rem;
+    }
+
+    .dataTables_wrapper .paginate_button {
+        padding: 0.5rem 0.75rem;
+        margin: 0 0.25rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        background-color: white;
+        color: #1f2937;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .dataTables_wrapper .paginate_button:hover {
+        background-color: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .dataTables_wrapper .paginate_button.current {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding: 1rem 0;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
 </style>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <div class="p-6">
     <!-- Page Header -->
@@ -584,69 +677,32 @@ include 'admin-layout/topbar.php';
 
         <!-- List View Tab -->
         <div id="list-view" class="tab-content active">
-            <!-- View Toggle -->
-            <div class="view-toggle">
-                <button class="active" onclick="switchListView('list')">
-                    <i class="fas fa-list"></i> รายการ
-                </button>
-                <button onclick="switchListView('grid')">
-                    <i class="fas fa-grip"></i> ตาราง
-                </button>
-            </div>
-
-            <!-- List View -->
+            <!-- List View (Table) -->
             <div id="list-view-container">
             <?php if (!empty($all_tasks)): ?>
-                <div class="task-simple-list">
-                <?php foreach ($all_tasks as $task): ?>
-                    <div class="task-simple-item" onclick="window.location.href='task_detail.php?assignment_id=<?= $task['assignment_id'] ?>'">
-                        <div class="task-simple-left">
-                            <div class="task-code-simple"><?= htmlspecialchars($task['request_code']) ?></div>
-                            <div class="task-service-simple"><?= htmlspecialchars($task['service_name']) ?></div>
-                            <div class="task-requester-simple"><?= htmlspecialchars($task['requester_name']) ?></div>
-                        </div>
-                        <div class="task-simple-right">
-                            <span class="status-badge status-<?= $task['status'] ?>">
-                                <?php
-                                $status_labels = [
-                                    'pending' => 'รอรับงาน',
-                                    'accepted' => 'รับงานแล้ว',
-                                    'in_progress' => 'กำลังดำเนินการ',
-                                    'completed' => 'เสร็จสิ้น',
-                                    'cancelled' => 'ยกเลิก'
-                                ];
-                                echo $status_labels[$task['status']] ?? $task['status'];
-                                ?>
-                            </span>
-                            <?php if ($task['due_date']): ?>
-                                <div class="text-xs text-gray-500">
-                                    📅 <?= date('d/m/Y', strtotime($task['due_date'])) ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div class="no-tasks">
-                    <i class="fas fa-inbox"></i>
-                    <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
-                    <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
-                </div>
-            <?php endif; ?>
-            </div>
-
-            <!-- Grid View -->
-            <div id="grid-view-container" style="display: none;">
-                <?php if (!empty($all_tasks)): ?>
-                    <div class="task-grid">
-                        <?php foreach ($all_tasks as $task): ?>
-                            <div class="task-grid-card" onclick="window.location.href='task_detail.php?assignment_id=<?= $task['assignment_id'] ?>'">
-                                <div class="task-grid-header">
-                                    <div class="text-sm font-semibold text-gray-600"><?= htmlspecialchars($task['request_code']) ?></div>
-                                    <div class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($task['service_name']) ?></div>
-                                </div>
-                                <div class="status-badge status-<?= $task['status'] ?> mb-3">
+                <table id="tasksTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>รหัสคำขอ</th>
+                            <th>บริการ</th>
+                            <th>ผู้ขอ</th>
+                            <th>สถานะ</th>
+                            <th>กำหนดส่ง</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($all_tasks as $task): ?>
+                        <tr>
+                            <td>
+                                <span style="font-family: 'Courier New', monospace; font-weight: 600;">
+                                    <?= htmlspecialchars($task['request_code']) ?>
+                                </span>
+                            </td>
+                            <td><?= htmlspecialchars($task['service_name']) ?></td>
+                            <td><?= htmlspecialchars($task['requester_name']) ?></td>
+                            <td>
+                                <span class="status-badge status-<?= $task['status'] ?>">
                                     <?php
                                     $status_labels = [
                                         'pending' => 'รอรับงาน',
@@ -657,29 +713,33 @@ include 'admin-layout/topbar.php';
                                     ];
                                     echo $status_labels[$task['status']] ?? $task['status'];
                                     ?>
-                                </div>
-                                <div class="text-sm">
-                                    <p class="text-gray-600 mb-1"><span class="font-semibold">ผู้ขอ:</span> <?= htmlspecialchars($task['requester_name']) ?></p>
-                                    <p class="text-gray-600 mb-3"><span class="font-semibold">มอบหมายโดย:</span> <?= htmlspecialchars($task['assigned_by_name']) ?></p>
-                                    <?php if ($task['due_date']): ?>
-                                        <p class="text-gray-500 text-xs">
-                                            <i class="fas fa-clock"></i>
-                                            <?= date('d/m/Y H:i', strtotime($task['due_date'])) ?>
-                                        </p>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="no-tasks">
-                        <i class="fas fa-inbox"></i>
-                        <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
-                        <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
-                    </div>
-                <?php endif; ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($task['due_date']): ?>
+                                    <?= date('d/m/Y', strtotime($task['due_date'])) ?>
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>" 
+                                   class="btn-action-small" title="ดูรายละเอียด">
+                                    <i class="fas fa-eye"></i> ดูรายละเอียด
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="no-tasks">
+                    <i class="fas fa-inbox"></i>
+                    <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
+                    <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
+                </div>
+            <?php endif; ?>
             </div>
-        </div>
 
         <!-- Calendar View Tab -->
         <div id="calendar-view" class="tab-content">
@@ -733,6 +793,32 @@ include 'admin-layout/topbar.php';
 
         if (tabName === 'calendar-view') {
             renderCalendar();
+        } else if (tabName === 'list-view' && !window.tasksTableInitialized) {
+            // Initialize DataTable on first load
+            if (document.getElementById('tasksTable')) {
+                $('#tasksTable').DataTable({
+                    "language": {
+                        "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
+                        "zeroRecords": "ไม่พบรายการ",
+                        "info": "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                        "infoEmpty": "ไม่มีรายการ",
+                        "infoFiltered": "(กรองจากทั้งหมด _MAX_ รายการ)",
+                        "search": "ค้นหา:",
+                        "paginate": {
+                            "first": "หน้าแรก",
+                            "last": "หน้าสุดท้าย",
+                            "next": "ถัดไป",
+                            "previous": "ก่อนหน้า"
+                        }
+                    },
+                    "pageLength": 10,
+                    "lengthChange": true,
+                    "searching": true,
+                    "ordering": true,
+                    "order": [[0, 'asc']]
+                });
+                window.tasksTableInitialized = true;
+            }
         }
     }
 
@@ -983,6 +1069,34 @@ include 'admin-layout/topbar.php';
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
         }
     }
+
+    // Initialize DataTable on page load
+    $(document).ready(function() {
+        if (document.getElementById('tasksTable')) {
+            $('#tasksTable').DataTable({
+                "language": {
+                    "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
+                    "zeroRecords": "ไม่พบรายการ",
+                    "info": "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                    "infoEmpty": "ไม่มีรายการ",
+                    "infoFiltered": "(กรองจากทั้งหมด _MAX_ รายการ)",
+                    "search": "ค้นหา:",
+                    "paginate": {
+                        "first": "หน้าแรก",
+                        "last": "หน้าสุดท้าย",
+                        "next": "ถัดไป",
+                        "previous": "ก่อนหน้า"
+                    }
+                },
+                "pageLength": 10,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "order": [[0, 'asc']]
+            });
+            window.tasksTableInitialized = true;
+        }
+    });
 </script>
 
 <?php include 'admin-layout/footer.php'; ?>
