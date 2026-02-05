@@ -1173,33 +1173,6 @@ include 'admin-layout/topbar.php';
         }
     }
 
-    // Initialize DataTable on page load
-    $(document).ready(function() {
-        if (document.getElementById('tasksTable')) {
-            $('#tasksTable').DataTable({
-                "language": {
-                    "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
-                    "zeroRecords": "ไม่พบรายการ",
-                    "info": "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
-                    "infoEmpty": "ไม่มีรายการ",
-                    "infoFiltered": "(กรองจากทั้งหมด _MAX_ รายการ)",
-                    "search": "ค้นหา:",
-                    "paginate": {
-                        "first": "หน้าแรก",
-                        "last": "หน้าสุดท้าย",
-                        "next": "ถัดไป",
-                        "previous": "ก่อนหน้า"
-                    }
-                },
-                "pageLength": 10,
-                "lengthChange": true,
-                "searching": true,
-                "ordering": true,
-                "order": [[0, 'asc']]
-            });
-            window.tasksTableInitialized = true;
-        }
-    });
 </script>
 
 <?php include 'admin-layout/footer.php'; ?>
