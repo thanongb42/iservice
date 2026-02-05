@@ -359,10 +359,23 @@ if ($action === 'update_task_times') {
         exit();
     }
     
-    // Allow staff to update their own times, or admin to update any
-    if ($get_result['assigned_to'] != $_SESSION['user_id'] && $_SESSION['role'] !== 'admin') {
+    // Check if user is a manager - only managers can update task times
+    $is_manager = false;
+    $manager_check = $conn->prepare("
+        SELECT COUNT(*) as cnt FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE ur.user_id = ? AND r.role_code IN ('manager', 'all')
+        AND ur.is_active = 1 AND r.is_active = 1
+    ");
+    $manager_check->bind_param('i', $_SESSION['user_id']);
+    $manager_check->execute();
+    $manager_result = $manager_check->get_result()->fetch_assoc();
+    $is_manager = $manager_result['cnt'] > 0;
+    
+    // Only managers can update task times (not staff)
+    if (!$is_manager && $_SESSION['role'] !== 'admin') {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+        echo json_encode(['success' => false, 'message' => 'เฉพาะผู้จัดการเท่านั้นที่สามารถแก้ไขเวลาได้']);
         exit();
     }
     

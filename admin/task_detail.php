@@ -45,6 +45,19 @@ if (!$task_result || $task_result->num_rows === 0) {
 
 $task = $task_result->fetch_assoc();
 
+// Check if user is manager
+$is_manager = false;
+$manager_check = $conn->prepare("
+    SELECT COUNT(*) as cnt FROM user_roles ur
+    JOIN roles r ON ur.role_id = r.role_id
+    WHERE ur.user_id = ? AND r.role_code IN ('manager', 'all')
+    AND ur.is_active = 1 AND r.is_active = 1
+");
+$manager_check->bind_param('i', $user_id);
+$manager_check->execute();
+$manager_result = $manager_check->get_result()->fetch_assoc();
+$is_manager = $manager_result['cnt'] > 0;
+
 // Get service-specific details
 $service_details = null;
 $service_code = $task['service_code'];
@@ -612,26 +625,52 @@ include 'admin-layout/topbar.php';
                     </button>
                 </div>
 
-                <!-- Time Input Section -->
+                <!-- Time Input Section - Manager Only -->
                 <div class="mt-4">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-clock text-green-600 mr-1"></i> เวลาทำงาน
+                        <?php if (!$is_manager): ?>
+                            <span class="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">📖 อ่านอย่างเดียว</span>
+                        <?php endif; ?>
                     </label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาเริ่มต้น</label>
-                            <input type="datetime-local" id="startTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium" 
-                                value="<?php echo $task['start_time'] ? date('Y-m-d\TH:i', strtotime($task['start_time'])) : ''; ?>">
+                    
+                    <?php if ($is_manager): ?>
+                        <!-- Manager: Editable Time Inputs -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาเริ่มต้น</label>
+                                <input type="datetime-local" id="startTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium" 
+                                    value="<?php echo $task['start_time'] ? date('Y-m-d\TH:i', strtotime($task['start_time'])) : ''; ?>">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาสิ้นสุด</label>
+                                <input type="datetime-local" id="endTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium"
+                                    value="<?php echo $task['end_time'] ? date('Y-m-d\TH:i', strtotime($task['end_time'])) : ''; ?>">
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาสิ้นสุด</label>
-                            <input type="datetime-local" id="endTime" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 font-medium"
-                                value="<?php echo $task['end_time'] ? date('Y-m-d\TH:i', strtotime($task['end_time'])) : ''; ?>">
+                        <button class="w-full btn-action bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2" onclick="updateTaskTimes()">
+                            <i class="fas fa-save"></i> บันทึกเวลา
+                        </button>
+                    <?php else: ?>
+                        <!-- Staff: Read-only Time Display -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาเริ่มต้น</label>
+                                <div class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100 font-medium text-gray-700">
+                                    <?php echo $task['start_time'] ? date('d/m/Y H:i', strtotime($task['start_time'])) : '—'; ?>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาสิ้นสุด</label>
+                                <div class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100 font-medium text-gray-700">
+                                    <?php echo $task['end_time'] ? date('d/m/Y H:i', strtotime($task['end_time'])) : '—'; ?>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <button class="w-full btn-action bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2" onclick="updateTaskTimes()">
-                        <i class="fas fa-save"></i> บันทึกเวลา
-                    </button>
+                        <p class="text-sm text-gray-600 italic">
+                            <i class="fas fa-lock text-gray-500 mr-1"></i> เฉพาะผู้จัดการเท่านั้นที่สามารถแก้ไขเวลาได้
+                        </p>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Status Change Dropdown -->
