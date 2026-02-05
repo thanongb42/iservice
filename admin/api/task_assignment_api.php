@@ -149,7 +149,7 @@ if ($action === 'assign_task') {
         exit();
     }
     
-    // Get service code of the request
+    // Get service code and fetch service-specific times
     $service_query = "SELECT service_code FROM service_requests WHERE request_id = ?";
     $service_stmt = $conn->prepare($service_query);
     $service_stmt->bind_param('i', $request_id);
@@ -162,6 +162,43 @@ if ($action === 'assign_task') {
     }
     
     $service_code = $service_result['service_code'];
+    
+    // Fetch start_time and end_time from service-specific details if available
+    $start_time = null;
+    $end_time = null;
+    
+    if ($service_code === 'PHOTOGRAPHY') {
+        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_photography_details WHERE request_id = ?";
+        $detail_stmt = $conn->prepare($detail_query);
+        $detail_stmt->bind_param('i', $request_id);
+        $detail_stmt->execute();
+        $detail_result = $detail_stmt->get_result()->fetch_assoc();
+        
+        if ($detail_result) {
+            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+            }
+            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+            }
+        }
+    } elseif ($service_code === 'MC') {
+        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_mc_details WHERE request_id = ?";
+        $detail_stmt = $conn->prepare($detail_query);
+        $detail_stmt->bind_param('i', $request_id);
+        $detail_stmt->execute();
+        $detail_result = $detail_stmt->get_result()->fetch_assoc();
+        
+        if ($detail_result) {
+            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+            }
+            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+            }
+        }
+    }
+    
     $required_roles = $SERVICE_ROLE_MAPPING[$service_code] ?? ['manager', 'all'];
     
     // Verify user has one of the required roles
@@ -196,21 +233,23 @@ if ($action === 'assign_task') {
     
     // Create task assignment
     $insert_query = "INSERT INTO task_assignments 
-                    (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
+                    (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, start_time, end_time, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
     
     $insert_stmt = $conn->prepare($insert_query);
     $admin_id = $_SESSION['user_id'];
     
     $insert_stmt->bind_param(
-        'iiissss',
+        'iiisssss',
         $request_id,
         $assigned_to,
         $assigned_as_role,
         $admin_id,
         $priority,
         $due_date,
-        $notes
+        $notes,
+        $start_time,
+        $end_time
     );
     
     if ($insert_stmt->execute()) {
