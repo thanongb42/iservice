@@ -448,6 +448,7 @@ include 'admin-layout/topbar.php';
         width: 100%;
         border-collapse: collapse;
         background: white;
+        min-height: 400px;
     }
 
     .calendar-table th {
