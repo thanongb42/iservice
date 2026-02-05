@@ -835,16 +835,34 @@ include 'admin-layout/topbar.php';
 
         // Get tasks from tasksData array
         tasksData.forEach(task => {
-            if (task.due_date) {
+            let matchesDate = false;
+            
+            // Check start_time first (for PHOTOGRAPHY, MC events)
+            if (task.start_time) {
+                const startDate = new Date(task.start_time);
+                const taskDateStr = startDate.toISOString().split('T')[0];
+                if (taskDateStr === dateStr) {
+                    matchesDate = true;
+                }
+            }
+            
+            // Fall back to due_date if start_time not available
+            if (!matchesDate && task.due_date) {
                 const dueDate = new Date(task.due_date);
                 const taskDateStr = dueDate.toISOString().split('T')[0];
                 if (taskDateStr === dateStr) {
-                    tasks.push({
-                        assignment_id: task.assignment_id,
-                        request_code: task.request_code,
-                        status: task.status
-                    });
+                    matchesDate = true;
                 }
+            }
+            
+            if (matchesDate) {
+                tasks.push({
+                    assignment_id: task.assignment_id,
+                    request_code: task.request_code,
+                    status: task.status,
+                    start_time: task.start_time,
+                    end_time: task.end_time
+                });
             }
         });
 
@@ -860,11 +878,26 @@ include 'admin-layout/topbar.php';
         } else {
             let html = `<div class="day-details"><div class="day-details-title">งานในวันที่ ${dateStr}</div>`;
             tasks.forEach(task => {
+                // Format time display if available
+                let timeDisplay = '';
+                if (task.start_time) {
+                    const startTime = new Date(task.start_time);
+                    const timeStr = startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    timeDisplay = `<div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">⏰ เวลา: ${timeStr}`;
+                    if (task.end_time) {
+                        const endTime = new Date(task.end_time);
+                        const endTimeStr = endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                        timeDisplay += ` - ${endTimeStr}`;
+                    }
+                    timeDisplay += '</div>';
+                }
+                
                 html += `
-                    <div class="task-card" onclick="event.stopPropagation()">
+                    <div class="task-card" onclick="event.stopPropagation()" style="border-left: 4px solid #0d9488;">
                         <div class="task-header">
                             <div>
                                 <div class="task-code">${task.request_code}</div>
+                                ${timeDisplay}
                             </div>
                             <span class="status-badge status-${task.status}">
                                 ${['pending', 'รอรับงาน', 'accepted', 'รับงานแล้ว', 'in_progress', 'กำลังดำเนินการ', 'completed', 'เสร็จสิ้น'][
