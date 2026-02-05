@@ -1036,6 +1036,6 @@ include __DIR__ . '/includes/header_public.php';
                 imageObserver.observe(img);
             });
         }
-*/
+    </script>
 ?>
 <?php include __DIR__ . '/includes/footer_public.php'; ?>
