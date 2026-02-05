@@ -78,21 +78,23 @@ try {
         $dept_name = $dept_result ? $dept_result['department_name'] : '';
     }
 
-    $name = clean_input($_POST['requester_name']);
-    $email = clean_input($_POST['requester_email']);
-    $phone = clean_input($_POST['requester_phone']);
-    $position = clean_input($_POST['position']);
+    $name = clean_input($_POST['requester_name'] ?? '');
+    $email = clean_input($_POST['requester_email'] ?? '');
+    $phone = clean_input($_POST['requester_phone'] ?? '');
+    $position = clean_input($_POST['position'] ?? '');
     $priority = isset($_POST['priority']) ? clean_input($_POST['priority']) : 'medium';
     $target_date = !empty($_POST['target_date']) ? clean_input($_POST['target_date']) : NULL;
-    $description = clean_input($_POST['notes']); // Notes maps to description
+    $description = clean_input($_POST['notes'] ?? '');
 
-    // Validate required fields
-    if (empty($name) || empty($dept_id)) {
+    // Validate required fields (skip for QR_CODE - free public service)
+    if ($service_code !== 'QR_CODE' && (empty($name) || empty($dept_id))) {
         throw new Exception("กรุณากรอกข้อมูลที่จำเป็น (ชื่อ, แผนก)");
     }
-    
+
     // Create Subject
-    $subject = $service_name . " Request from " . $name;
+    $subject = !empty($name)
+        ? $service_name . " Request from " . $name
+        : $service_name . " Request #" . $request_code;
     
     // User ID (NULL for guest/public)
     $user_id = null;

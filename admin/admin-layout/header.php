@@ -14,16 +14,11 @@ $favicon_path = '';
 if (!isset($system_settings)) {
     // Assuming db connection is already included by parent script
     if (isset($conn)) {
-        $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+        $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key = 'logo_image' LIMIT 1");
         if ($settings_query) {
-            while ($row = $settings_query->fetch_assoc()) {
-                $settings = []; // Temp
-                $settings[$row['setting_key']] = $row['setting_value'];
-                
-                // If found logo
-                if ($row['setting_key'] == 'logo_image') {
-                     $favicon_path = '../' . $row['setting_value'];
-                }
+            $logo_row = $settings_query->fetch_assoc();
+            if ($logo_row && !empty($logo_row['setting_value'])) {
+                $favicon_path = '../' . $logo_row['setting_value'];
             }
         }
     }

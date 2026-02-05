@@ -211,11 +211,12 @@ $type_config = [
                 <?php foreach (array_slice($featured_resources, 0, 3) as $resource):
                     $type = $type_config[$resource['resource_type']] ?? $type_config['pdf'];
                 ?>
+                    <?php $fixed_cover = fix_asset_path($resource['cover_image'] ?? ''); ?>
                     <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all transform hover:-translate-y-1">
                         <!-- Cover Image -->
                         <div class="relative h-48 bg-gray-200 overflow-hidden">
-                            <?php if ($resource['cover_image']): ?>
-                                <img src="<?= htmlspecialchars($resource['cover_image']) ?>"
+                            <?php if ($fixed_cover): ?>
+                                <img src="<?= htmlspecialchars($fixed_cover) ?>"
                                      alt="<?= htmlspecialchars($resource['title']) ?>"
                                      class="w-full h-full object-cover"
                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center bg-gradient-to-br from-teal-400 to-blue-500\'><i class=\'fas fa-image text-white text-5xl opacity-50\'></i></div>';">
@@ -309,11 +310,12 @@ $type_config = [
                 <?php foreach ($resources as $resource):
                     $type = $type_config[$resource['resource_type']] ?? $type_config['pdf'];
                 ?>
+                    <?php $fixed_cover = fix_asset_path($resource['cover_image'] ?? ''); ?>
                     <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all transform hover:-translate-y-1">
                         <!-- Cover Image -->
                         <div class="relative h-40 bg-gray-200 overflow-hidden">
-                            <?php if ($resource['cover_image']): ?>
-                                <img src="<?= htmlspecialchars($resource['cover_image']) ?>"
+                            <?php if ($fixed_cover): ?>
+                                <img src="<?= htmlspecialchars($fixed_cover) ?>"
                                      alt="<?= htmlspecialchars($resource['title']) ?>"
                                      class="w-full h-full object-cover"
                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400\'><i class=\'fas fa-image text-gray-500 text-4xl opacity-50\'></i></div>';">

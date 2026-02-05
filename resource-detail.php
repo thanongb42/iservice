@@ -69,6 +69,10 @@ $nav_html = render_nav_menu($nav_menus);
 // Get resource type configuration
 $type_config = get_resource_type_config($resource['resource_type']);
 
+// Fix upload paths for production
+$resource['cover_image'] = fix_asset_path($resource['cover_image'] ?? '');
+$resource['resource_url'] = fix_asset_path($resource['resource_url'] ?? '');
+
 $page_title = htmlspecialchars($resource['title']) . " - ศูนย์รวมการเรียนรู้";
 $extra_styles = "
         .content-wrapper {
@@ -644,11 +648,12 @@ include __DIR__ . '/includes/header_public.php';
                         <div class="space-y-4">
                             <?php foreach ($related_resources as $related):
                                 $related_type_config = get_resource_type_config($related['resource_type']);
+                                $related_cover = fix_asset_path($related['cover_image'] ?? '');
                             ?>
                             <a href="resource-detail.php?id=<?= $related['id'] ?>"
                                class="block group hover:bg-gray-50 rounded-lg p-3 transition">
                                 <div class="flex gap-3">
-                                    <img src="<?= htmlspecialchars($related['cover_image']) ?>"
+                                    <img src="<?= htmlspecialchars($related_cover) ?>"
                                          alt="<?= htmlspecialchars($related['title']) ?>"
                                          class="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                                          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23E5E7EB\' width=\'80\' height=\'80\'/%3E%3Ctext fill=\'%236B7280\' font-family=\'Arial,sans-serif\' font-size=\'12\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dominant-baseline=\'middle\'%3EImage%3C/text%3E%3C/svg%3E'; this.onerror=null;">

@@ -255,6 +255,217 @@ include 'admin-layout/topbar.php';
         color: #d1d5db;
         margin-bottom: 1rem;
     }
+
+    /* Tab Styles */
+    .tab-container {
+        background: white;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .tab-buttons {
+        display: flex;
+        border-bottom: 2px solid #e5e7eb;
+        background-color: #f9fafb;
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        border: none;
+        background: none;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .tab-button.active {
+        color: #3b82f6;
+        border-bottom: 3px solid #3b82f6;
+        margin-bottom: -2px;
+        background-color: white;
+    }
+
+    .tab-button:hover {
+        color: #1f2937;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 1.5rem;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* View Toggle */
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .view-toggle button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .view-toggle button.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    /* Grid View */
+    .task-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    .task-grid-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .task-grid-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+
+    .task-grid-header {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    /* Calendar Styles */
+    .calendar-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 0.75rem;
+    }
+
+    .calendar-header button {
+        padding: 0.5rem 1rem;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .calendar-header button:hover {
+        background: #2563eb;
+    }
+
+    .calendar-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    .calendar-table th {
+        background: #f3f4f6;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .calendar-table td {
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        height: 120px;
+        vertical-align: top;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .calendar-table td:hover {
+        background: #f9fafb;
+    }
+
+    .calendar-day-number {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .calendar-day-tasks {
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .calendar-task-item {
+        background: #dbeafe;
+        color: #0c4a6e;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .calendar-task-item.status-pending { background: #fef3c7; color: #92400e; }
+    .calendar-task-item.status-accepted { background: #dbeafe; color: #0c4a6e; }
+    .calendar-task-item.status-in_progress { background: #c7d2fe; color: #3730a3; }
+    .calendar-task-item.status-completed { background: #dcfce7; color: #166534; }
+
+    .calendar-table td.other-month {
+        background: #f9fafb;
+        color: #d1d5db;
+    }
+
+    .calendar-table td.today {
+        background: #fef2f2;
+    }
+
+    /* Day Details */
+    .day-details {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: #f9fafb;
+        border-radius: 0.75rem;
+    }
+
+    .day-details-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1rem;
+    }
+
+    .day-details-empty {
+        text-align: center;
+        color: #9ca3af;
+        padding: 2rem;
+    }
 </style>
 
 <div class="p-6">
@@ -298,15 +509,31 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
-    <!-- Tasks List -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="font-semibold text-gray-800">
-                <i class="fas fa-list-check text-blue-600"></i> รายการงานที่ได้รับมอบหมาย
-            </h2>
+    <!-- Tab Container -->
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('list-view')">
+                <i class="fas fa-list mr-2"></i> รายการ
+            </button>
+            <button class="tab-button" onclick="switchTab('calendar-view')">
+                <i class="fas fa-calendar mr-2"></i> ปฏิทิน
+            </button>
         </div>
 
-        <div class="p-6">
+        <!-- List View Tab -->
+        <div id="list-view" class="tab-content active">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="active" onclick="switchListView('list')">
+                    <i class="fas fa-list"></i> รายการ
+                </button>
+                <button onclick="switchListView('grid')">
+                    <i class="fas fa-grip"></i> ตาราง
+                </button>
+            </div>
+
+            <!-- List View -->
+            <div id="list-view-container">
             <?php if ($tasks_result && $tasks_result->num_rows > 0): ?>
                 <?php while ($task = $tasks_result->fetch_assoc()): ?>
                     <div class="task-card">
@@ -403,11 +630,278 @@ include 'admin-layout/topbar.php';
                     <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
                 </div>
             <?php endif; ?>
+            </div>
+
+            <!-- Grid View -->
+            <div id="grid-view-container" style="display: none;">
+                <?php
+                // Reset result pointer for grid view
+                if ($tasks_result && $tasks_result->num_rows > 0) {
+                    $tasks_result->data_seek(0);
+                ?>
+                    <div class="task-grid">
+                        <?php while ($task = $tasks_result->fetch_assoc()): ?>
+                            <div class="task-grid-card" onclick="window.location.href='task_detail.php?assignment_id=<?= $task['assignment_id'] ?>'">
+                                <div class="task-grid-header">
+                                    <div class="text-sm font-semibold text-gray-600"><?= htmlspecialchars($task['request_code']) ?></div>
+                                    <div class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($task['service_name']) ?></div>
+                                </div>
+                                <div class="status-badge status-<?= $task['status'] ?> mb-3">
+                                    <?php
+                                    $status_labels = [
+                                        'pending' => 'รอรับงาน',
+                                        'accepted' => 'รับงานแล้ว',
+                                        'in_progress' => 'กำลังดำเนินการ',
+                                        'completed' => 'เสร็จสิ้น',
+                                        'cancelled' => 'ยกเลิก'
+                                    ];
+                                    echo $status_labels[$task['status']] ?? $task['status'];
+                                    ?>
+                                </div>
+                                <div class="text-sm">
+                                    <p class="text-gray-600 mb-1"><span class="font-semibold">ผู้ขอ:</span> <?= htmlspecialchars($task['requester_name']) ?></p>
+                                    <p class="text-gray-600 mb-3"><span class="font-semibold">มอบหมายโดย:</span> <?= htmlspecialchars($task['assigned_by_name']) ?></p>
+                                    <?php if ($task['due_date']): ?>
+                                        <p class="text-gray-500 text-xs">
+                                            <i class="fas fa-clock"></i>
+                                            <?= date('d/m/Y H:i', strtotime($task['due_date'])) ?>
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    </div>
+                <?php
+                } else {
+                ?>
+                    <div class="no-tasks">
+                        <i class="fas fa-inbox"></i>
+                        <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
+                        <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
+                    </div>
+                <?php
+                }
+                ?>
+            </div>
+        </div>
+
+        <!-- Calendar View Tab -->
+        <div id="calendar-view" class="tab-content">
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <button onclick="previousMonth()"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+                    <h2 id="calendar-month-year" style="font-size: 1.25rem; font-weight: 600; color: #1f2937;"></h2>
+                    <button onclick="nextMonth()">ถัดไป <i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <table class="calendar-table">
+                    <thead>
+                        <tr>
+                            <th>จันทร์</th>
+                            <th>อังคาร</th>
+                            <th>พุธ</th>
+                            <th>พฤหัสบดี</th>
+                            <th>ศุกร์</th>
+                            <th>เสาร์</th>
+                            <th>อาทิตย์</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendar-body">
+                    </tbody>
+                </table>
+
+                <div id="day-details" style="display: none;">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Get all tasks data
+    const tasksData = <?= json_encode($tasks_result ? array_map(fn($task) => $task, array_column(iterator_to_array($tasks_result), null)) : []) ?>;
+    
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+
+    // Tab switching
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+
+        if (tabName === 'calendar-view') {
+            renderCalendar();
+        }
+    }
+
+    // List view toggle
+    function switchListView(viewType) {
+        event.target.closest('.view-toggle').querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if (viewType === 'list') {
+            document.getElementById('list-view-container').style.display = 'block';
+            document.getElementById('grid-view-container').style.display = 'none';
+        } else {
+            document.getElementById('list-view-container').style.display = 'none';
+            document.getElementById('grid-view-container').style.display = 'block';
+        }
+    }
+
+    // Calendar functions
+    function renderCalendar() {
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+        // Update month/year display
+        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        document.getElementById('calendar-month-year').textContent = `${monthNames[currentMonth]} ${currentYear + 543}`;
+
+        const calendarBody = document.getElementById('calendar-body');
+        calendarBody.innerHTML = '';
+
+        let dayCount = 1;
+        let weekRow = null;
+
+        // Previous month days
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            if (i === 0) weekRow = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.classList.add('other-month');
+            weekRow.appendChild(cell);
+        }
+
+        // Current month days
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            if (!weekRow) weekRow = document.createElement('tr');
+            if (weekRow.children.length === 7) {
+                calendarBody.appendChild(weekRow);
+                weekRow = document.createElement('tr');
+            }
+
+            const cell = document.createElement('td');
+            const cellDate = new Date(currentYear, currentMonth, day);
+
+            // Check if today
+            if (cellDate.toDateString() === today.toDateString()) {
+                cell.classList.add('today');
+            }
+
+            cell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+            cell.classList.add('calendar-day');
+            cell.dataset.date = cellDate.toISOString().split('T')[0];
+
+            // Add tasks for this day
+            const dayTasks = getTasksForDay(cellDate);
+            if (dayTasks.length > 0) {
+                const tasksDiv = document.createElement('div');
+                tasksDiv.classList.add('calendar-day-tasks');
+                dayTasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.classList.add('calendar-task-item', `status-${task.status}`);
+                    taskEl.title = task.request_code;
+                    taskEl.textContent = task.request_code.substring(0, 10) + '...';
+                    tasksDiv.appendChild(taskEl);
+                });
+                cell.appendChild(tasksDiv);
+            }
+
+            cell.onclick = () => showDayDetails(cellDate, dayTasks);
+            weekRow.appendChild(cell);
+        }
+
+        // Next month days
+        if (weekRow && weekRow.children.length < 7) {
+            while (weekRow.children.length < 7) {
+                const cell = document.createElement('td');
+                cell.classList.add('other-month');
+                weekRow.appendChild(cell);
+            }
+        }
+        if (weekRow) calendarBody.appendChild(weekRow);
+    }
+
+    function getTasksForDay(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        const tasks = [];
+
+        // Get tasks from raw task data
+        const allTasks = document.querySelectorAll('.task-card');
+        allTasks.forEach(taskEl => {
+            const dueDateText = taskEl.querySelector('.task-detail-value')?.textContent;
+            if (dueDateText && dueDateText.includes(dateStr.substring(0, 10))) {
+                tasks.push({
+                    request_code: taskEl.querySelector('.task-code')?.textContent || 'Unknown',
+                    status: taskEl.querySelector('.status-badge')?.className.match(/status-(\w+)/)?.[1] || 'pending'
+                });
+            }
+        });
+
+        return tasks;
+    }
+
+    function showDayDetails(date, tasks) {
+        const dayDetailsDiv = document.getElementById('day-details');
+        const dateStr = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        if (tasks.length === 0) {
+            dayDetailsDiv.innerHTML = `<div class="day-details"><div class="day-details-empty">ไม่มีงานในวันนี้</div></div>`;
+        } else {
+            let html = `<div class="day-details"><div class="day-details-title">งานในวันที่ ${dateStr}</div>`;
+            tasks.forEach(task => {
+                html += `
+                    <div class="task-card" onclick="event.stopPropagation()">
+                        <div class="task-header">
+                            <div>
+                                <div class="task-code">${task.request_code}</div>
+                            </div>
+                            <span class="status-badge status-${task.status}">
+                                ${['pending', 'รอรับงาน', 'accepted', 'รับงานแล้ว', 'in_progress', 'กำลังดำเนินการ', 'completed', 'เสร็จสิ้น'][
+                                    ['pending', 'accepted', 'in_progress', 'completed'].indexOf(task.status) * 2 + 1
+                                ] || task.status}
+                            </span>
+                        </div>
+                        <a href="task_detail.php?assignment_id=${task.assignment_id}" class="btn-status" style="background-color: #dbeafe; color: #0c4a6e; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; margin-top: 1rem;">
+                            <i class="fas fa-eye"></i> ดูรายละเอียด
+                        </a>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            dayDetailsDiv.innerHTML = html;
+        }
+        dayDetailsDiv.style.display = 'block';
+    }
+
+    function previousMonth() {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    }
+
+    // Task status update
     async function updateTaskStatus(assignmentId, newStatus) {
         const statusLabels = {
             'accepted': 'รับงาน',
@@ -452,11 +946,6 @@ include 'admin-layout/topbar.php';
             console.error('Error:', error);
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
         }
-    }
-
-    function showTaskDetails(assignmentId) {
-        // Redirect to task detail page
-        window.location.href = `task_detail.php?assignment_id=${assignmentId}`;
     }
 </script>
 

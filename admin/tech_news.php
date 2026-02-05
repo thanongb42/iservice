@@ -79,10 +79,7 @@ include 'admin-layout/topbar.php';
                                     <!-- Image -->
                                     <div class="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200">
                                         <?php if ($news['cover_image']):
-                                            $img_src = $news['cover_image'];
-                                            if (!preg_match('/^https?:\/\//', $img_src) && !str_starts_with($img_src, '../')) {
-                                                $img_src = '../' . $img_src;
-                                            }
+                                            $img_src = fix_asset_path($news['cover_image'], true);
                                         ?>
                                             <img src="<?= htmlspecialchars($img_src) ?>"
                                                  alt="<?= htmlspecialchars($news['title']) ?>"

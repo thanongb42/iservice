@@ -130,11 +130,8 @@ function render_tech_news_cards($news_list) {
     foreach ($news_list as $news) {
         $colors = $category_colors[$news['category_color']] ?? $category_colors['blue'];
 
-        // Fix image path
-        $cover_image = $news['cover_image'];
-        if (!empty($cover_image) && !preg_match('/^https?:\/\//', $cover_image)) {
-            $cover_image = str_replace('../', '', $cover_image);
-        }
+        // Fix image path - ensure correct public/ prefix
+        $cover_image = fix_asset_path($news['cover_image'] ?? '');
         if (empty($cover_image)) {
             // Use SVG data URI for placeholder (no external dependency)
             $cover_image = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\'%3E%3Crect fill=\'%23E5E7EB\' width=\'400\' height=\'250\'/%3E%3Ctext fill=\'%236B7280\' font-family=\'Arial,sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dominant-baseline=\'middle\'%3ENo Image%3C/text%3E%3C/svg%3E';

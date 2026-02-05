@@ -76,11 +76,7 @@ include 'admin-layout/topbar.php';
                                 <!-- Cover Image -->
                                 <div class="relative h-40 bg-gray-200 overflow-hidden">
                                     <?php if ($resource['cover_image']):
-                                        // Fix path for admin page - add ../ if not present and not a URL
-                                        $cover_img = $resource['cover_image'];
-                                        if (!preg_match('/^https?:\/\//', $cover_img) && !str_starts_with($cover_img, '../')) {
-                                            $cover_img = '../' . $cover_img;
-                                        }
+                                        $cover_img = fix_asset_path($resource['cover_image'], true);
                                     ?>
                                         <img src="<?= htmlspecialchars($cover_img) ?>"
                                              alt="<?= htmlspecialchars($resource['title']) ?>"
@@ -422,7 +418,11 @@ include 'admin-layout/topbar.php';
                     // Show current cover image
                     if (resource.cover_image) {
                         let coverImgPath = resource.cover_image;
-                        if (!coverImgPath.match(/^https?:\/\//) && !coverImgPath.startsWith('../')) {
+                        if (!coverImgPath.match(/^https?:\/\//) && !coverImgPath.startsWith('data:')) {
+                            coverImgPath = coverImgPath.replace(/^(\.\.\/)+/, '');
+                            if (!coverImgPath.startsWith('public/')) {
+                                coverImgPath = 'public/' + coverImgPath;
+                            }
                             coverImgPath = '../' + coverImgPath;
                         }
                         document.getElementById('currentCoverImg').src = coverImgPath;

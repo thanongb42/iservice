@@ -66,6 +66,32 @@ function clean_input($data) {
 }
 
 /**
+ * Fix asset/upload path for display
+ * เพิ่ม public/ prefix ให้กับ path ของไฟล์ที่อัปโหลด
+ * เพื่อให้เข้าถึงไฟล์ได้ทั้ง localhost และ production
+ *
+ * @param string $path Path from database (e.g. "uploads/covers/file.jpg")
+ * @param bool $from_admin true if called from admin/ subdirectory
+ * @return string Fixed path (e.g. "public/uploads/covers/file.jpg")
+ */
+function fix_asset_path($path, $from_admin = false) {
+    if (empty($path)) return $path;
+    // Skip external URLs and data URIs
+    if (preg_match('/^(https?:\/\/|data:)/', $path)) return $path;
+    // Remove any ../ prefix
+    $path = preg_replace('/^(\.\.\/)+/', '', $path);
+    // Add public/ prefix for upload paths
+    if (strpos($path, 'public/') !== 0 && strpos($path, 'uploads/') === 0) {
+        $path = 'public/' . $path;
+    }
+    // For admin pages, prepend ../
+    if ($from_admin) {
+        $path = '../' . $path;
+    }
+    return $path;
+}
+
+/**
  * Utility function: Check if table exists
  */
 function table_exists($table_name) {
