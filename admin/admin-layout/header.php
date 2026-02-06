@@ -136,6 +136,16 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
             transition: margin-left 0.3s ease-in-out;
         }
 
+        /* Main content margin when sidebar expanded */
+        #mainContent.lg\:ml-\[280px\] {
+            margin-left: 280px !important;
+        }
+
+        /* Main content margin when sidebar collapsed */
+        #mainContent.lg\:ml-\[80px\] {
+            margin-left: 80px !important;
+        }
+
         /* Mobile menu overlay */
         .mobile-overlay {
             display: none;

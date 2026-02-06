@@ -90,15 +90,21 @@
                 // EXPAND
                 sidebar.classList.remove('sidebar-collapsed');
                 sidebar.classList.add('sidebar-expanded');
+                
                 if (mainContent) {
+                    // Remove collapsed margin class
                     mainContent.classList.remove('lg:ml-[80px]');
+                    // Add expanded margin class
                     mainContent.classList.add('lg:ml-[280px]');
+                    console.log('MainContent classes:', mainContent.className);
                 }
+                
                 if (collapseIcon) {
                     collapseIcon.classList.remove('fa-chevron-right');
                     collapseIcon.classList.add('fa-chevron-left');
                 }
                 if (collapseText) collapseText.textContent = 'ย่อเมนู';
+                
                 menuTexts.forEach(el => {
                     el.style.opacity = '1';
                     el.style.width = 'auto';
@@ -109,15 +115,21 @@
                 // COLLAPSE
                 sidebar.classList.remove('sidebar-expanded');
                 sidebar.classList.add('sidebar-collapsed');
+                
                 if (mainContent) {
+                    // Remove expanded margin class
                     mainContent.classList.remove('lg:ml-[280px]');
+                    // Add collapsed margin class
                     mainContent.classList.add('lg:ml-[80px]');
+                    console.log('MainContent classes:', mainContent.className);
                 }
+                
                 if (collapseIcon) {
                     collapseIcon.classList.remove('fa-chevron-left');
                     collapseIcon.classList.add('fa-chevron-right');
                 }
                 if (collapseText) collapseText.textContent = '';
+                
                 menuTexts.forEach(el => {
                     el.style.opacity = '0';
                     el.style.width = '0';
