@@ -229,7 +229,7 @@ if ($action === 'assign_task') {
     $assigned_to = intval($_POST['assigned_to'] ?? 0);
     $assigned_as_role = !empty($_POST['assigned_as_role']) ? intval($_POST['assigned_as_role']) : null;
     $priority = $_POST['priority'] ?? 'normal';
-    $due_date = $_POST['due_date'] ?? null;
+    $due_date = !empty($_POST['due_date']) ? $_POST['due_date'] : null;
     $notes = $_POST['notes'] ?? '';
     
     if (!$request_id || !$assigned_to) {
