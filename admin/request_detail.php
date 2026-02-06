@@ -180,8 +180,8 @@ include __DIR__ . '/admin-layout/sidebar.php';
 include __DIR__ . '/admin-layout/topbar.php';
 ?>
 
-<main class="ml-64 bg-gray-50 min-h-screen">
-    <div class="p-6">
+<!-- mainContent div is already opened in topbar.php -->
+    <div class="p-4">
         <!-- Breadcrumb -->
         <nav class="text-gray-600 text-sm mb-4">
             <a href="index.php" class="hover:text-teal-600"><i class="fas fa-home mr-1"></i>หน้าหลัก</a>
@@ -532,7 +532,7 @@ include __DIR__ . '/admin-layout/topbar.php';
             </div>
         </div>
     </div>
-</main>
+</div><!-- End mainContent from topbar.php -->
 
 <script>
 const REQUEST_ID = <?= $request_id ?>;
