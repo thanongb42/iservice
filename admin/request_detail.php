@@ -594,13 +594,23 @@ async function submitNewAssignment() {
         formData.append('notes', notes);
 
         const response = await fetch('api/task_assignment_api.php', { method: 'POST', body: formData });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers.get('content-type'));
+        
         const responseText = await response.text();
+        console.log('Response body:', responseText);
+        
+        if (!responseText || responseText.trim() === '') {
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับว่างเปล่า (Empty Response)<br>Status: ' + response.status, 'error');
+            return;
+        }
         
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (parseErr) {
-            Swal.fire('ผิดพลาด', 'Server ตอบกลับผิดปกติ:<br><small>' + responseText.substring(0, 500) + '</small>', 'error');
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับไม่ใช่ JSON:<br><code style="word-break:break-all;font-size:12px;">' + responseText.substring(0, 500) + '</code>', 'error');
             return;
         }
 
@@ -612,7 +622,8 @@ async function submitNewAssignment() {
             Swal.fire('ผิดพลาด', errMsg, 'error');
         }
     } catch (error) {
-        Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายงานได้: ' + error.message, 'error');
+        console.error('Assign task error:', error);
+        Swal.fire('ผิดพลาด', 'Network/Fetch Error:<br>' + error.name + ': ' + error.message, 'error');
     }
 }
 
