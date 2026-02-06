@@ -14,15 +14,29 @@
  * - PHOTOGRAPHY => photographer
  */
 
-// Error reporting - show errors in development, hide in production
-$is_production = (strpos($_SERVER['HTTP_HOST'] ?? '', 'rangsitcity.go.th') !== false);
-if ($is_production) {
-    error_reporting(0);
-    ini_set('display_errors', '0');
-} else {
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-}
+// Always capture errors as JSON responses
+error_reporting(E_ALL);
+ini_set('display_errors', '0'); // Don't display - we'll catch them
+ini_set('log_errors', '1');
+
+// Custom error handler to return JSON errors
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+// Global exception handler
+set_exception_handler(function($e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Server Error: ' . $e->getMessage(),
+        'debug' => [
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine()
+        ]
+    ]);
+    exit();
+});
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -30,11 +44,22 @@ header('Content-Type: application/json; charset=utf-8');
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Access denied']);
+    echo json_encode(['success' => false, 'message' => 'Access denied - กรุณาล็อกอินใหม่']);
     exit();
 }
 
-require_once '../../config/database.php';
+try {
+    require_once '../../config/database.php';
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
+    exit();
+}
+
+// Verify DB connection is valid
+if (!$conn || $conn->connect_error) {
+    echo json_encode(['success' => false, 'message' => 'DB connection error: ' . ($conn->connect_error ?? 'null connection')]);
+    exit();
+}
 
 /**
  * Helper: Check if a column exists in a table
@@ -280,51 +305,42 @@ if ($action === 'assign_task') {
     // Check if start_time/end_time columns exist (may not exist on Production)
     $has_time_columns = column_exists($conn, 'task_assignments', 'start_time');
     
-    if ($has_time_columns && ($start_time || $end_time)) {
-        $insert_query = "INSERT INTO task_assignments 
-                        (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, start_time, end_time, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
-        
-        $insert_stmt = $conn->prepare($insert_query);
-        if (!$insert_stmt) {
-            echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
-            exit();
-        }
-        
-        $insert_stmt->bind_param(
-            'iiiisssss',
-            $request_id,
-            $assigned_to,
-            $assigned_as_role,
-            $admin_id,
-            $priority,
-            $due_date,
-            $notes,
-            $start_time,
-            $end_time
-        );
-    } else {
-        $insert_query = "INSERT INTO task_assignments 
-                        (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
-        
-        $insert_stmt = $conn->prepare($insert_query);
-        if (!$insert_stmt) {
-            echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
-            exit();
-        }
-        
-        $insert_stmt->bind_param(
-            'iiiisss',
-            $request_id,
-            $assigned_to,
-            $assigned_as_role,
-            $admin_id,
-            $priority,
-            $due_date,
-            $notes
-        );
+    // Build dynamic INSERT based on what data we have
+    $columns = ['request_id', 'assigned_to', 'assigned_by', 'priority', 'due_date', 'notes', 'status', 'created_at'];
+    $placeholders = ['?', '?', '?', '?', '?', '?', "'pending'", 'NOW()'];
+    $params = [$request_id, $assigned_to, $admin_id, $priority, $due_date, $notes];
+    $types = 'iiisss';
+    
+    // Only include assigned_as_role if it has a valid value (not null/0)
+    if (!empty($assigned_as_role)) {
+        array_splice($columns, 2, 0, ['assigned_as_role']);
+        array_splice($placeholders, 2, 0, ['?']);
+        $params = [$request_id, $assigned_to, $assigned_as_role, $admin_id, $priority, $due_date, $notes];
+        $types = 'iiiisss';
     }
+    
+    // Add time columns if they exist and have values
+    if ($has_time_columns && ($start_time || $end_time)) {
+        $columns[] = 'start_time';
+        $placeholders[] = '?';
+        $params[] = $start_time;
+        $types .= 's';
+        
+        $columns[] = 'end_time';
+        $placeholders[] = '?';
+        $params[] = $end_time;
+        $types .= 's';
+    }
+    
+    $insert_query = "INSERT INTO task_assignments (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    
+    $insert_stmt = $conn->prepare($insert_query);
+    if (!$insert_stmt) {
+        echo json_encode(['success' => false, 'message' => 'SQL Prepare Error: ' . $conn->error, 'query' => $insert_query]);
+        exit();
+    }
+    
+    $insert_stmt->bind_param($types, ...$params);
     
     if ($insert_stmt->execute()) {
         echo json_encode([
