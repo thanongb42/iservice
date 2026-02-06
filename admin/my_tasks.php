@@ -16,6 +16,14 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
 
+// Build $user array for topbar.php
+$user = [
+    'username' => $_SESSION['username'] ?? 'User',
+    'email' => $_SESSION['email'] ?? '',
+    'full_name' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User',
+    'first_name' => $_SESSION['first_name'] ?? 'User'
+];
+
 // Manager/all users can also access my_tasks (they may be assigned tasks too)
 
 // Get user roles

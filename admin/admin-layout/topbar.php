@@ -11,6 +11,16 @@
  *   เช่น [['label' => 'หน้าหลัก', 'url' => '#', 'icon' => 'fa-home'], ['label' => 'แดชบอร์ด']]
  */
 
+// Build $user from session if not already defined by the parent page
+if (!isset($user) || !is_array($user)) {
+    $user = [
+        'username' => $_SESSION['username'] ?? 'User',
+        'email' => $_SESSION['email'] ?? '',
+        'full_name' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User',
+        'first_name' => $_SESSION['first_name'] ?? 'User'
+    ];
+}
+
 $pending_requests = $pending_requests ?? 0;
 $breadcrumb = $breadcrumb ?? [
     ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],

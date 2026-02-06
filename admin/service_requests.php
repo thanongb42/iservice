@@ -137,6 +137,52 @@ function getServiceName($code) {
     ];
     return $service_names[$code] ?? $code;
 }
+
+// Helper function to get Thai status label
+function getThaiStatus($status) {
+    $labels = [
+        'pending' => 'รอดำเนินการ',
+        'in_progress' => 'กำลังดำเนินการ',
+        'completed' => 'เสร็จสิ้น',
+        'cancelled' => 'ยกเลิก'
+    ];
+    return $labels[$status] ?? $status;
+}
+
+// Helper function to get Thai priority label
+function getThaiPriority($priority) {
+    $labels = [
+        'low' => 'ต่ำ',
+        'medium' => 'ปานกลาง',
+        'normal' => 'ปกติ',
+        'high' => 'สูง',
+        'urgent' => 'เร่งด่วน'
+    ];
+    return $labels[$priority] ?? $priority;
+}
+
+// Helper function to format date in Thai
+function formatThaiDate($datetime, $showTime = true) {
+    if (empty($datetime)) return '-';
+
+    $timestamp = strtotime($datetime);
+
+    $thai_months = [
+        1 => 'ม.ค.', 2 => 'ก.พ.', 3 => 'มี.ค.', 4 => 'เม.ย.',
+        5 => 'พ.ค.', 6 => 'มิ.ย.', 7 => 'ก.ค.', 8 => 'ส.ค.',
+        9 => 'ก.ย.', 10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.'
+    ];
+
+    $day = date('j', $timestamp);
+    $month = $thai_months[(int)date('n', $timestamp)];
+    $year = date('Y', $timestamp) + 543; // พ.ศ.
+    $time = date('H:i', $timestamp); // 24-hour format
+
+    if ($showTime) {
+        return "{$day} {$month} {$year} {$time} น.";
+    }
+    return "{$day} {$month} {$year}";
+}
 ?>
 <?php
 include 'admin-layout/header.php';
@@ -145,6 +191,10 @@ include 'admin-layout/topbar.php';
 ?>
 
 <main class="main-content-transition lg:ml-0">
+    <!-- Flatpickr CSS for Thai Date/Time Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+
     <style>
         .status-badge {
             display: inline-block;
@@ -272,7 +322,7 @@ include 'admin-layout/topbar.php';
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm">Total Requests</p>
+                        <p class="text-gray-500 text-sm">คำขอทั้งหมด</p>
                         <p class="text-2xl font-bold text-gray-800"><?= $stats['total'] ?></p>
                     </div>
                     <i class="fas fa-clipboard-list text-3xl text-gray-400"></i>
@@ -281,7 +331,7 @@ include 'admin-layout/topbar.php';
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm">Pending</p>
+                        <p class="text-gray-500 text-sm">รอดำเนินการ</p>
                         <p class="text-2xl font-bold text-yellow-600"><?= $stats['pending'] ?></p>
                     </div>
                     <i class="fas fa-clock text-3xl text-yellow-400"></i>
@@ -290,7 +340,7 @@ include 'admin-layout/topbar.php';
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm">In Progress</p>
+                        <p class="text-gray-500 text-sm">กำลังดำเนินการ</p>
                         <p class="text-2xl font-bold text-blue-600"><?= $stats['in_progress'] ?></p>
                     </div>
                     <i class="fas fa-spinner text-3xl text-blue-400"></i>
@@ -299,7 +349,7 @@ include 'admin-layout/topbar.php';
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm">Completed</p>
+                        <p class="text-gray-500 text-sm">เสร็จสิ้น</p>
                         <p class="text-2xl font-bold text-green-600"><?= $stats['completed'] ?></p>
                     </div>
                     <i class="fas fa-check-circle text-3xl text-green-400"></i>
@@ -308,7 +358,7 @@ include 'admin-layout/topbar.php';
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm">Cancelled</p>
+                        <p class="text-gray-500 text-sm">ยกเลิก</p>
                         <p class="text-2xl font-bold text-red-600"><?= $stats['cancelled'] ?></p>
                     </div>
                     <i class="fas fa-times-circle text-3xl text-red-400"></i>
@@ -320,24 +370,24 @@ include 'admin-layout/topbar.php';
         <div class="filter-container">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                    <input type="text" id="searchInput" placeholder="Request Code, Name, Department..."
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหา</label>
+                    <input type="text" id="searchInput" placeholder="รหัสคำขอ, ชื่อ, หน่วยงาน..."
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
                     <select id="filterStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="">ทุกสถานะ</option>
+                        <option value="pending">รอดำเนินการ</option>
+                        <option value="in_progress">กำลังดำเนินการ</option>
+                        <option value="completed">เสร็จสิ้น</option>
+                        <option value="cancelled">ยกเลิก</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทบริการ</label>
                     <select id="filterService" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Services</option>
+                        <option value="">ทุกบริการ</option>
                         <?php foreach ($service_types as $service): ?>
                             <option value="<?= htmlspecialchars($service['service_code']) ?>">
                                 <?= htmlspecialchars($service['service_name']) ?>
@@ -346,28 +396,28 @@ include 'admin-layout/topbar.php';
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ความสำคัญ</label>
                     <select id="filterPriority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Priorities</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
+                        <option value="">ทุกระดับ</option>
+                        <option value="low">ต่ำ</option>
+                        <option value="medium">ปานกลาง</option>
+                        <option value="high">สูง</option>
+                        <option value="urgent">เร่งด่วน</option>
                     </select>
                 </div>
             </div>
             <div class="flex justify-between items-center">
                 <button onclick="clearFilters()" class="text-sm text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-redo"></i> Clear Filters
+                    <i class="fas fa-redo"></i> ล้างตัวกรอง
                 </button>
                 <div id="bulkActions" style="display: none;">
                     <select id="bulkActionSelect" class="px-3 py-2 border border-gray-300 rounded-md mr-2">
-                        <option value="">-- Bulk Actions --</option>
-                        <option value="update_status">Update Status</option>
-                        <option value="delete">Delete Selected</option>
+                        <option value="">-- เลือกการดำเนินการ --</option>
+                        <option value="update_status">อัปเดตสถานะ</option>
+                        <option value="delete">ลบที่เลือก</option>
                     </select>
                     <button onclick="executeBulkAction()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                        Apply
+                        ดำเนินการ
                     </button>
                 </div>
             </div>
@@ -382,15 +432,15 @@ include 'admin-layout/topbar.php';
                             <th style="width: 40px;">
                                 <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                             </th>
-                            <th>Request Code</th>
-                            <th>Service</th>
-                            <th>Requester</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Assigned To</th>
-                            <th>Created</th>
-                            <th style="width: 180px;">Actions</th>
+                            <th>รหัสคำขอ</th>
+                            <th>บริการ</th>
+                            <th>ผู้ขอ</th>
+                            <th>หน่วยงาน</th>
+                            <th>สถานะ</th>
+                            <th>ความสำคัญ</th>
+                            <th>มอบหมายให้</th>
+                            <th>วันที่สร้าง</th>
+                            <th style="width: 180px;">การดำเนินการ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -412,12 +462,12 @@ include 'admin-layout/topbar.php';
                                 <td><?= htmlspecialchars($req['department_name'] ?? '-') ?></td>
                                 <td>
                                     <span class="status-badge status-<?= $req['status'] ?>">
-                                        <?= ucfirst(str_replace('_', ' ', $req['status'])) ?>
+                                        <?= getThaiStatus($req['status']) ?>
                                     </span>
                                 </td>
                                 <td>
                                     <span class="priority-badge priority-<?= $req['priority'] ?>">
-                                        <?= ucfirst($req['priority']) ?>
+                                        <?= getThaiPriority($req['priority']) ?>
                                     </span>
                                 </td>
                                 <td>
@@ -442,21 +492,21 @@ include 'admin-layout/topbar.php';
                                         <span class="text-gray-400">ยังไม่มอบหมาย</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-sm"><?= date('d/m/Y H:i', strtotime($req['created_at'])) ?></td>
+                                <td class="text-sm"><?= formatThaiDate($req['created_at']) ?></td>
                                 <td>
-                                    <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="View Details">
+                                    <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="ดูรายละเอียด">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="Update Status">
+                                    <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="อัปเดตสถานะ">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="มอบหมายงาน">
                                         <i class="fas fa-user-tag"></i>
                                     </button>
-                                    <button onclick="updatePriority(<?= $req['request_id'] ?>)" class="action-btn text-orange-600 hover:bg-orange-50" title="Update Priority">
+                                    <button onclick="updatePriority(<?= $req['request_id'] ?>)" class="action-btn text-orange-600 hover:bg-orange-50" title="อัปเดตความสำคัญ">
                                         <i class="fas fa-flag"></i>
                                     </button>
-                                    <button onclick="deleteRequest(<?= $req['request_id'] ?>)" class="action-btn text-red-600 hover:bg-red-50" title="Delete">
+                                    <button onclick="deleteRequest(<?= $req['request_id'] ?>)" class="action-btn text-red-600 hover:bg-red-50" title="ลบ">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -472,7 +522,7 @@ include 'admin-layout/topbar.php';
     <div id="detailsModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeDetailsModal()">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Request Details</h2>
+            <h2 class="text-2xl font-bold mb-4">รายละเอียดคำขอ</h2>
             <div id="detailsContent"></div>
         </div>
     </div>
@@ -517,7 +567,7 @@ include 'admin-layout/topbar.php';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
                         <select id="assignUser" onchange="updateSelectedUserRoles()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="">-- กำลังโหลด --</option>
+                            <option value="">-- เลือกผู้รับผิดชอบ --</option>
                         </select>
                         <p id="userRolesInfo" class="text-xs text-gray-500 mt-1"></p>
                     </div>
@@ -538,15 +588,15 @@ include 'admin-layout/topbar.php';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ความสำคัญ</label>
                         <select id="assignPriority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="normal">ปกติ (Normal)</option>
-                            <option value="low">ต่ำ (Low)</option>
-                            <option value="high">สูง (High)</option>
-                            <option value="urgent">เร่งด่วน (Urgent)</option>
+                            <option value="normal">ปกติ</option>
+                            <option value="low">ต่ำ</option>
+                            <option value="high">สูง</option>
+                            <option value="urgent">เร่งด่วน</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">กำหนดส่ง</label>
-                        <input type="datetime-local" id="assignDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="text" id="assignDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="เลือกวันที่และเวลา">
                     </div>
                 </div>
 
@@ -567,10 +617,78 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
     <script>
         const users = <?= json_encode($users) ?>;
         const roles = <?= json_encode($roles) ?>;
         const canAssignTasks = <?= $can_assign_tasks ? 'true' : 'false' ?>;
+
+        // Thai month names for display
+        const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thaiMonthsFull = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const thaiDays = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+
+        // Status labels in Thai
+        const statusLabelsThai = {
+            'pending': 'รอดำเนินการ',
+            'in_progress': 'กำลังดำเนินการ',
+            'completed': 'เสร็จสิ้น',
+            'cancelled': 'ยกเลิก'
+        };
+
+        // Priority labels in Thai
+        const priorityLabelsThai = {
+            'low': 'ต่ำ',
+            'medium': 'ปานกลาง',
+            'normal': 'ปกติ',
+            'high': 'สูง',
+            'urgent': 'เร่งด่วน'
+        };
+
+        // Function to format date in Thai
+        function formatThaiDate(dateStr, showTime = true) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            const day = date.getDate();
+            const month = thaiMonths[date.getMonth()];
+            const year = date.getFullYear() + 543;
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+
+            if (showTime) {
+                return `${day} ${month} ${year} ${hours}:${minutes} น.`;
+            }
+            return `${day} ${month} ${year}`;
+        }
+
+        // Initialize Flatpickr with Thai locale and 24-hour format
+        document.addEventListener('DOMContentLoaded', function() {
+            // Due date picker with Thai locale
+            flatpickr("#assignDueDate", {
+                locale: "th",
+                enableTime: true,
+                time_24hr: true,
+                dateFormat: "Y-m-d H:i",
+                altInput: true,
+                altFormat: "j M Y H:i น.",
+                minDate: "today",
+                monthSelectorType: "static",
+                formatDate: function(date, format, locale) {
+                    if (format === "j M Y H:i น.") {
+                        const day = date.getDate();
+                        const month = thaiMonths[date.getMonth()];
+                        const year = date.getFullYear() + 543;
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${day} ${month} ${year} ${hours}:${minutes} น.`;
+                    }
+                    return flatpickr.formatDate(date, format, locale);
+                }
+            });
+        });
 
         // Service name mapping
         const serviceNames = {
@@ -663,58 +781,58 @@ include 'admin-layout/topbar.php';
                         <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-sm text-gray-500">Request Code</p>
+                                    <p class="text-sm text-gray-500">รหัสคำขอ</p>
                                     <p class="font-bold">#${String(req.request_id).padStart(4, '0')}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Service</p>
+                                    <p class="text-sm text-gray-500">บริการ</p>
                                     <p class="font-bold">${req.service_name || getServiceName(req.service_code)}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Status</p>
-                                    <p><span class="status-badge status-${req.status}">${req.status.replace('_', ' ')}</span></p>
+                                    <p class="text-sm text-gray-500">สถานะ</p>
+                                    <p><span class="status-badge status-${req.status}">${statusLabelsThai[req.status] || req.status}</span></p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Priority</p>
-                                    <p><span class="priority-badge priority-${req.priority}">${req.priority}</span></p>
+                                    <p class="text-sm text-gray-500">ความสำคัญ</p>
+                                    <p><span class="priority-badge priority-${req.priority}">${priorityLabelsThai[req.priority] || req.priority}</span></p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Requester</p>
+                                    <p class="text-sm text-gray-500">ผู้ขอ</p>
                                     <p>${req.user_full_name}</p>
                                     <p class="text-sm text-gray-600">${req.user_email}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Department</p>
+                                    <p class="text-sm text-gray-500">หน่วยงาน</p>
                                     <p>${req.department_name || '-'}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Created At</p>
-                                    <p>${new Date(req.created_at).toLocaleString('th-TH')}</p>
+                                    <p class="text-sm text-gray-500">วันที่สร้าง</p>
+                                    <p>${formatThaiDate(req.created_at)}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500">Updated At</p>
-                                    <p>${new Date(req.updated_at).toLocaleString('th-TH')}</p>
+                                    <p class="text-sm text-gray-500">อัปเดตล่าสุด</p>
+                                    <p>${formatThaiDate(req.updated_at)}</p>
                                 </div>
                             </div>
 
                             ${req.description ? `
                             <div>
-                                <p class="text-sm text-gray-500">Description</p>
+                                <p class="text-sm text-gray-500">รายละเอียด</p>
                                 <p class="mt-1">${req.description}</p>
                             </div>
                             ` : ''}
 
                             ${req.admin_notes ? `
                             <div>
-                                <p class="text-sm text-gray-500">Admin Notes</p>
+                                <p class="text-sm text-gray-500">หมายเหตุผู้ดูแล</p>
                                 <p class="mt-1 bg-yellow-50 p-3 rounded">${req.admin_notes}</p>
                             </div>
                             ` : ''}
 
                             ${req.completed_date ? `
                             <div>
-                                <p class="text-sm text-gray-500">Completed Date</p>
-                                <p>${new Date(req.completed_date).toLocaleString('th-TH')}</p>
+                                <p class="text-sm text-gray-500">วันที่เสร็จสิ้น</p>
+                                <p>${formatThaiDate(req.completed_date)}</p>
                             </div>
                             ` : ''}
                         </div>
@@ -723,10 +841,10 @@ include 'admin-layout/topbar.php';
                     document.getElementById('detailsContent').innerHTML = html;
                     document.getElementById('detailsModal').style.display = 'block';
                 } else {
-                    Swal.fire('Error', 'Failed to load request details', 'error');
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดรายละเอียดได้', 'error');
                 }
             } catch (error) {
-                Swal.fire('Error', 'Failed to load request details', 'error');
+                Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดรายละเอียดได้', 'error');
             }
         }
 
@@ -737,18 +855,19 @@ include 'admin-layout/topbar.php';
         // Update Status
         async function updateStatus(id) {
             const { value: formValues } = await Swal.fire({
-                title: 'Update Request Status',
+                title: 'อัปเดตสถานะคำขอ',
                 html:
                     '<select id="swal-status" class="swal2-input">' +
-                    '<option value="pending">Pending</option>' +
-                    '<option value="in_progress">In Progress</option>' +
-                    '<option value="completed">Completed</option>' +
-                    '<option value="cancelled">Cancelled</option>' +
+                    '<option value="pending">รอดำเนินการ</option>' +
+                    '<option value="in_progress">กำลังดำเนินการ</option>' +
+                    '<option value="completed">เสร็จสิ้น</option>' +
+                    '<option value="cancelled">ยกเลิก</option>' +
                     '</select>' +
-                    '<textarea id="swal-notes" class="swal2-textarea" placeholder="Admin Notes (Optional)"></textarea>',
+                    '<textarea id="swal-notes" class="swal2-textarea" placeholder="หมายเหตุ (ไม่บังคับ)"></textarea>',
                 focusConfirm: false,
                 showCancelButton: true,
-                confirmButtonText: 'Update',
+                confirmButtonText: 'อัปเดต',
+                cancelButtonText: 'ยกเลิก',
                 preConfirm: () => {
                     return {
                         status: document.getElementById('swal-status').value,
@@ -773,14 +892,14 @@ include 'admin-layout/topbar.php';
                     const result = await response.json();
 
                     if (result.success) {
-                        Swal.fire('Success', result.message, 'success').then(() => {
+                        Swal.fire('สำเร็จ', result.message, 'success').then(() => {
                             location.reload();
                         });
                     } else {
-                        Swal.fire('Error', result.message, 'error');
+                        Swal.fire('ผิดพลาด', result.message, 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'Failed to update status', 'error');
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
                 }
             }
         }
@@ -830,7 +949,7 @@ include 'admin-layout/topbar.php';
             const serviceRoleInfo = document.getElementById('serviceRoleInfo');
             const requiredRolesText = document.getElementById('requiredRolesText');
 
-            userSelect.innerHTML = '<option value="">-- กำลังโหลค --</option>';
+            userSelect.innerHTML = '<option value="">-- กำลังโหลด --</option>';
 
             try {
                 const response = await fetch(`api/task_assignment_api.php?action=get_available_users&service_code=${serviceCode}&request_id=${requestId}`);
@@ -853,7 +972,7 @@ include 'admin-layout/topbar.php';
                     data.users.forEach(user => {
                         const option = document.createElement('option');
                         option.value = user.user_id;
-                        option.textContent = `${user.first_name} ${user.last_name} (${user.roles})`;
+                        option.textContent = `${user.first_name} ${user.last_name} [@${user.username}] (${user.roles})`;
                         option.dataset.roles = user.roles;
                         userSelect.appendChild(option);
                     });
@@ -890,6 +1009,15 @@ include 'admin-layout/topbar.php';
             const container = document.getElementById('assignmentsList');
             container.innerHTML = '<p class="text-gray-500 text-sm"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</p>';
 
+            // Status labels in Thai for assignments
+            const assignStatusThai = {
+                'pending': 'รอรับงาน',
+                'accepted': 'รับงานแล้ว',
+                'in_progress': 'กำลังดำเนินการ',
+                'completed': 'เสร็จสิ้น',
+                'cancelled': 'ยกเลิก'
+            };
+
             try {
                 const response = await fetch(`api/task_assignments_api.php?action=list_by_request&request_id=${requestId}`);
                 const result = await response.json();
@@ -912,6 +1040,7 @@ include 'admin-layout/topbar.php';
                             'urgent': 'bg-red-100 text-red-700'
                         }[task.priority] || 'bg-gray-100 text-gray-700';
 
+                        const canModify = !['completed', 'cancelled'].includes(task.status);
                         html += `
                             <div class="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
                                 <div class="flex items-center gap-3">
@@ -919,7 +1048,10 @@ include 'admin-layout/topbar.php';
                                         <i class="fas ${task.role_icon || 'fa-user'}" style="color: ${task.role_color || '#6b7280'}"></i>
                                     </div>
                                     <div>
-                                        <p class="font-medium text-gray-900">${task.assigned_to_name || task.assigned_to_username}</p>
+                                        <p class="font-medium text-gray-900">
+                                            ${task.assigned_to_name || task.assigned_to_username}
+                                            <span class="text-gray-400 font-normal text-xs">@${task.assigned_to_username}</span>
+                                        </p>
                                         <p class="text-xs text-gray-500">
                                             ${task.assigned_role_name || 'ไม่ระบุบทบาท'}
                                             <span class="mx-1">•</span>
@@ -928,11 +1060,16 @@ include 'admin-layout/topbar.php';
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span class="px-2 py-1 text-xs rounded-full ${priorityClass}">${task.priority}</span>
-                                    <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${task.status}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full ${priorityClass}">${priorityLabelsThai[task.priority] || task.priority}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${assignStatusThai[task.status] || task.status}</span>
+                                    ${canModify ? `
+                                    <button onclick="reassignAssignment(${task.assignment_id}, '${(task.assigned_to_name || task.assigned_to_username).replace(/'/g, "\\'")}')" class="p-1 text-blue-500 hover:bg-blue-50 rounded" title="เปลี่ยนผู้รับ">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
                                     <button onclick="cancelAssignment(${task.assignment_id})" class="p-1 text-red-500 hover:bg-red-50 rounded" title="ยกเลิก">
                                         <i class="fas fa-times"></i>
                                     </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
@@ -952,11 +1089,11 @@ include 'admin-layout/topbar.php';
             const userSelect = document.getElementById('assignUser');
 
             if (!roleId) {
-                userSelect.innerHTML = '<option value="">-- เลือกบทบาทก่อน --</option>';
+                userSelect.innerHTML = '<option value="">-- เลือกผู้รับผิดชอบ --</option>';
                 return;
             }
 
-            userSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+            userSelect.innerHTML = '<option value="">-- กำลังโหลด --</option>';
 
             try {
                 const response = await fetch(`api/task_assignments_api.php?action=get_assignable_users&role_id=${roleId}`);
@@ -1069,6 +1206,76 @@ include 'admin-layout/topbar.php';
             }
         }
 
+        // Reassign assignment to different user
+        async function reassignAssignment(assignmentId, currentName) {
+            const requestId = document.getElementById('assignRequestId').value;
+            const serviceCode = document.getElementById('assignServiceCode').value;
+
+            // Load available users
+            let usersOptions = '';
+            try {
+                const response = await fetch(`api/task_assignment_api.php?action=get_available_users&service_code=${serviceCode}&request_id=${requestId}`);
+                const data = await response.json();
+                if (data.success) {
+                    data.users.forEach(user => {
+                        usersOptions += `<option value="${user.user_id}">${user.first_name} ${user.last_name} [@${user.username}] (${user.roles})</option>`;
+                    });
+                }
+            } catch (e) { /* ignore */ }
+
+            const { value: formValues } = await Swal.fire({
+                title: 'เปลี่ยนผู้รับผิดชอบ',
+                width: 420,
+                html:
+                    `<p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.75rem;">ปัจจุบัน: <strong>${currentName}</strong></p>` +
+                    '<label style="display:block;font-size:0.8rem;font-weight:500;text-align:left;margin-bottom:4px;">ผู้รับผิดชอบใหม่</label>' +
+                    '<select id="swal-reassign-user" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:0.8rem;margin:0;">' +
+                    '<option value="">-- เลือกผู้รับผิดชอบ --</option>' +
+                    usersOptions +
+                    '</select>' +
+                    '<label style="display:block;font-size:0.8rem;font-weight:500;text-align:left;margin:10px 0 4px;">หมายเหตุ</label>' +
+                    '<textarea id="swal-reassign-notes" rows="2" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:0.8rem;resize:vertical;margin:0;" placeholder="เหตุผลในการเปลี่ยน..."></textarea>',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: '#0d9488',
+                confirmButtonText: '<i class="fas fa-exchange-alt mr-1"></i> เปลี่ยน',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const userId = document.getElementById('swal-reassign-user').value;
+                    if (!userId) {
+                        Swal.showValidationMessage('กรุณาเลือกผู้รับผิดชอบใหม่');
+                        return false;
+                    }
+                    return {
+                        assigned_to: userId,
+                        notes: document.getElementById('swal-reassign-notes').value
+                    };
+                }
+            });
+
+            if (!formValues) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'reassign');
+                formData.append('assignment_id', assignmentId);
+                formData.append('assigned_to', formValues.assigned_to);
+                formData.append('notes', formValues.notes);
+
+                const response = await fetch('api/task_assignments_api.php', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire('สำเร็จ', result.message, 'success');
+                    await loadCurrentAssignments(requestId);
+                } else {
+                    Swal.fire('ผิดพลาด', result.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนผู้รับผิดชอบได้', 'error');
+            }
+        }
+
         // Legacy Assign Request (simple assignment to service_requests.assigned_to)
         async function legacyAssignRequest(id) {
             const usersOptions = users.map(u =>
@@ -1076,15 +1283,16 @@ include 'admin-layout/topbar.php';
             ).join('');
 
             const { value: userId } = await Swal.fire({
-                title: 'Assign Request',
+                title: 'มอบหมายคำขอ',
                 html:
                     '<select id="swal-user" class="swal2-input">' +
-                    '<option value="">-- Select User --</option>' +
+                    '<option value="">-- เลือกผู้รับผิดชอบ --</option>' +
                     usersOptions +
                     '</select>',
                 focusConfirm: false,
                 showCancelButton: true,
-                confirmButtonText: 'Assign',
+                confirmButtonText: 'มอบหมาย',
+                cancelButtonText: 'ยกเลิก',
                 preConfirm: () => {
                     return document.getElementById('swal-user').value;
                 }
@@ -1105,14 +1313,14 @@ include 'admin-layout/topbar.php';
                     const result = await response.json();
 
                     if (result.success) {
-                        Swal.fire('Success', result.message, 'success').then(() => {
+                        Swal.fire('สำเร็จ', result.message, 'success').then(() => {
                             location.reload();
                         });
                     } else {
-                        Swal.fire('Error', result.message, 'error');
+                        Swal.fire('ผิดพลาด', result.message, 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'Failed to assign request', 'error');
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายคำขอได้', 'error');
                 }
             }
         }
@@ -1120,17 +1328,18 @@ include 'admin-layout/topbar.php';
         // Update Priority
         async function updatePriority(id) {
             const { value: priority } = await Swal.fire({
-                title: 'Update Priority',
+                title: 'อัปเดตความสำคัญ',
                 input: 'select',
                 inputOptions: {
-                    'low': 'Low',
-                    'medium': 'Medium',
-                    'high': 'High',
-                    'urgent': 'Urgent'
+                    'low': 'ต่ำ',
+                    'medium': 'ปานกลาง',
+                    'high': 'สูง',
+                    'urgent': 'เร่งด่วน'
                 },
-                inputPlaceholder: 'Select priority',
+                inputPlaceholder: 'เลือกความสำคัญ',
                 showCancelButton: true,
-                confirmButtonText: 'Update'
+                confirmButtonText: 'อัปเดต',
+                cancelButtonText: 'ยกเลิก'
             });
 
             if (priority) {
@@ -1148,14 +1357,14 @@ include 'admin-layout/topbar.php';
                     const result = await response.json();
 
                     if (result.success) {
-                        Swal.fire('Success', result.message, 'success').then(() => {
+                        Swal.fire('สำเร็จ', result.message, 'success').then(() => {
                             location.reload();
                         });
                     } else {
-                        Swal.fire('Error', result.message, 'error');
+                        Swal.fire('ผิดพลาด', result.message, 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'Failed to update priority', 'error');
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตความสำคัญได้', 'error');
                 }
             }
         }
@@ -1163,13 +1372,14 @@ include 'admin-layout/topbar.php';
         // Delete Request
         async function deleteRequest(id) {
             const result = await Swal.fire({
-                title: 'Are you sure?',
-                text: "This will permanently delete the request and all related data!",
+                title: 'ยืนยันการลบ?',
+                text: "การดำเนินการนี้จะลบคำขอและข้อมูลที่เกี่ยวข้องทั้งหมดอย่างถาวร!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, delete it!'
+                confirmButtonText: 'ใช่ ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
             });
 
             if (result.isConfirmed) {
@@ -1186,14 +1396,14 @@ include 'admin-layout/topbar.php';
                     const data = await response.json();
 
                     if (data.success) {
-                        Swal.fire('Deleted!', data.message, 'success').then(() => {
+                        Swal.fire('ลบแล้ว!', data.message, 'success').then(() => {
                             location.reload();
                         });
                     } else {
-                        Swal.fire('Error', data.message, 'error');
+                        Swal.fire('ผิดพลาด', data.message, 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'Failed to delete request', 'error');
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถลบคำขอได้', 'error');
                 }
             }
         }
@@ -1205,28 +1415,29 @@ include 'admin-layout/topbar.php';
             const ids = Array.from(checkedBoxes).map(cb => cb.value);
 
             if (!action) {
-                Swal.fire('Error', 'Please select an action', 'error');
+                Swal.fire('ผิดพลาด', 'กรุณาเลือกการดำเนินการ', 'error');
                 return;
             }
 
             if (ids.length === 0) {
-                Swal.fire('Error', 'Please select at least one request', 'error');
+                Swal.fire('ผิดพลาด', 'กรุณาเลือกอย่างน้อย 1 คำขอ', 'error');
                 return;
             }
 
             if (action === 'update_status') {
                 const { value: status } = await Swal.fire({
-                    title: `Update Status for ${ids.length} requests`,
+                    title: `อัปเดตสถานะ ${ids.length} คำขอ`,
                     input: 'select',
                     inputOptions: {
-                        'pending': 'Pending',
-                        'in_progress': 'In Progress',
-                        'completed': 'Completed',
-                        'cancelled': 'Cancelled'
+                        'pending': 'รอดำเนินการ',
+                        'in_progress': 'กำลังดำเนินการ',
+                        'completed': 'เสร็จสิ้น',
+                        'cancelled': 'ยกเลิก'
                     },
-                    inputPlaceholder: 'Select status',
+                    inputPlaceholder: 'เลือกสถานะ',
                     showCancelButton: true,
-                    confirmButtonText: 'Update All'
+                    confirmButtonText: 'อัปเดตทั้งหมด',
+                    cancelButtonText: 'ยกเลิก'
                 });
 
                 if (status) {
@@ -1244,25 +1455,26 @@ include 'admin-layout/topbar.php';
                         const result = await response.json();
 
                         if (result.success) {
-                            Swal.fire('Success', result.message, 'success').then(() => {
+                            Swal.fire('สำเร็จ', result.message, 'success').then(() => {
                                 location.reload();
                             });
                         } else {
-                            Swal.fire('Error', result.message, 'error');
+                            Swal.fire('ผิดพลาด', result.message, 'error');
                         }
                     } catch (error) {
-                        Swal.fire('Error', 'Failed to update status', 'error');
+                        Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
                     }
                 }
             } else if (action === 'delete') {
                 const result = await Swal.fire({
-                    title: 'Are you sure?',
-                    text: `This will permanently delete ${ids.length} requests and all related data!`,
+                    title: 'ยืนยันการลบ?',
+                    text: `การดำเนินการนี้จะลบ ${ids.length} คำขอ และข้อมูลที่เกี่ยวข้องทั้งหมดอย่างถาวร!`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete them!'
+                    confirmButtonText: 'ใช่ ลบทั้งหมด!',
+                    cancelButtonText: 'ยกเลิก'
                 });
 
                 if (result.isConfirmed) {
@@ -1289,16 +1501,16 @@ include 'admin-layout/topbar.php';
                         }
 
                         if (errorCount === 0) {
-                            Swal.fire('Success', `Successfully deleted ${successCount} requests`, 'success').then(() => {
+                            Swal.fire('สำเร็จ', `ลบ ${successCount} คำขอเรียบร้อยแล้ว`, 'success').then(() => {
                                 location.reload();
                             });
                         } else {
-                            Swal.fire('Partial Success', `Deleted ${successCount} requests, ${errorCount} failed`, 'warning').then(() => {
+                            Swal.fire('บางส่วนสำเร็จ', `ลบได้ ${successCount} คำขอ, ล้มเหลว ${errorCount} คำขอ`, 'warning').then(() => {
                                 location.reload();
                             });
                         }
                     } catch (error) {
-                        Swal.fire('Error', 'Failed to delete requests', 'error');
+                        Swal.fire('ผิดพลาด', 'ไม่สามารถลบคำขอได้', 'error');
                     }
                 }
             }

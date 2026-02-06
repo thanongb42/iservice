@@ -27,7 +27,30 @@ if (!empty($request_code)) {
     $request = $result->fetch_assoc();
 
     if ($request) {
-        // Construct Timeline Data
+        // Get task assignments for this request
+        $ta_stmt = $conn->prepare("
+            SELECT ta.status, ta.assigned_to, ta.created_at, ta.accepted_at, ta.started_at, ta.completed_at,
+                   CONCAT(u.first_name, ' ', u.last_name) as assignee_name
+            FROM task_assignments ta
+            JOIN users u ON ta.assigned_to = u.user_id
+            WHERE ta.request_id = ? AND ta.status != 'cancelled'
+            ORDER BY ta.created_at DESC
+            LIMIT 1
+        ");
+        $ta_stmt->bind_param('i', $request['request_id']);
+        $ta_stmt->execute();
+        $task = $ta_stmt->get_result()->fetch_assoc();
+
+        // Determine actual progress from task assignment data
+        $task_status = $task['status'] ?? null;
+        $is_assigned = !empty($task);
+        $is_accepted = in_array($task_status, ['accepted', 'in_progress', 'completed']);
+        $is_working = in_array($task_status, ['in_progress', 'completed']);
+        $is_completed = ($request['status'] == 'completed') || ($task_status == 'completed');
+        $is_rejected = ($request['status'] == 'rejected');
+        $is_cancelled = ($request['status'] == 'cancelled');
+
+        // Step 1: รับเรื่อง
         $timeline[] = [
             'status' => 'pending',
             'label' => 'รับเรื่อง',
@@ -36,23 +59,35 @@ if (!empty($request_code)) {
             'completed' => true
         ];
 
-        // Assignment logic check
-        $is_assigned = !empty($request['assigned_at']);
+        // Step 2: มอบหมายงาน
+        $timeline[] = [
+            'status' => 'assigned',
+            'label' => 'มอบหมายงาน',
+            'desc' => $is_assigned ? 'มอบหมายให้ ' . htmlspecialchars($task['assignee_name']) : 'รอมอบหมาย',
+            'time' => $is_assigned ? $task['created_at'] : null,
+            'completed' => $is_assigned
+        ];
+
+        // Step 3: รับงาน
+        $timeline[] = [
+            'status' => 'accepted',
+            'label' => 'รับงาน',
+            'desc' => $is_accepted ? 'เจ้าหน้าที่รับงานแล้ว' : 'รอเจ้าหน้าที่รับงาน',
+            'time' => $is_accepted ? $task['accepted_at'] : null,
+            'completed' => $is_accepted
+        ];
+
+        // Step 4: กำลังดำเนินการ
         $timeline[] = [
             'status' => 'in_progress',
             'label' => 'กำลังดำเนินการ',
-            'desc' => $is_assigned ? "มอบหมายให้เจ้าหน้าที่แล้ว" : "รอดำเนินการ",
-            'time' => $request['started_at'] ?? $request['assigned_at'],
-            'completed' => ($request['status'] == 'in_progress' || $request['status'] == 'completed')
+            'desc' => $is_working ? 'เจ้าหน้าที่กำลังดำเนินการ' : 'รอดำเนินการ',
+            'time' => $is_working ? $task['started_at'] : null,
+            'completed' => $is_working
         ];
 
-        // Completion logic check
-        $is_completed = ($request['status'] == 'completed');
-        $is_rejected = ($request['status'] == 'rejected');
-        $is_cancelled = ($request['status'] == 'cancelled');
-
         if ($is_rejected) {
-             $timeline[] = [
+            $timeline[] = [
                 'status' => 'rejected',
                 'label' => 'ถูกปฏิเสธ',
                 'desc' => $request['rejection_reason'],
@@ -60,7 +95,7 @@ if (!empty($request_code)) {
                 'completed' => true
             ];
         } elseif ($is_cancelled) {
-             $timeline[] = [
+            $timeline[] = [
                 'status' => 'cancelled',
                 'label' => 'ยกเลิก',
                 'desc' => 'ผู้ใช้ยกเลิกคำขอ',
@@ -68,11 +103,12 @@ if (!empty($request_code)) {
                 'completed' => true
             ];
         } else {
+            // Step 5: เสร็จสิ้น
             $timeline[] = [
                 'status' => 'completed',
                 'label' => 'เสร็จสิ้น',
-                'desc' => $request['completion_notes'] ?? 'ดำเนินการเรียบร้อย',
-                'time' => $request['completed_at'],
+                'desc' => $is_completed ? ($request['completion_notes'] ?? 'ดำเนินการเรียบร้อย') : 'รอดำเนินการให้เสร็จ',
+                'time' => $is_completed ? ($request['completed_at'] ?? $task['completed_at']) : null,
                 'completed' => $is_completed
             ];
         }

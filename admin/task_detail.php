@@ -621,6 +621,33 @@ include 'admin-layout/topbar.php';
             <!-- Action Buttons -->
             <div class="detail-card">
                 <h3>การดำเนินการ</h3>
+
+                <?php if ($task['status'] === 'pending'): ?>
+                <!-- ปุ่มรับงาน - แสดงเมื่อสถานะเป็น pending -->
+                <div class="mb-4">
+                    <button class="w-full btn-action btn-accept text-lg py-3 flex items-center justify-center gap-2" onclick="acceptTask()">
+                        <i class="fas fa-check-circle"></i> รับงาน
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2 text-center">กดปุ่มเพื่อยืนยันการรับงานนี้</p>
+                </div>
+                <?php elseif ($task['status'] === 'accepted'): ?>
+                <!-- ปุ่มเริ่มดำเนินการ - แสดงเมื่อสถานะเป็น accepted -->
+                <div class="mb-4">
+                    <button class="w-full btn-action btn-start text-lg py-3 flex items-center justify-center gap-2" onclick="startTask()">
+                        <i class="fas fa-play-circle"></i> เริ่มดำเนินการ
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2 text-center">กดปุ่มเพื่อเริ่มทำงาน</p>
+                </div>
+                <?php elseif ($task['status'] === 'in_progress'): ?>
+                <!-- ปุ่มเสร็จสิ้น - แสดงเมื่อสถานะเป็น in_progress -->
+                <div class="mb-4">
+                    <button class="w-full btn-action btn-complete text-lg py-3 flex items-center justify-center gap-2" onclick="completeTask()">
+                        <i class="fas fa-check-double"></i> งานเสร็จสิ้น
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2 text-center">กดปุ่มเมื่อทำงานเสร็จแล้ว</p>
+                </div>
+                <?php endif; ?>
+
                 <div class="action-buttons">
                     <button class="btn-action btn-back" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i> ย้อนกลับ
@@ -727,6 +754,88 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
+    // ฟังก์ชันรับงาน
+    async function acceptTask() {
+        const result = await Swal.fire({
+            title: 'ยืนยันการรับงาน',
+            text: 'คุณต้องการรับงานนี้ใช่หรือไม่?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0284c7',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="fas fa-check"></i> รับงาน',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!result.isConfirmed) return;
+
+        await updateTaskStatus('accepted', 'รับงานเรียบร้อยแล้ว');
+    }
+
+    // ฟังก์ชันเริ่มดำเนินการ
+    async function startTask() {
+        const result = await Swal.fire({
+            title: 'เริ่มดำเนินการ',
+            text: 'คุณต้องการเริ่มทำงานนี้ใช่หรือไม่?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="fas fa-play"></i> เริ่มงาน',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!result.isConfirmed) return;
+
+        await updateTaskStatus('in_progress', 'เริ่มดำเนินการแล้ว');
+    }
+
+    // ฟังก์ชันงานเสร็จสิ้น
+    async function completeTask() {
+        const result = await Swal.fire({
+            title: 'ยืนยันงานเสร็จสิ้น',
+            text: 'คุณต้องการทำเครื่องหมายว่างานนี้เสร็จสิ้นแล้วใช่หรือไม่?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="fas fa-check-double"></i> เสร็จสิ้น',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!result.isConfirmed) return;
+
+        await updateTaskStatus('completed', 'งานเสร็จสิ้นแล้ว');
+    }
+
+    // ฟังก์ชันอัปเดตสถานะงาน
+    async function updateTaskStatus(newStatus, successMessage) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'update_status');
+            formData.append('assignment_id', <?= $assignment_id ?>);
+            formData.append('new_status', newStatus);
+
+            const response = await fetch('api/task_assignment_api.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire('สำเร็จ', successMessage, 'success').then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('ผิดพลาด', data.message || 'ไม่สามารถอัปเดตสถานะได้', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
+        }
+    }
+
     async function updateTaskTimes() {
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;

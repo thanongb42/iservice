@@ -111,6 +111,7 @@ if ($is_manager) {
 #sidebar {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
+    width: 16rem;
 }
 
 /* Menu item styles */

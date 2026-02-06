@@ -196,7 +196,7 @@ try {
             $shared = clean_input($_POST['shared_with']);
             $purpose = clean_input($_POST['purpose']);
             $backup = intval($_POST['backup_required']);
-            $stmt->bind_param("sisssi", $request_id, $folder, $size, $permission, $shared, $purpose, $backup);
+            $stmt->bind_param("isisssi", $request_id, $folder, $size, $permission, $shared, $purpose, $backup);
             break;
 
         case 'IT_SUPPORT':

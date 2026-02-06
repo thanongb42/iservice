@@ -14,6 +14,16 @@
  * - PHOTOGRAPHY => photographer
  */
 
+// Error reporting - show errors in development, hide in production
+$is_production = (strpos($_SERVER['HTTP_HOST'] ?? '', 'rangsitcity.go.th') !== false);
+if ($is_production) {
+    error_reporting(0);
+    ini_set('display_errors', '0');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -25,6 +35,19 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../config/database.php';
+
+/**
+ * Helper: Check if a column exists in a table
+ */
+function column_exists($conn, $table, $column) {
+    $result = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+    return $result && $result->num_rows > 0;
+}
+
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// Actions ที่ staff สามารถทำได้ (ไม่ต้องเป็น manager)
+$staff_allowed_actions = ['update_status'];
 
 // Check if user has manager/all role or is legacy admin
 $_can_assign = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
@@ -39,7 +62,9 @@ if (!$_can_assign) {
     $chk->execute();
     $_can_assign = $chk->get_result()->fetch_assoc()['cnt'] > 0;
 }
-if (!$_can_assign) {
+
+// อนุญาต staff actions หรือต้องเป็น manager
+if (!$_can_assign && !in_array($action, $staff_allowed_actions)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'ไม่มีสิทธิ์มอบหมายงาน']);
     exit();
@@ -56,8 +81,6 @@ $SERVICE_ROLE_MAPPING = [
     'WEB_DESIGN' => ['it_support'],  // Changed to it_support
     'PRINTER' => ['it_support'],
 ];
-
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // ========================================
 // GET: ดึงข้อมูล users ที่เหมาะสมตามบทบาท
@@ -161,7 +184,7 @@ if ($action === 'get_service_info') {
 if ($action === 'assign_task') {
     $request_id = intval($_POST['request_id'] ?? 0);
     $assigned_to = intval($_POST['assigned_to'] ?? 0);
-    $assigned_as_role = intval($_POST['assigned_as_role'] ?? 0);
+    $assigned_as_role = !empty($_POST['assigned_as_role']) ? intval($_POST['assigned_as_role']) : null;
     $priority = $_POST['priority'] ?? 'normal';
     $due_date = $_POST['due_date'] ?? null;
     $notes = $_POST['notes'] ?? '';
@@ -251,26 +274,57 @@ if ($action === 'assign_task') {
         exit();
     }
     
-    // Create task assignment
-    $insert_query = "INSERT INTO task_assignments 
-                    (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, start_time, end_time, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
-    
-    $insert_stmt = $conn->prepare($insert_query);
+    // Create task assignment - dynamically build query based on available columns
     $admin_id = $_SESSION['user_id'];
     
-    $insert_stmt->bind_param(
-        'iiiisssss',
-        $request_id,
-        $assigned_to,
-        $assigned_as_role,
-        $admin_id,
-        $priority,
-        $due_date,
-        $notes,
-        $start_time,
-        $end_time
-    );
+    // Check if start_time/end_time columns exist (may not exist on Production)
+    $has_time_columns = column_exists($conn, 'task_assignments', 'start_time');
+    
+    if ($has_time_columns && ($start_time || $end_time)) {
+        $insert_query = "INSERT INTO task_assignments 
+                        (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, start_time, end_time, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
+        
+        $insert_stmt = $conn->prepare($insert_query);
+        if (!$insert_stmt) {
+            echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
+            exit();
+        }
+        
+        $insert_stmt->bind_param(
+            'iiiisssss',
+            $request_id,
+            $assigned_to,
+            $assigned_as_role,
+            $admin_id,
+            $priority,
+            $due_date,
+            $notes,
+            $start_time,
+            $end_time
+        );
+    } else {
+        $insert_query = "INSERT INTO task_assignments 
+                        (request_id, assigned_to, assigned_as_role, assigned_by, priority, due_date, notes, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
+        
+        $insert_stmt = $conn->prepare($insert_query);
+        if (!$insert_stmt) {
+            echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
+            exit();
+        }
+        
+        $insert_stmt->bind_param(
+            'iiiisss',
+            $request_id,
+            $assigned_to,
+            $assigned_as_role,
+            $admin_id,
+            $priority,
+            $due_date,
+            $notes
+        );
+    }
     
     if ($insert_stmt->execute()) {
         echo json_encode([
@@ -408,6 +462,13 @@ if ($action === 'update_task_times') {
     if (!$assignment_id) {
         echo json_encode(['success' => false, 'message' => 'Invalid assignment ID']);
         exit();
+    }
+    
+    // Check if start_time/end_time columns exist
+    if (!column_exists($conn, 'task_assignments', 'start_time')) {
+        // Auto-create columns if missing
+        $conn->query("ALTER TABLE task_assignments ADD COLUMN start_time DATETIME DEFAULT NULL AFTER started_at");
+        $conn->query("ALTER TABLE task_assignments ADD COLUMN end_time DATETIME DEFAULT NULL AFTER start_time");
     }
     
     // Verify assignment belongs to current user or user is admin
