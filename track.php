@@ -15,24 +15,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ticket'])) {
     $search_ticket = trim($_GET['ticket']);
     
     if (!empty($search_ticket)) {
-        // Search via API
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => 'http://localhost/iservice/api/track_task.php?ticket=' . urlencode($search_ticket),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
-        ]);
-        
-        $response = curl_exec($curl);
-        curl_close($curl);
-        
-        if ($response) {
-            $data = json_decode($response, true);
-            if ($data['status'] === 'success' && $data['data']) {
-                $tracking_data = $data['data'];
+        // Query database directly (no cURL - avoids loopback issues on production)
+        try {
+            $stmt = $conn->prepare("
+                SELECT 
+                    sr.request_id,
+                    sr.request_code,
+                    sr.service_code,
+                    sr.subject,
+                    sr.description,
+                    sr.priority,
+                    sr.status AS request_status,
+                    sr.created_at,
+                    sr.requester_name,
+                    sr.requester_phone,
+                    sr.requester_email,
+                    ta.assignment_id,
+                    ta.assigned_to,
+                    ta.created_at AS assigned_at,
+                    ta.status AS task_status,
+                    ta.accepted_at,
+                    ta.started_at,
+                    ta.completed_at,
+                    CONCAT(u.first_name, ' ', u.last_name) as assigned_staff_name,
+                    r.role_name
+                FROM service_requests sr
+                LEFT JOIN task_assignments ta ON sr.request_id = ta.request_id
+                LEFT JOIN users u ON ta.assigned_to = u.user_id
+                LEFT JOIN user_roles ur ON u.user_id = ur.user_id AND ur.is_primary = 1
+                LEFT JOIN roles r ON ur.role_id = r.role_id
+                WHERE sr.request_code = ?
+                LIMIT 1
+            ");
+            
+            if ($stmt) {
+                $stmt->bind_param('s', $search_ticket);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    $tracking_data = $result->fetch_assoc();
+                    
+                    // Get service details
+                    $service_details_map = [
+                        'EMAIL' => 'request_email_details',
+                        'NAS' => 'request_nas_details',
+                        'INTERNET' => 'request_internet_details',
+                        'IT_SUPPORT' => 'request_it_support_details',
+                        'WEB_DESIGN' => 'request_webdesign_details',
+                        'PRINTER' => 'request_printer_details',
+                        'QR_CODE' => 'request_qr_code_details',
+                        'PHOTOGRAPHY' => 'request_photography_details'
+                    ];
+                    
+                    $sc = $tracking_data['service_code'];
+                    if (isset($service_details_map[$sc])) {
+                        $d_stmt = $conn->prepare("SELECT * FROM " . $service_details_map[$sc] . " WHERE request_id = ?");
+                        if ($d_stmt) {
+                            $d_stmt->bind_param('i', $tracking_data['request_id']);
+                            $d_stmt->execute();
+                            $d_result = $d_stmt->get_result();
+                            if ($d_result && $d_result->num_rows > 0) {
+                                $tracking_data['details'] = $d_result->fetch_assoc();
+                            }
+                            $d_stmt->close();
+                        }
+                    }
+                } else {
+                    $error_message = 'ไม่พบข้อมูลเรื่องที่ค้นหา';
+                }
+                $stmt->close();
             } else {
-                $error_message = $data['message'] ?? 'ไม่สามารถค้นหาข้อมูลได้';
+                $error_message = 'เกิดข้อผิดพลาดในการค้นหา';
             }
+        } catch (Exception $e) {
+            $error_message = 'ไม่สามารถค้นหาข้อมูลได้';
         }
     }
 }
