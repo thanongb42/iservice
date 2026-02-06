@@ -64,12 +64,25 @@ switch ($request['service_code']) {
         break;
 }
 
-// Get users for assignment
-$users_query = "SELECT user_id, first_name, last_name FROM users WHERE role IN ('admin', 'staff') ORDER BY first_name";
-$users_result = $conn->query($users_query);
-$users = [];
-while ($row = $users_result->fetch_assoc()) {
-    $users[] = $row;
+// Get task assignments for this request
+$task_assignments = [];
+$ta_query = $conn->prepare("
+    SELECT ta.*,
+           u_to.first_name as to_first, u_to.last_name as to_last,
+           u_by.first_name as by_first, u_by.last_name as by_last,
+           r.role_name
+    FROM task_assignments ta
+    JOIN users u_to ON ta.assigned_to = u_to.user_id
+    JOIN users u_by ON ta.assigned_by = u_by.user_id
+    LEFT JOIN roles r ON ta.assigned_as_role = r.role_id
+    WHERE ta.request_id = ? AND ta.status != 'cancelled'
+    ORDER BY ta.created_at DESC
+");
+$ta_query->bind_param('i', $request_id);
+$ta_query->execute();
+$ta_result = $ta_query->get_result();
+while ($row = $ta_result->fetch_assoc()) {
+    $task_assignments[] = $row;
 }
 
 // Handle form submissions
@@ -114,25 +127,6 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Approve request
-    $assigned_to = intval($_POST['assigned_to']);
-    
-    $approve_stmt = $conn->prepare("
-        UPDATE service_requests 
-        SET status = 'in_progress', assigned_to = ?
-        WHERE request_id = ?
-    ");
-    
-    $approve_stmt->bind_param("ii", $assigned_to, $request_id);
-    
-    if ($approve_stmt->execute()) {
-        $_SESSION['success_msg'] = 'อนุมัติคำขอสำเร็จ';
-        $stmt->execute();
-        $request = $stmt->get_result()->fetch_assoc();
-    }
-}
-
 if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Reject request
     $rejection_reason = clean_input($_POST['rejection_reason']);
@@ -173,14 +167,6 @@ while ($row = $dept_result->fetch_assoc()) {
     $departments[] = $row;
 }
 
-// Get assigned staff
-$assigned_staff = null;
-if ($request['assigned_to']) {
-    $staff_stmt = $conn->prepare("SELECT first_name, last_name FROM users WHERE user_id = ?");
-    $staff_stmt->bind_param("i", $request['assigned_to']);
-    $staff_stmt->execute();
-    $assigned_staff = $staff_stmt->get_result()->fetch_assoc();
-}
 
 include __DIR__ . '/admin-layout/header.php';
 include __DIR__ . '/admin-layout/sidebar.php';
@@ -412,43 +398,50 @@ include __DIR__ . '/admin-layout/sidebar.php';
 
             <!-- Sidebar Actions -->
             <div class="lg:col-span-1">
-                <!-- Assignment -->
+                <!-- Task Assignments -->
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">มอบหมายงาน</h3>
-                    
-                    <?php if ($assigned_staff): ?>
-                    <div class="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-4">
-                        <p class="text-sm text-gray-600 mb-1">มอบหมายให้</p>
-                        <p class="text-gray-900 font-bold">
-                            <?= htmlspecialchars($assigned_staff['first_name'] . ' ' . $assigned_staff['last_name']) ?>
-                        </p>
-                        <p class="text-xs text-gray-500 mt-2">
-                            <?= date('d/m/Y H:i', strtotime($request['assigned_at'])) ?>
-                        </p>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($request['status'] === 'pending'): ?>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="approve">
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกผู้รับมอบหมาย</label>
-                            <select name="assigned_to" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
-                                <option value="">-- เลือกผู้รับมอบหมาย --</option>
-                                <?php foreach ($users as $user): ?>
-                                <option value="<?= $user['user_id'] ?>">
-                                    <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-user-tag text-teal-600 mr-1"></i> มอบหมายงาน
+                    </h3>
+
+                    <?php if (!empty($task_assignments)): ?>
+                        <div class="space-y-3 mb-4">
+                        <?php foreach ($task_assignments as $ta):
+                            $status_config = [
+                                'pending'     => ['label' => 'รอรับงาน',       'bg' => 'bg-yellow-50', 'border' => 'border-yellow-200', 'text' => 'text-yellow-800'],
+                                'accepted'    => ['label' => 'รับงานแล้ว',     'bg' => 'bg-blue-50',   'border' => 'border-blue-200',   'text' => 'text-blue-800'],
+                                'in_progress' => ['label' => 'กำลังดำเนินการ', 'bg' => 'bg-indigo-50', 'border' => 'border-indigo-200', 'text' => 'text-indigo-800'],
+                                'completed'   => ['label' => 'เสร็จสิ้น',     'bg' => 'bg-green-50',  'border' => 'border-green-200',  'text' => 'text-green-800'],
+                            ];
+                            $sc = $status_config[$ta['status']] ?? ['label' => $ta['status'], 'bg' => 'bg-gray-50', 'border' => 'border-gray-200', 'text' => 'text-gray-800'];
+                        ?>
+                            <div class="<?= $sc['bg'] ?> border <?= $sc['border'] ?> rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-1">
+                                    <p class="text-gray-900 font-bold text-sm">
+                                        <?= htmlspecialchars($ta['to_first'] . ' ' . $ta['to_last']) ?>
+                                    </p>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded <?= $sc['bg'] ?> <?= $sc['text'] ?>">
+                                        <?= $sc['label'] ?>
+                                    </span>
+                                </div>
+                                <?php if ($ta['role_name']): ?>
+                                <p class="text-xs text-gray-500">บทบาท: <?= htmlspecialchars($ta['role_name']) ?></p>
+                                <?php endif; ?>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    มอบหมายโดย <?= htmlspecialchars($ta['by_first'] . ' ' . $ta['by_last']) ?>
+                                    &middot; <?= date('d/m/Y H:i', strtotime($ta['created_at'])) ?>
+                                </p>
+                            </div>
+                        <?php endforeach; ?>
                         </div>
-                        
-                        <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold">
-                            <i class="fas fa-check mr-2"></i>อนุมัติ
-                        </button>
-                    </form>
+                    <?php else: ?>
+                        <p class="text-sm text-gray-400 mb-4">ยังไม่มีการมอบหมายงาน</p>
                     <?php endif; ?>
+
+                    <a href="service_requests.php"
+                       class="block w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-bold text-center text-sm">
+                        <i class="fas fa-user-plus mr-1"></i> มอบหมายงานที่หน้ารายการ
+                    </a>
                 </div>
 
                 <!-- Rejection -->

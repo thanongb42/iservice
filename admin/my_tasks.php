@@ -16,21 +16,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
 
-// Check if user has manager/all role (redirect to admin dashboard)
-$check_manager = $conn->prepare("
-    SELECT COUNT(*) as cnt FROM user_roles ur
-    JOIN roles r ON ur.role_id = r.role_id
-    WHERE ur.user_id = ? AND r.role_code IN ('manager', 'all')
-    AND ur.is_active = 1 AND r.is_active = 1
-");
-$check_manager->bind_param('i', $user_id);
-$check_manager->execute();
-$manager_result = $check_manager->get_result()->fetch_assoc();
-
-if ($manager_result['cnt'] > 0) {
-    header('Location: admin_dashboard.php');
-    exit();
-}
+// Manager/all users can also access my_tasks (they may be assigned tasks too)
 
 // Get user roles
 $roles_query = "SELECT r.role_code, r.role_name, r.role_icon, r.role_color

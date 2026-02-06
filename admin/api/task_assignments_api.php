@@ -72,14 +72,15 @@ function canAssignTasks() {
     global $conn;
     $user_id = $_SESSION['user_id'];
 
-    // Admin can always assign
-    if ($_SESSION['role'] === 'admin') return true;
+    // Legacy admin can always assign
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') return true;
 
-    // Check if user has a role that can assign
+    // Check if user has manager/all role or a role that can assign
     $stmt = $conn->prepare("
         SELECT COUNT(*) as cnt FROM user_roles ur
         JOIN roles r ON ur.role_id = r.role_id
-        WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 AND r.can_assign = 1
+        WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1
+        AND (r.can_assign = 1 OR r.role_code IN ('manager', 'all'))
     ");
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
@@ -208,8 +209,8 @@ function updateTaskStatus() {
         throw new Exception('ไม่พบการมอบหมายงาน');
     }
 
-    // Check permission - must be assigned user or admin
-    if ($assignment['assigned_to'] != $user_id && $_SESSION['role'] !== 'admin') {
+    // Check permission - must be assigned user or manager/admin
+    if ($assignment['assigned_to'] != $user_id && !canAssignTasks()) {
         throw new Exception('คุณไม่มีสิทธิ์อัปเดตสถานะนี้');
     }
 

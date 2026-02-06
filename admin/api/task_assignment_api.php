@@ -17,14 +17,33 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-// Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Access denied']);
     exit();
 }
 
 require_once '../../config/database.php';
+
+// Check if user has manager/all role or is legacy admin
+$_can_assign = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+if (!$_can_assign) {
+    $chk = $conn->prepare("
+        SELECT COUNT(*) as cnt FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.role_id
+        WHERE ur.user_id = ? AND r.role_code IN ('manager', 'all')
+        AND ur.is_active = 1 AND r.is_active = 1
+    ");
+    $chk->bind_param('i', $_SESSION['user_id']);
+    $chk->execute();
+    $_can_assign = $chk->get_result()->fetch_assoc()['cnt'] > 0;
+}
+if (!$_can_assign) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'ไม่มีสิทธิ์มอบหมายงาน']);
+    exit();
+}
 
 // Service code to required role mapping
 $SERVICE_ROLE_MAPPING = [
@@ -54,11 +73,16 @@ if ($action === 'get_available_users') {
     
     // Get required roles for this service code
     $required_roles = $SERVICE_ROLE_MAPPING[$service_code] ?? ['manager', 'all'];
-    
+
+    // Always include 'all' role (can do everything)
+    if (!in_array('all', $required_roles)) {
+        $required_roles[] = 'all';
+    }
+
     // Build role placeholders for query
     $role_placeholders = implode(',', array_fill(0, count($required_roles), '?'));
-    
-    // Get users with matching roles
+
+    // Get users with matching roles (include self - manager may assign to themselves)
     $query = "SELECT DISTINCT
                 u.user_id,
                 u.username,
@@ -71,16 +95,14 @@ if ($action === 'get_available_users') {
               WHERE r.role_code IN ($role_placeholders)
               AND ur.is_active = 1
               AND r.is_active = 1
-              AND r.can_be_assigned = 1
-              AND u.user_id != ?
               GROUP BY u.user_id
               ORDER BY u.first_name, u.last_name";
-    
+
     $stmt = $conn->prepare($query);
-    
+
     // Bind parameters
-    $params = array_merge($required_roles, [$_SESSION['user_id']]);
-    $types = str_repeat('s', count($required_roles)) . 'i';
+    $params = $required_roles;
+    $types = str_repeat('s', count($required_roles));
     $stmt->bind_param($types, ...$params);
     
     $stmt->execute();
@@ -200,28 +222,26 @@ if ($action === 'assign_task') {
     }
     
     $required_roles = $SERVICE_ROLE_MAPPING[$service_code] ?? ['manager', 'all'];
-    
+
+    // Always include 'all' role (can do everything)
+    if (!in_array('all', $required_roles)) {
+        $required_roles[] = 'all';
+    }
+
     // Verify user has one of the required roles
-    $check_role_query = "
-        SELECT COUNT(*) as cnt FROM user_roles ur
-        JOIN roles r ON ur.role_id = r.role_id
-        WHERE ur.user_id = ? AND r.role_code IN ('" . implode("','", $required_roles) . "')
-        AND ur.is_active = 1 AND r.is_active = 1
-    ";
-    
     $check_stmt = $conn->prepare("
         SELECT COUNT(*) as cnt FROM user_roles ur
         JOIN roles r ON ur.role_id = r.role_id
         WHERE ur.user_id = ? AND r.role_code IN (" . implode(',', array_fill(0, count($required_roles), '?')) . ")
         AND ur.is_active = 1 AND r.is_active = 1
     ");
-    
+
     $params = array_merge([$assigned_to], $required_roles);
     $types = 'i' . str_repeat('s', count($required_roles));
     $check_stmt->bind_param($types, ...$params);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result()->fetch_assoc();
-    
+
     if ($check_result['cnt'] == 0) {
         echo json_encode([
             'success' => false,
@@ -240,7 +260,7 @@ if ($action === 'assign_task') {
     $admin_id = $_SESSION['user_id'];
     
     $insert_stmt->bind_param(
-        'iiisssss',
+        'iiiisssss',
         $request_id,
         $assigned_to,
         $assigned_as_role,

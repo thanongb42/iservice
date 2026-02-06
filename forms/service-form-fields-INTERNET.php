@@ -35,28 +35,10 @@ if (empty($internet_request_types)) {
 
     <div class="md:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-2">
-            สถานที่/ห้อง <span class="text-red-500">*</span>
+            สถานที่ใช้งาน<span class="text-red-500">*</span>
         </label>
         <input type="text" name="location" required
                placeholder="ระบุสถานที่ที่ต้องการติดตั้ง/มีปัญหา"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            อาคาร
-        </label>
-        <input type="text" name="building"
-               placeholder="เช่น อาคาร 1, อาคารอำนวยการ"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            เลขห้อง
-        </label>
-        <input type="text" name="room_number"
-               placeholder="เช่น 301, ห้องประชุมใหญ่"
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
     </div>
 

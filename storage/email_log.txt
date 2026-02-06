@@ -29,3 +29,19 @@ To: thanongb42@gmail.com
 Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0010)
 Link: http://localhost/iservice/tracking.php?req=REQ-2026-0010
 
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: ขอพิธีกร (REQ-2026-0011)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0011
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0012)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0012
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0013)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0013
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0014)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0014
+
