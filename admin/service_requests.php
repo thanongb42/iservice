@@ -31,11 +31,26 @@ FROM service_requests";
 $stats_result = $conn->query($stats_query);
 $stats = $stats_result->fetch_assoc();
 
-// Get all service requests using view
-$sql = "SELECT * FROM v_service_requests_full ORDER BY created_at DESC";
+// Pagination setup
+$items_per_page = 20;
+$current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($current_page - 1) * $items_per_page;
 
-$result = $conn->query($sql);
+// Get total count
+$count_sql = "SELECT COUNT(*) as total FROM v_service_requests_full";
+$count_result = $conn->query($count_sql);
+$count_row = $count_result->fetch_assoc();
+$total_items = $count_row['total'];
+$total_pages = ceil($total_items / $items_per_page);
+
+// Get paginated service requests
+$sql = "SELECT * FROM v_service_requests_full ORDER BY created_at DESC LIMIT ? OFFSET ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('ii', $items_per_page, $offset);
+$stmt->execute();
+$result = $stmt->get_result();
 $requests = [];
+$stmt->close();
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $requests[] = $row;
@@ -515,6 +530,66 @@ include 'admin-layout/topbar.php';
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
+            <div style="padding: 1.5rem; border-top: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="font-size: 0.875rem; color: #6b7280;">
+                    แสดง <strong><?= ($offset + 1) ?></strong> ถึง <strong><?= min($offset + $items_per_page, $total_items) ?></strong> จาก <strong><?= $total_items ?></strong> รายการ
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <!-- First Page -->
+                    <a href="?page=1<?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $current_page === 1 ? 'onclick="return false;"' : '' ?>>
+                        <i class="fas fa-chevron-left mr-1"></i>First
+                    </a>
+
+                    <!-- Previous Page -->
+                    <a href="?page=<?= max(1, $current_page - 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $current_page === 1 ? 'onclick="return false;"' : '' ?>>
+                        <i class="fas fa-chevron-left mr-1"></i>ก่อนหน้า
+                    </a>
+
+                    <!-- Page Numbers -->
+                    <?php
+                    $start_page = max(1, $current_page - 2);
+                    $end_page = min($total_pages, $current_page + 2);
+                    
+                    if ($start_page > 1) {
+                        echo '<span style="padding: 0 0.25rem; color: #9ca3af;">...</span>';
+                    }
+                    
+                    for ($p = $start_page; $p <= $end_page; $p++):
+                    ?>
+                        <a href="?page=<?= $p ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
+                           style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; font-size: 0.875rem; <?= $p === $current_page ? 'background: #009933; color: white; border-color: #009933;' : 'color: #374151; cursor: pointer;' ?>">
+                            <?= $p ?>
+                        </a>
+                    <?php endfor; ?>
+
+                    <?php if ($end_page < $total_pages) {
+                        echo '<span style="padding: 0 0.25rem; color: #9ca3af;">...</span>';
+                    } ?>
+
+                    <!-- Next Page -->
+                    <a href="?page=<?= min($total_pages, $current_page + 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $current_page === $total_pages ? 'onclick="return false;"' : '' ?>>
+                        ถัดไป<i class="fas fa-chevron-right ml-1"></i>
+                    </a>
+
+                    <!-- Last Page -->
+                    <a href="?page=<?= $total_pages ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $current_page === $total_pages ? 'onclick="return false;"' : '' ?>>
+                        Last<i class="fas fa-chevron-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 
