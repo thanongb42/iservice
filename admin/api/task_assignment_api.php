@@ -14,9 +14,12 @@
  * - PHOTOGRAPHY => photographer
  */
 
+// Start output buffering FIRST to prevent BOM/whitespace issues
+ob_start();
+
 // Always capture errors as JSON responses
 error_reporting(E_ALL);
-ini_set('display_errors', '0'); // Don't display - we'll catch them
+ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
 // Custom error handler to return JSON errors
@@ -26,6 +29,8 @@ set_error_handler(function($severity, $message, $file, $line) {
 
 // Global exception handler
 set_exception_handler(function($e) {
+    ob_end_clean(); // Clear any buffered output
+    header('Content-Type: application/json; charset=utf-8');
     http_response_code(500);
     echo json_encode([
         'success' => false, 
@@ -39,6 +44,9 @@ set_exception_handler(function($e) {
 });
 
 session_start();
+
+// Clear any output that leaked from included files (BOM, whitespace, etc.)
+ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
 
 // Check if user is logged in
@@ -49,8 +57,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
+    ob_start(); // Buffer again for database.php include
     require_once '../../config/database.php';
+    ob_end_clean(); // Clear any output from database.php
 } catch (Exception $e) {
+    ob_end_clean();
     echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
     exit();
 }
