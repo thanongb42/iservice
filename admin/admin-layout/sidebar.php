@@ -50,6 +50,7 @@ if ($is_manager) {
             'label' => '',
             'items' => [
                 ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
                 ['id' => 'user-manager', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
                 ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
                 ['id' => 'roles_manager', 'icon' => 'fa-user-tag', 'label' => 'จัดการบทบาท', 'url' => 'roles_manager.php'],
@@ -60,7 +61,6 @@ if ($is_manager) {
             'label' => 'บริการ',
             'items' => [
                 ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
-                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
                 ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
             ]
         ],
@@ -216,7 +216,7 @@ if ($is_manager) {
     <div class="flex flex-col h-full">
         <!-- Logo Area -->
         <div class="sidebar-logo-area flex items-center">
-            <div class="flex items-center space-x-3">
+            <a href="admin_dashboard.php" class="flex items-center space-x-3 hover:opacity-80 transition-opacity" style="text-decoration:none;">
                 <?php if ($sidebar_logo): ?>
                     <img src="../<?php echo htmlspecialchars($sidebar_logo); ?>" alt="Logo" class="w-9 h-9 object-contain rounded-lg flex-shrink-0">
                 <?php else: ?>
@@ -228,7 +228,7 @@ if ($is_manager) {
                     <h1 class="text-base font-bold text-gray-800 truncate" style="max-width: 160px;"><?php echo htmlspecialchars($sidebar_app_name); ?></h1>
                     <p class="text-xs text-gray-400 truncate" style="max-width: 160px;"><?php echo htmlspecialchars($sidebar_org_name); ?></p>
                 </div>
-            </div>
+            </a>
             <button id="sidebarToggle" onclick="toggleMobileSidebar()" class="lg:hidden ml-auto text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100">
                 <i class="fas fa-times"></i>
             </button>
