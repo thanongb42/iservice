@@ -38,10 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_menu'])) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issssiiis", $parent_id, $menu_name, $menu_name_en, $menu_url, $menu_icon, $menu_order, $is_active, $target, $description);
+    $stmt->bind_param("issssiiss", $parent_id, $menu_name, $menu_name_en, $menu_url, $menu_icon, $menu_order, $is_active, $target, $description);
 
     if ($stmt->execute()) {
         $message = "เพิ่มเมนูสำเร็จ!";
+        // Redirect to clear form
+        header("Refresh: 1.5; url=nav_menu.php");
     } else {
         $error = "เกิดข้อผิดพลาด: " . $conn->error;
     }
@@ -64,10 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_menu'])) {
             menu_order=?, is_active=?, target=?, description=? WHERE id=?";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issssiiisi", $parent_id, $menu_name, $menu_name_en, $menu_url, $menu_icon, $menu_order, $is_active, $target, $description, $id);
+    $stmt->bind_param("issssiissi", $parent_id, $menu_name, $menu_name_en, $menu_url, $menu_icon, $menu_order, $is_active, $target, $description, $id);
 
     if ($stmt->execute()) {
         $message = "แก้ไขเมนูสำเร็จ!";
+        // Redirect to clear form
+        header("Refresh: 1.5; url=nav_menu.php");
     } else {
         $error = "เกิดข้อผิดพลาด: " . $conn->error;
     }
@@ -87,6 +91,8 @@ if ($action === 'delete' && isset($_GET['id'])) {
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
         $message = "ลบเมนูสำเร็จ!";
+        // Redirect after delete
+        header("Refresh: 1.5; url=nav_menu.php");
     } else {
         $error = "เกิดข้อผิดพลาด: " . $conn->error;
     }
@@ -97,8 +103,11 @@ if ($action === 'toggle' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $conn->prepare("UPDATE nav_menu SET is_active = NOT is_active WHERE id = ?");
     $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $message = "เปลี่ยนสถานะสำเร็จ!";
+    if ($stmt->execute()) {
+        $message = "เปลี่ยนสถานะสำเร็จ!";
+        // Redirect after toggle
+        header("Refresh: 1; url=nav_menu.php");
+    }
 }
 
 // Fetch all menus
