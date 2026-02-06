@@ -545,7 +545,17 @@ async function loadAvailableUsers() {
     const select = document.getElementById('newAssignUser');
     try {
         const response = await fetch(`api/task_assignment_api.php?action=get_available_users&service_code=${SERVICE_CODE}&request_id=${REQUEST_ID}`);
-        const data = await response.json();
+        const responseText = await response.text();
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseErr) {
+            console.error('API Response (not JSON):', responseText);
+            select.innerHTML = '<option value="">❌ API Error - ดู Console</option>';
+            return;
+        }
+        
         select.innerHTML = '<option value="">-- เลือกผู้รับผิดชอบ --</option>';
         if (data.success && data.users.length > 0) {
             data.users.forEach(user => {
@@ -555,10 +565,11 @@ async function loadAvailableUsers() {
                 select.appendChild(option);
             });
         } else {
-            select.innerHTML += '<option disabled>ไม่มีผู้ใช้ที่เหมาะสม</option>';
+            select.innerHTML += `<option disabled>${data.message || 'ไม่มีผู้ใช้ที่เหมาะสม'}</option>`;
         }
     } catch (error) {
-        select.innerHTML = '<option value="">เกิดข้อผิดพลาด</option>';
+        console.error('loadAvailableUsers error:', error);
+        select.innerHTML = `<option value="">❌ ${error.message}</option>`;
     }
 }
 
@@ -583,15 +594,25 @@ async function submitNewAssignment() {
         formData.append('notes', notes);
 
         const response = await fetch('api/task_assignment_api.php', { method: 'POST', body: formData });
-        const result = await response.json();
+        const responseText = await response.text();
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseErr) {
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับผิดปกติ:<br><small>' + responseText.substring(0, 500) + '</small>', 'error');
+            return;
+        }
 
         if (result.success) {
             Swal.fire('สำเร็จ', result.message, 'success').then(() => location.reload());
         } else {
-            Swal.fire('ผิดพลาด', result.message, 'error');
+            let errMsg = result.message || 'Unknown error';
+            if (result.debug) errMsg += '<br><small>(' + result.debug.file + ':' + result.debug.line + ')</small>';
+            Swal.fire('ผิดพลาด', errMsg, 'error');
         }
     } catch (error) {
-        Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายงานได้', 'error');
+        Swal.fire('ผิดพลาด', 'ไม่สามารถมอบหมายงานได้: ' + error.message, 'error');
     }
 }
 
