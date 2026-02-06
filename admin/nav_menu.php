@@ -24,7 +24,7 @@ $error = '';
 
 // CREATE - Add new menu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_menu'])) {
-    $parent_id = $_POST['parent_id'] ? (int)$_POST['parent_id'] : NULL;
+    $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : NULL;
     $menu_name = clean_input($_POST['menu_name']);
     $menu_name_en = clean_input($_POST['menu_name_en']);
     $menu_url = clean_input($_POST['menu_url']);
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_menu'])) {
 // UPDATE - Edit menu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_menu'])) {
     $id = (int)$_POST['id'];
-    $parent_id = $_POST['parent_id'] ? (int)$_POST['parent_id'] : NULL;
+    $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : NULL;
     $menu_name = clean_input($_POST['menu_name']);
     $menu_name_en = clean_input($_POST['menu_name_en']);
     $menu_url = clean_input($_POST['menu_url']);
@@ -291,10 +291,11 @@ include 'admin-layout/topbar.php';
                                 <option value="">-- ไม่มี (Parent Menu) --</option>
                                 <?php
                                 $parent_menus = $conn->query("SELECT id, menu_name FROM nav_menu WHERE parent_id IS NULL ORDER BY menu_name ASC");
+                                $current_parent_id = ($edit_data && isset($edit_data['parent_id'])) ? $edit_data['parent_id'] : null;
                                 while ($parent = $parent_menus->fetch_assoc()):
                                 ?>
-                                    <option value="<?= $parent['id'] ?>" <?= ($edit_data && $edit_data['parent_id'] == $parent['id']) ? 'selected' : '' ?>>
-                                        <?= $parent['menu_name'] ?>
+                                    <option value="<?= $parent['id'] ?>" <?= ($current_parent_id == $parent['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($parent['menu_name']) ?>
                                     </option>
                                 <?php endwhile; ?>
                             </select>
@@ -303,21 +304,21 @@ include 'admin-layout/topbar.php';
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อเมนู (TH) *</label>
                             <input type="text" name="menu_name" required
-                                   value="<?= $edit_data['menu_name'] ?? '' ?>"
+                                   value="<?= htmlspecialchars($edit_data['menu_name'] ?? '') ?>"
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อเมนู (EN)</label>
                             <input type="text" name="menu_name_en"
-                                   value="<?= $edit_data['menu_name_en'] ?? '' ?>"
+                                   value="<?= htmlspecialchars($edit_data['menu_name_en'] ?? '') ?>"
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">URL *</label>
                             <input type="text" name="menu_url" required
-                                   value="<?= $edit_data['menu_url'] ?? '#' ?>"
+                                   value="<?= htmlspecialchars($edit_data['menu_url'] ?? '#') ?>"
                                    placeholder="#, page.php, https://..."
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
@@ -330,7 +331,7 @@ include 'admin-layout/topbar.php';
                                 </a>
                             </label>
                             <input type="text" name="menu_icon"
-                                   value="<?= $edit_data['menu_icon'] ?? '' ?>"
+                                   value="<?= htmlspecialchars($edit_data['menu_icon'] ?? '') ?>"
                                    placeholder="fas fa-home"
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
@@ -338,22 +339,22 @@ include 'admin-layout/topbar.php';
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">ลำดับ *</label>
                             <input type="number" name="menu_order" required
-                                   value="<?= $edit_data['menu_order'] ?? 0 ?>"
+                                   value="<?= htmlspecialchars($edit_data['menu_order'] ?? 0) ?>"
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Target</label>
                             <select name="target" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                                <option value="_self" <?= ($edit_data && $edit_data['target'] == '_self') ? 'selected' : '' ?>>_self (หน้าเดิม)</option>
-                                <option value="_blank" <?= ($edit_data && $edit_data['target'] == '_blank') ? 'selected' : '' ?>>_blank (หน้าใหม่)</option>
+                                <option value="_self" <?= ($edit_data && ($edit_data['target'] ?? '_self') == '_self') ? 'selected' : '' ?>>_self (หน้าเดิม)</option>
+                                <option value="_blank" <?= ($edit_data && ($edit_data['target'] ?? '') == '_blank') ? 'selected' : '' ?>>_blank (หน้าใหม่)</option>
                             </select>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">คำอธิบาย</label>
                             <textarea name="description" rows="3"
-                                      class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"><?= $edit_data['description'] ?? '' ?></textarea>
+                                      class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"><?= htmlspecialchars($edit_data['description'] ?? '') ?></textarea>
                         </div>
 
                         <div class="flex items-center">
