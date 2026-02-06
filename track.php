@@ -56,7 +56,7 @@ function get_service_name($service_code) {
 function get_status_badge($status) {
     $badges = [
         'pending' => ['color' => 'bg-yellow-100 text-yellow-800', 'label' => 'รอการรับงาน'],
-        'accepted' => ['color' => 'bg-blue-100 text-blue-800', 'label' => 'ยอมรับแล้ว'],
+        'accepted' => ['color' => 'bg-blue-100 text-blue-800', 'label' => 'เจ้าหน้าที่รับงานแล้ว'],
         'in_progress' => ['color' => 'bg-purple-100 text-purple-800', 'label' => 'กำลังดำเนินการ'],
         'completed' => ['color' => 'bg-green-100 text-green-800', 'label' => 'เสร็จสิ้น'],
         'cancelled' => ['color' => 'bg-red-100 text-red-800', 'label' => 'ยกเลิก'],
@@ -301,9 +301,9 @@ include __DIR__ . '/includes/header_public.php';
                             <?php endif; ?>
                         </div>
                         <div class="pt-1">
-                            <p class="font-semibold text-gray-900">ยอมรับแล้ว</p>
+                            <p class="font-semibold text-gray-900">เจ้าหน้าที่รับงานแล้ว</p>
                             <p class="text-sm text-gray-600">
-                                <?php echo $tracking_data['accepted_at'] ? date('d/m/Y H:i', strtotime($tracking_data['accepted_at'])) : 'รอการยอมรับ'; ?>
+                                <?php echo $tracking_data['accepted_at'] ? date('d/m/Y H:i', strtotime($tracking_data['accepted_at'])) : 'รอเจ้าหน้าที่รับงาน'; ?>
                             </p>
                         </div>
                     </div>
