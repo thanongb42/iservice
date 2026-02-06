@@ -602,7 +602,7 @@ async function submitNewAssignment() {
         console.log('Response body:', responseText);
         
         if (!responseText || responseText.trim() === '') {
-            Swal.fire('ผิดพลาด', 'Server ตอบกลับว่างเปล่า (Empty Response)<br>Status: ' + response.status, 'error');
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับว่างเปล่า (Empty Response)<br>Status: ' + response.status + '<br>URL: api/task_assignment_api.php', 'error');
             return;
         }
         
@@ -610,7 +610,7 @@ async function submitNewAssignment() {
         try {
             result = JSON.parse(responseText);
         } catch (parseErr) {
-            Swal.fire('ผิดพลาด', 'Server ตอบกลับไม่ใช่ JSON:<br><code style="word-break:break-all;font-size:12px;">' + responseText.substring(0, 500) + '</code>', 'error');
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับไม่ใช่ JSON (Status ' + response.status + '):<br><code style="word-break:break-all;font-size:12px;">' + responseText.substring(0, 800) + '</code>', 'error');
             return;
         }
 
