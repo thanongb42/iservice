@@ -58,12 +58,59 @@ while ($row = $services_query->fetch_assoc()) {
     $services_stats[] = $row;
 }
 
+// Service Requests by Type (for charts)
+$requests_by_type = [];
+$type_query = $conn->query("SELECT service_code, service_name, COUNT(*) as count FROM service_requests GROUP BY service_code ORDER BY count DESC");
+while ($row = $type_query->fetch_assoc()) {
+    $requests_by_type[] = $row;
+}
+
+// Service Requests by Day (past 30 days)
+$requests_by_day = [];
+$day_query = $conn->query("
+    SELECT DATE(created_at) as date, COUNT(*) as count 
+    FROM service_requests 
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+");
+while ($row = $day_query->fetch_assoc()) {
+    $requests_by_day[] = $row;
+}
+
+// Service Requests by Month (past 12 months)
+$requests_by_month = [];
+$month_query = $conn->query("
+    SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count 
+    FROM service_requests 
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    ORDER BY month ASC
+");
+while ($row = $month_query->fetch_assoc()) {
+    $requests_by_month[] = $row;
+}
+
+// Service Requests by Year
+$requests_by_year = [];
+$year_query = $conn->query("
+    SELECT YEAR(created_at) as year, COUNT(*) as count 
+    FROM service_requests 
+    GROUP BY YEAR(created_at)
+    ORDER BY year ASC
+");
+while ($row = $year_query->fetch_assoc()) {
+    $requests_by_year[] = $row;
+}
+
 ?>
 <?php
 include 'admin-layout/header.php';
 include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <main class="main-content-transition lg:ml-0">
 
@@ -292,61 +339,203 @@ include 'admin-layout/topbar.php';
             </div>
 
             <!-- Charts Section -->
-            <div class="report-container">
-                <!-- Service Requests by Status -->
+            <div style="margin-bottom: 2rem;">
+                <!-- Service Requests by Type - Bar Chart -->
                 <div class="chart-container">
-                    <h3><i class="fas fa-tasks"></i> สถานะคำขอบริการ</h3>
-                    <table class="table-report">
-                        <thead>
-                            <tr>
-                                <th>สถานะ</th>
-                                <th>จำนวน</th>
-                                <th>เปอร์เซ็นต์</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $total_requests = array_sum($request_status);
-                            foreach ($request_status as $status => $count):
-                                $percent = $total_requests > 0 ? round($count / $total_requests * 100) : 0;
-                                $badge_class = 'status-' . strtolower(str_replace(' ', '-', $status));
-                            ?>
-                                <tr>
-                                    <td><span class="status-badge <?= $badge_class ?>"><?= htmlspecialchars($status) ?></span></td>
-                                    <td><?= number_format($count) ?></td>
-                                    <td>
-                                        <div style="background: #e5e7eb; border-radius: 9999px; height: 6px; width: 100px; overflow: hidden;">
-                                            <div style="background: #0d9488; height: 100%; width: <?= $percent ?>%;"></div>
-                                        </div>
-                                        <?= $percent ?>%
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <h3><i class="fas fa-chart-bar"></i> คำขอตามประเภทบริการ</h3>
+                    <canvas id="chartTypeBar" style="max-height: 300px;"></canvas>
                 </div>
 
-                <!-- Users by Department -->
+                <!-- Service Requests by Type - Pie Chart -->
                 <div class="chart-container">
-                    <h3><i class="fas fa-sitemap"></i> ผู้ใช้งานตามแผนก</h3>
-                    <table class="table-report">
-                        <thead>
-                            <tr>
-                                <th>แผนก</th>
-                                <th>จำนวนผู้ใช้</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($users_by_dept as $dept): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($dept['name']) ?></td>
-                                    <td><?= number_format($dept['count']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <h3><i class="fas fa-chart-pie"></i> สัดส่วนคำขอบริการ</h3>
+                    <canvas id="chartTypePie" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Service Requests by Day - Line Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-line"></i> คำขอรายวัน (30 วันล่าสุด)</h3>
+                    <canvas id="chartDay" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Service Requests by Month - Line Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-line"></i> คำขอรายเดือน (12 เดือนล่าสุด)</h3>
+                    <canvas id="chartMonth" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Service Requests by Year - Bar Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> คำขอรายปี</h3>
+                    <canvas id="chartYear" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Service Requests by Status - Pie Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-pie"></i> สถานะคำขอบริการ</h3>
+                    <canvas id="chartStatus" style="max-height: 300px;"></canvas>
                 </div>
             </div>
+
+            <script>
+            // Color palettes
+            const colors = {
+                bar: ['#0d9488', '#0f766e', '#06b6d4', '#0891b2', '#06a7d2', '#0e7490'],
+                status: {
+                    'pending': '#fbbf24',
+                    'in_progress': '#60a5fa',
+                    'completed': '#34d399',
+                    'cancelled': '#f87171'
+                }
+            };
+
+            // Chart 1: Service Requests by Type (Bar)
+            const typeData = <?= json_encode($requests_by_type) ?>;
+            const ctxTypeBar = document.getElementById('chartTypeBar').getContext('2d');
+            new Chart(ctxTypeBar, {
+                type: 'bar',
+                data: {
+                    labels: typeData.map(d => d.service_name || d.service_code),
+                    datasets: [{
+                        label: 'จำนวนคำขอ',
+                        data: typeData.map(d => d.count),
+                        backgroundColor: typeData.map((_, i) => colors.bar[i % colors.bar.length]),
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Chart 2: Service Requests by Type (Pie)
+            const ctxTypePie = document.getElementById('chartTypePie').getContext('2d');
+            new Chart(ctxTypePie, {
+                type: 'pie',
+                data: {
+                    labels: typeData.map(d => d.service_name || d.service_code),
+                    datasets: [{
+                        data: typeData.map(d => d.count),
+                        backgroundColor: typeData.map((_, i) => colors.bar[i % colors.bar.length])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Chart 3: Service Requests by Day (Line)
+            const dayData = <?= json_encode($requests_by_day) ?>;
+            const ctxDay = document.getElementById('chartDay').getContext('2d');
+            new Chart(ctxDay, {
+                type: 'line',
+                data: {
+                    labels: dayData.map(d => {
+                        const date = new Date(d.date);
+                        return date.toLocaleDateString('th-TH');
+                    }),
+                    datasets: [{
+                        label: 'จำนวนคำขอ',
+                        data: dayData.map(d => d.count),
+                        borderColor: '#0d9488',
+                        backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#0d9488'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Chart 4: Service Requests by Month (Line)
+            const monthData = <?= json_encode($requests_by_month) ?>;
+            const ctxMonth = document.getElementById('chartMonth').getContext('2d');
+            new Chart(ctxMonth, {
+                type: 'line',
+                data: {
+                    labels: monthData.map(d => {
+                        const [year, month] = d.month.split('-');
+                        const date = new Date(year, parseInt(month) - 1);
+                        return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short' });
+                    }),
+                    datasets: [{
+                        label: 'จำนวนคำขอ',
+                        data: monthData.map(d => d.count),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Chart 5: Service Requests by Year (Bar)
+            const yearData = <?= json_encode($requests_by_year) ?>;
+            const ctxYear = document.getElementById('chartYear').getContext('2d');
+            new Chart(ctxYear, {
+                type: 'bar',
+                data: {
+                    labels: yearData.map(d => 'ปี ' + (d.year + 543)),
+                    datasets: [{
+                        label: 'จำนวนคำขอ',
+                        data: yearData.map(d => d.count),
+                        backgroundColor: '#10b981',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Chart 6: Service Requests by Status (Pie)
+            const statusData = <?= json_encode($request_status) ?>;
+            const ctxStatus = document.getElementById('chartStatus').getContext('2d');
+            const statusLabels = Object.keys(statusData);
+            const statusColors = statusLabels.map(s => colors.status[s] || '#9ca3af');
+            new Chart(ctxStatus, {
+                type: 'pie',
+                data: {
+                    labels: statusLabels.map(s => {
+                        const labels = { 'pending': 'รอดำเนินการ', 'in_progress': 'กำลังดำเนินการ', 'completed': 'เสร็จสิ้น', 'cancelled': 'ยกเลิก' };
+                        return labels[s] || s;
+                    }),
+                    datasets: [{
+                        data: statusLabels.map(s => statusData[s]),
+                        backgroundColor: statusColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            </script>
 
         <?php endif; ?>
 
