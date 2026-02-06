@@ -2,51 +2,56 @@
 /**
  * API สำหรับมอบหมายงานตามบทบาท/หน้าที่
  * Role-based task assignment API
- * 
- * Service Code to Role Mapping:
- * - EMAIL => it_support
- * - NAS => it_support
- * - INTERNET => it_support
- * - IT_SUPPORT => it_support
- * - WEB_DESIGN => it_support
- * - PRINTER => it_support
- * - QR_CODE => graphic_designer
- * - PHOTOGRAPHY => photographer
  */
 
-// Start output buffering FIRST to prevent BOM/whitespace issues
+// Shutdown handler - catches fatal errors that nothing else can catch
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Clear any output
+        while (ob_get_level()) ob_end_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Fatal Error: ' . $error['message'],
+            'debug' => ['file' => basename($error['file']), 'line' => $error['line']]
+        ]);
+    }
+});
+
+// Start output buffering
 ob_start();
 
-// Always capture errors as JSON responses
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-// Custom error handler to return JSON errors
-set_error_handler(function($severity, $message, $file, $line) {
-    throw new ErrorException($message, 0, $severity, $file, $line);
-});
-
-// Global exception handler
+// Exception handler
 set_exception_handler(function($e) {
-    ob_end_clean(); // Clear any buffered output
+    while (ob_get_level()) ob_end_clean();
     header('Content-Type: application/json; charset=utf-8');
     http_response_code(500);
     echo json_encode([
-        'success' => false, 
-        'message' => 'Server Error: ' . $e->getMessage(),
-        'debug' => [
-            'file' => basename($e->getFile()),
-            'line' => $e->getLine()
-        ]
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage(),
+        'debug' => ['file' => basename($e->getFile()), 'line' => $e->getLine()]
     ]);
     exit();
 });
 
-session_start();
+// Start session (suppress warnings - don't convert to exceptions yet)
+@session_start();
 
-// Clear any output that leaked from included files (BOM, whitespace, etc.)
-ob_end_clean();
+// NOW set error handler (after session_start)
+set_error_handler(function($severity, $message, $file, $line) {
+    // Ignore suppressed errors
+    if (!(error_reporting() & $severity)) return false;
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+// Clear buffered output and set headers
+while (ob_get_level()) ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
 
 // Check if user is logged in
@@ -56,19 +61,21 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Include database config
+ob_start();
 try {
-    ob_start(); // Buffer again for database.php include
     require_once '../../config/database.php';
-    ob_end_clean(); // Clear any output from database.php
 } catch (Exception $e) {
-    ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
+    while (ob_get_level()) ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'message' => 'DB config error: ' . $e->getMessage()]);
     exit();
 }
+ob_end_clean();
 
-// Verify DB connection is valid
-if (!$conn || $conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'DB connection error: ' . ($conn->connect_error ?? 'null connection')]);
+// Verify DB connection
+if (!isset($conn) || !$conn || $conn->connect_error) {
+    echo json_encode(['success' => false, 'message' => 'DB connection error: ' . ($conn->connect_error ?? 'no connection')]);
     exit();
 }
 
