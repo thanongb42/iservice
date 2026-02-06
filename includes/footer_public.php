@@ -1,13 +1,38 @@
+<?php
+// Ensure database connection
+require_once __DIR__ . '/../config/database.php';
+
+// Fetch system settings if not already fetched
+if (!isset($footer_org_name) || !isset($footer_logo)) {
+    $system_settings = [];
+    if (isset($conn)) {
+        $settings_query = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+        if ($settings_query) {
+            while ($row = $settings_query->fetch_assoc()) {
+                $system_settings[$row['setting_key']] = $row['setting_value'];
+            }
+        }
+    }
+
+    $footer_org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'เทศบาลนครรังสิต';
+    
+    // Get logo from database
+    $db_logo = !empty($system_settings['logo_image']) ? $system_settings['logo_image'] : '';
+    if (!empty($db_logo) && file_exists(__DIR__ . '/../' . $db_logo)) {
+        $footer_logo = $db_logo;
+    } else {
+        $footer_logo = 'images/logo/rangsit-big-logo.png';
+    }
+}
+?>
     <!-- Footer -->
     <footer class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-300 py-12 md:py-16">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-10">
                 <div class="space-y-4">
                     <h3 class="text-2xl font-display font-bold text-white mb-4 flex items-center">
-                        <span class="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center mr-3 text-sm">
-                            <i class="fas fa-city text-white"></i>
-                        </span>
-                        <?php echo isset($org_name) ? htmlspecialchars($org_name) : 'เทศบาลนครรังสิต'; ?>
+                        <img src="<?php echo htmlspecialchars($footer_logo); ?>" alt="Logo" class="w-10 h-10 object-contain rounded-lg mr-3">
+                        <?php echo htmlspecialchars($footer_org_name); ?>
                     </h3>
                     <p class="text-gray-400 text-sm leading-relaxed mb-6">
                         มุ่งมั่นพัฒนาระบบบริการสาธารณะด้วยเทคโนโลยีทันสมัย เพื่อคุณภาพชีวิตที่ดีของประชาชน และการบริหารจัดการที่มีประสิทธิภาพ

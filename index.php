@@ -23,7 +23,7 @@ $latest_news = get_latest_tech_news(3); // ดึงข่าวล่าสุ�
 $tech_news_html = render_tech_news_cards($all_news);
 $tech_updates_html = render_tech_updates($latest_news);
 
-$page_title = "ข้อมูลธุรกรรมเมือง ศีลคำเขียว รุกรม";
+$page_title = "ระบบบริการของฝ่ายบริการและเผยแพ่วิชาการ เทศบาลนครรังสิต";
 $extra_styles = '
         .hero-gradient {
             background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 50%, #7fb069 100%);
@@ -862,50 +862,6 @@ include __DIR__ . '/includes/header_public.php';
             </div>
         </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-300 py-8 md:py-12">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8">
-                <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">เกี่ยวกับ เทศบาลนครรังสิต</h5>
-                    <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">ประวัติ เทศบาลนครรังสิต</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">วิสัยทัศน์ พันธกิจ</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">โครงสร้างองค์กร</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">บริการ</h5>
-                    <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการตู้น้ำดื่มอัจฉริยะ</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการป้ายรถเมล์อัจฉริยะ</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการรังสิตซิตี้แอพ</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ข้อมูล</h5>
-                    <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">ศูนย์ข้อมูลข่าวสาร</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">คำถามที่พบบ่อย</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">ดาวน์โหลด</a></li>
-                        <li><a href="admin/admin_dashboard.php" class="hover:text-yellow-400 transition-colors flex items-center">
-                            <i class="fas fa-user-shield mr-2"></i>Admin Panel
-                        </a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ติดต่อเรา</h5>
-                    <p class="text-xs md:text-sm mb-2">ที่อยู่ เลขที่ 151 ถนนรังสิต-ปทุมธานี </p>
-                    <p class="text-xs md:text-sm mb-2">ตำบลประชาธิปัตย์ อำเภอธัญบุรี </p>
-                    <p class="text-xs md:text-sm">จังหวัดปทุมธานี 12130</p>
-                </div>
-            </div>
-            <div class="border-t border-gray-700 pt-6 text-center text-xs md:text-sm">
-                <p>&copy; 2569 Rangsit City Municipality . All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
 
     <script>
         // Add smooth scrolling
