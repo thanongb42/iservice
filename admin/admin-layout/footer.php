@@ -69,11 +69,15 @@
             const sidebarLogo = document.getElementById('sidebarLogo');
             const userInfo = document.getElementById('userInfo');
 
+            console.log('Toggle sidebar - expanded:', sidebarExpanded);
+
             if (sidebarExpanded) {
                 sidebar.classList.remove('sidebar-collapsed');
                 sidebar.classList.add('sidebar-expanded');
-                mainContent.classList.remove('lg:ml-[80px]');
-                mainContent.classList.add('lg:ml-[280px]');
+                if (mainContent) {
+                    mainContent.classList.remove('lg:ml-[80px]');
+                    mainContent.classList.add('lg:ml-[280px]');
+                }
                 if (collapseIcon) {
                     collapseIcon.classList.remove('fa-chevron-right');
                     collapseIcon.classList.add('fa-chevron-left');
@@ -88,8 +92,10 @@
             } else {
                 sidebar.classList.remove('sidebar-expanded');
                 sidebar.classList.add('sidebar-collapsed');
-                mainContent.classList.remove('lg:ml-[280px]');
-                mainContent.classList.add('lg:ml-[80px]');
+                if (mainContent) {
+                    mainContent.classList.remove('lg:ml-[280px]');
+                    mainContent.classList.add('lg:ml-[80px]');
+                }
                 if (collapseIcon) {
                     collapseIcon.classList.remove('fa-chevron-left');
                     collapseIcon.classList.add('fa-chevron-right');
