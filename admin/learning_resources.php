@@ -207,7 +207,7 @@ function renderResources(resources) {
     
     resources.forEach(resource => {
         const icon = typeIcons[resource.resource_type] || 'fa-file text-gray-500';
-        const coverImg = resource.cover_image ? `/iservice/${resource.cover_image}` : 'https://via.placeholder.com/300x200?text=No+Image';
+        const coverImg = resource.cover_image ? `../${resource.cover_image}` : 'https://via.placeholder.com/300x200?text=No+Image';
         
         const html = `
             <div class="border rounded-xl overflow-hidden hover:shadow-lg transition ${!resource.is_active ? 'opacity-50' : ''}">
