@@ -320,56 +320,58 @@ function showResourceModal(resource = null) {
     ).join('');
     
     const html = `
-        <div>
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อทรัพยากร *</label>
-                <input type="text" id="modal_title" placeholder="ชื่อทรัพยากร" 
-                       value="${isEdit ? resource.title : ''}"
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">ชื่อทรัพยากร *</label>
+                    <input type="text" id="modal_title" placeholder="ชื่อทรัพยากร" 
+                           value="${isEdit ? resource.title : ''}"
+                           style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">ประเภท *</label>
+                    <select id="modal_resource_type" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px;">
+                        ${typeOptions}
+                    </select>
+                </div>
             </div>
             
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">รายละเอียด *</label>
-                <textarea id="modal_description" placeholder="รายละเอียด" rows="3"
-                          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">${isEdit ? resource.description : ''}</textarea>
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">รายละเอียด *</label>
+                <textarea id="modal_description" placeholder="รายละเอียด" rows="2"
+                          style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; resize: vertical;">${isEdit ? resource.description : ''}</textarea>
             </div>
             
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ประเภท *</label>
-                <select id="modal_resource_type" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">
-                    ${typeOptions}
-                </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">URL/Link</label>
+                    <input type="text" id="modal_resource_url" placeholder="https://..." 
+                           value="${isEdit ? (resource.resource_url || '') : ''}"
+                           style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">ลำดับแสดง</label>
+                    <input type="number" id="modal_display_order" placeholder="0" 
+                           value="${isEdit ? resource.display_order : 0}"
+                           style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px;">
+                </div>
             </div>
             
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">URL/Link</label>
-                <input type="text" id="modal_resource_url" placeholder="https://..." 
-                       value="${isEdit ? (resource.resource_url || '') : ''}"
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ลำดับแสดง</label>
-                <input type="number" id="modal_display_order" placeholder="0" 
-                       value="${isEdit ? resource.display_order : 0}"
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ภาพหน้าปก (URL)</label>
-                <input type="text" id="modal_cover_image" placeholder="https://..." 
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">ภาพหน้าปก (URL)</label>
+                <input type="text" id="modal_cover_image" placeholder="https://example.com/image.jpg" 
                        value="${isEdit ? (resource.cover_image || '') : ''}"
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500">
+                       style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px;">
             </div>
             
-            <div class="mb-4 space-y-2">
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="modal_is_active" ${isEdit && resource.is_active ? 'checked' : ''} class="rounded">
-                    <span class="text-sm text-gray-700">เปิดใช้งาน</span>
+            <div style="display: flex; gap: 16px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="modal_is_active" ${isEdit && resource.is_active ? 'checked' : ''} style="cursor: pointer;">
+                    <span style="font-size: 13px; color: #374151;">เปิดใช้งาน</span>
                 </label>
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="modal_is_featured" ${isEdit && resource.is_featured ? 'checked' : ''} class="rounded">
-                    <span class="text-sm text-gray-700">ทรัพยากรแนะนำ</span>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="modal_is_featured" ${isEdit && resource.is_featured ? 'checked' : ''} style="cursor: pointer;">
+                    <span style="font-size: 13px; color: #374151;">ทรัพยากรแนะนำ</span>
                 </label>
             </div>
         </div>
@@ -382,6 +384,14 @@ function showResourceModal(resource = null) {
         showCancelButton: true,
         confirmButtonText: isEdit ? 'บันทึก' : 'เพิ่ม',
         cancelButtonText: 'ยกเลิก',
+        width: '520px',
+        padding: '20px',
+        customClass: {
+            title: 'text-xl font-bold',
+            htmlContainer: 'text-left',
+            confirmButton: 'bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition',
+            cancelButton: 'bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-medium transition'
+        },
         didOpen: () => {
             document.getElementById('modal_title').focus();
         }
