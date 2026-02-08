@@ -29,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $conn->query("SELECT * FROM learning_resources ORDER BY display_order ASC, created_at DESC");
             $resources = [];
             while ($row = $result->fetch_assoc()) {
+                // Fix cover image path for admin context
+                $row['cover_image_url'] = fix_asset_path($row['cover_image'] ?? '', true);
                 $resources[] = $row;
             }
             echo json_encode(['success' => true, 'resources' => $resources]);
@@ -207,7 +209,7 @@ function renderResources(resources) {
     
     resources.forEach(resource => {
         const icon = typeIcons[resource.resource_type] || 'fa-file text-gray-500';
-        const coverImg = resource.cover_image ? `../${resource.cover_image}` : 'https://via.placeholder.com/300x200?text=No+Image';
+        const coverImg = resource.cover_image_url ? resource.cover_image_url : 'https://via.placeholder.com/300x200?text=No+Image';
         
         const html = `
             <div class="border rounded-xl overflow-hidden hover:shadow-lg transition ${!resource.is_active ? 'opacity-50' : ''}">
