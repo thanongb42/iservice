@@ -31,10 +31,13 @@ FROM service_requests";
 $stats_result = $conn->query($stats_query);
 $stats = $stats_result->fetch_assoc();
 
+// Set pending_requests for sidebar badge
+$pending_requests = intval($stats['pending'] ?? 0);
+
 // Pagination setup
 $items_per_page = 20;
-$current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$offset = ($current_page - 1) * $items_per_page;
+$page_num = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page_num - 1) * $items_per_page;
 
 // Get total count
 $count_sql = "SELECT COUNT(*) as total FROM v_service_requests_full";
@@ -321,6 +324,23 @@ include 'admin-layout/topbar.php';
             margin-bottom: 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+
+        /* SweetAlert Status Update Modal */
+        .swal-status-popup {
+            border-radius: 16px !important;
+        }
+        .swal-status-confirm-btn {
+            border-radius: 10px !important;
+            padding: 10px 28px !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+        }
+        .swal-status-cancel-btn {
+            border-radius: 10px !important;
+            padding: 10px 28px !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+        }
     </style>
 
     <div class="px-4 sm:px-6 lg:px-8 py-6">
@@ -540,32 +560,32 @@ include 'admin-layout/topbar.php';
                 
                 <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                     <!-- First Page -->
-                    <a href="?page=1<?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
-                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
-                       <?= $current_page === 1 ? 'onclick="return false;"' : '' ?>>
+                    <a href="?page=1<?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $page_num === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $page_num === 1 ? 'onclick="return false;"' : '' ?>>
                         <i class="fas fa-chevron-left mr-1"></i>First
                     </a>
 
                     <!-- Previous Page -->
-                    <a href="?page=<?= max(1, $current_page - 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
-                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
-                       <?= $current_page === 1 ? 'onclick="return false;"' : '' ?>>
+                    <a href="?page=<?= max(1, $page_num - 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $page_num === 1 ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $page_num === 1 ? 'onclick="return false;"' : '' ?>>
                         <i class="fas fa-chevron-left mr-1"></i>ก่อนหน้า
                     </a>
 
                     <!-- Page Numbers -->
                     <?php
-                    $start_page = max(1, $current_page - 2);
-                    $end_page = min($total_pages, $current_page + 2);
-                    
+                    $start_page = max(1, $page_num - 2);
+                    $end_page = min($total_pages, $page_num + 2);
+
                     if ($start_page > 1) {
                         echo '<span style="padding: 0 0.25rem; color: #9ca3af;">...</span>';
                     }
-                    
+
                     for ($p = $start_page; $p <= $end_page; $p++):
                     ?>
                         <a href="?page=<?= $p ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
-                           style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; font-size: 0.875rem; <?= $p === $current_page ? 'background: #009933; color: white; border-color: #009933;' : 'color: #374151; cursor: pointer;' ?>">
+                           style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; font-size: 0.875rem; <?= $p === $page_num ? 'background: #009933; color: white; border-color: #009933;' : 'color: #374151; cursor: pointer;' ?>">
                             <?= $p ?>
                         </a>
                     <?php endfor; ?>
@@ -575,16 +595,16 @@ include 'admin-layout/topbar.php';
                     } ?>
 
                     <!-- Next Page -->
-                    <a href="?page=<?= min($total_pages, $current_page + 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
-                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
-                       <?= $current_page === $total_pages ? 'onclick="return false;"' : '' ?>>
+                    <a href="?page=<?= min($total_pages, $page_num + 1) ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $page_num === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $page_num === $total_pages ? 'onclick="return false;"' : '' ?>>
                         ถัดไป<i class="fas fa-chevron-right ml-1"></i>
                     </a>
 
                     <!-- Last Page -->
-                    <a href="?page=<?= $total_pages ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>" 
-                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $current_page === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
-                       <?= $current_page === $total_pages ? 'onclick="return false;"' : '' ?>>
+                    <a href="?page=<?= $total_pages ?><?= isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?><?= isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '' ?>"
+                       style="padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; text-decoration: none; color: #374151; font-size: 0.875rem; <?= $page_num === $total_pages ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;' ?>"
+                       <?= $page_num === $total_pages ? 'onclick="return false;"' : '' ?>>
                         Last<i class="fas fa-chevron-right ml-1"></i>
                     </a>
                 </div>
@@ -927,27 +947,139 @@ include 'admin-layout/topbar.php';
             document.getElementById('detailsModal').style.display = 'none';
         }
 
+        // Select status card in the update status modal
+        function selectStatusCard(card) {
+            const statusColors = {
+                'pending':     { bg: '#fef3c7', border: '#fcd34d', color: '#f59e0b' },
+                'in_progress': { bg: '#dbeafe', border: '#93c5fd', color: '#3b82f6' },
+                'completed':   { bg: '#d1fae5', border: '#6ee7b7', color: '#10b981' },
+                'cancelled':   { bg: '#fee2e2', border: '#fca5a5', color: '#ef4444' }
+            };
+
+            // Deselect all cards
+            document.querySelectorAll('.swal-status-card').forEach(c => {
+                c.classList.remove('active');
+                c.style.borderColor = '#e5e7eb';
+                c.style.background = '#fff';
+                c.style.boxShadow = 'none';
+                c.querySelector('.swal-status-check').style.display = 'none';
+            });
+
+            // Select clicked card
+            const value = card.dataset.value;
+            const colors = statusColors[value];
+            card.classList.add('active');
+            card.style.borderColor = colors.border;
+            card.style.background = colors.bg;
+            card.querySelector('.swal-status-check').style.display = 'flex';
+            card.querySelector('.swal-status-check').style.background = colors.color;
+
+            // Update hidden input
+            document.getElementById('swal-status').value = value;
+        }
+
         // Update Status
         async function updateStatus(id) {
+            // Get current status from the table row
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const currentStatus = row ? row.dataset.status : '';
+            const requestCode = '#' + String(id).padStart(4, '0');
+
+            const statusOptions = [
+                { value: 'pending', label: 'รอดำเนินการ', icon: 'fa-clock', color: '#f59e0b', bg: '#fef3c7', border: '#fcd34d' },
+                { value: 'in_progress', label: 'กำลังดำเนินการ', icon: 'fa-spinner', color: '#3b82f6', bg: '#dbeafe', border: '#93c5fd' },
+                { value: 'completed', label: 'เสร็จสิ้น', icon: 'fa-check-circle', color: '#10b981', bg: '#d1fae5', border: '#6ee7b7' },
+                { value: 'cancelled', label: 'ยกเลิก', icon: 'fa-times-circle', color: '#ef4444', bg: '#fee2e2', border: '#fca5a5' }
+            ];
+
+            let statusCardsHtml = statusOptions.map(opt => {
+                const isActive = opt.value === currentStatus;
+                return `
+                    <div class="swal-status-card ${isActive ? 'active' : ''}" data-value="${opt.value}"
+                         onclick="selectStatusCard(this)"
+                         style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;cursor:pointer;
+                                border:2px solid ${isActive ? opt.border : '#e5e7eb'};
+                                background:${isActive ? opt.bg : '#fff'};
+                                transition:all 0.2s ease;margin-bottom:8px;position:relative;">
+                        <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+                                    background:${opt.bg};flex-shrink:0;">
+                            <i class="fas ${opt.icon}" style="color:${opt.color};font-size:18px;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600;color:#1f2937;font-size:0.95rem;">${opt.label}</div>
+                        </div>
+                        <div class="swal-status-check" style="display:${isActive ? 'flex' : 'none'};width:24px;height:24px;border-radius:50%;
+                                    background:${opt.color};align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-check" style="color:#fff;font-size:12px;"></i>
+                        </div>
+                    </div>`;
+            }).join('');
+
             const { value: formValues } = await Swal.fire({
-                title: 'อัปเดตสถานะคำขอ',
-                html:
-                    '<select id="swal-status" class="swal2-input">' +
-                    '<option value="pending">รอดำเนินการ</option>' +
-                    '<option value="in_progress">กำลังดำเนินการ</option>' +
-                    '<option value="completed">เสร็จสิ้น</option>' +
-                    '<option value="cancelled">ยกเลิก</option>' +
-                    '</select>' +
-                    '<textarea id="swal-notes" class="swal2-textarea" placeholder="หมายเหตุ (ไม่บังคับ)"></textarea>',
-                focusConfirm: false,
+                title: '',
+                html: `
+                    <div style="text-align:left;">
+                        <div style="text-align:center;margin-bottom:20px;">
+                            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);
+                                        display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                                <i class="fas fa-exchange-alt" style="color:#fff;font-size:22px;"></i>
+                            </div>
+                            <h2 style="margin:0;font-size:1.35rem;font-weight:700;color:#1f2937;">อัปเดตสถานะคำขอ</h2>
+                            <p style="margin:4px 0 0;color:#6b7280;font-size:0.875rem;">คำขอ ${requestCode}</p>
+                        </div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">
+                            <i class="fas fa-tag" style="margin-right:4px;color:#9ca3af;"></i> เลือกสถานะ
+                        </label>
+                        <input type="hidden" id="swal-status" value="${currentStatus}">
+                        ${statusCardsHtml}
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.05em;">
+                            <i class="fas fa-sticky-note" style="margin-right:4px;color:#9ca3af;"></i> หมายเหตุ
+                        </label>
+                        <textarea id="swal-notes" rows="3" placeholder="ระบุหมายเหตุเพิ่มเติม (ไม่บังคับ)..."
+                                  style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:0.9rem;
+                                         resize:vertical;transition:border-color 0.2s;outline:none;font-family:inherit;box-sizing:border-box;"
+                                  onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                    </div>`,
+                width: 440,
+                padding: '24px',
                 showCancelButton: true,
-                confirmButtonText: 'อัปเดต',
+                confirmButtonText: '<i class="fas fa-save" style="margin-right:6px;"></i> บันทึกสถานะ',
                 cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    popup: 'swal-status-popup',
+                    confirmButton: 'swal-status-confirm-btn',
+                    cancelButton: 'swal-status-cancel-btn'
+                },
+                focusConfirm: false,
+                didOpen: () => {
+                    // Add hover effects
+                    document.querySelectorAll('.swal-status-card').forEach(card => {
+                        card.addEventListener('mouseenter', function() {
+                            if (!this.classList.contains('active')) {
+                                this.style.borderColor = '#d1d5db';
+                                this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                            }
+                        });
+                        card.addEventListener('mouseleave', function() {
+                            if (!this.classList.contains('active')) {
+                                this.style.borderColor = '#e5e7eb';
+                                this.style.boxShadow = 'none';
+                            }
+                        });
+                    });
+                },
                 preConfirm: () => {
-                    return {
-                        status: document.getElementById('swal-status').value,
-                        admin_notes: document.getElementById('swal-notes').value
+                    const status = document.getElementById('swal-status').value;
+                    if (!status) {
+                        Swal.showValidationMessage('กรุณาเลือกสถานะ');
+                        return false;
                     }
+                    return {
+                        status: status,
+                        admin_notes: document.getElementById('swal-notes').value
+                    };
                 }
             });
 

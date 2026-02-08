@@ -180,6 +180,12 @@ include __DIR__ . '/admin-layout/sidebar.php';
 include __DIR__ . '/admin-layout/topbar.php';
 ?>
 
+<style>
+    .swal-status-popup { border-radius: 16px !important; }
+    .swal-status-confirm-btn { border-radius: 10px !important; padding: 10px 28px !important; font-weight: 600 !important; font-size: 0.95rem !important; }
+    .swal-status-cancel-btn { border-radius: 10px !important; padding: 10px 28px !important; font-weight: 600 !important; font-size: 0.95rem !important; }
+</style>
+
 <!-- mainContent div is already opened in topbar.php -->
     <div class="p-4">
         <!-- Breadcrumb -->
@@ -499,18 +505,17 @@ include __DIR__ . '/admin-layout/topbar.php';
                 <?php if ($request['status'] !== 'rejected' && $request['status'] !== 'completed'): ?>
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <h3 class="text-lg font-bold text-gray-900 mb-4">ปฏิเสธคำขอ</h3>
-                    
-                    <form method="POST">
+
+                    <form method="POST" id="rejectForm">
                         <input type="hidden" name="action" value="reject">
-                        
+
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">เหตุผลในการปฏิเสธ</label>
-                            <textarea name="rejection_reason" rows="3" 
+                            <textarea name="rejection_reason" id="rejectionReason" rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"></textarea>
                         </div>
-                        
-                        <button type="submit" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold" 
-                                onclick="return confirm('คุณแน่ใจหรือว่าต้องการปฏิเสธคำขอนี้?')">
+
+                        <button type="button" onclick="confirmReject()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold">
                             <i class="fas fa-times mr-2"></i>ปฏิเสธ
                         </button>
                     </form>
@@ -520,11 +525,11 @@ include __DIR__ . '/admin-layout/topbar.php';
                 <!-- Delete -->
                 <div class="bg-white rounded-lg shadow-lg p-6">
                     <h3 class="text-lg font-bold text-gray-900 mb-4">ลบข้อมูล</h3>
-                    
-                    <form method="POST" onsubmit="return confirm('คุณแน่ใจหรือว่าต้องการลบข้อมูลนี้? การกระทำนี้ไม่สามารถยกเลิกได้');">
+
+                    <form method="POST" id="deleteForm">
                         <input type="hidden" name="action" value="delete">
-                        
-                        <button type="submit" class="w-full px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 font-bold">
+
+                        <button type="button" onclick="confirmDelete()" class="w-full px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 font-bold">
                             <i class="fas fa-trash mr-2"></i>ลบคำขอนี้
                         </button>
                     </form>
@@ -689,6 +694,89 @@ async function reassignTask(assignmentId, currentName) {
         }
     } catch (error) {
         Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนผู้รับผิดชอบได้', 'error');
+    }
+}
+
+// Confirm Reject Request
+async function confirmReject() {
+    const reason = document.getElementById('rejectionReason').value.trim();
+
+    const result = await Swal.fire({
+        title: '',
+        html: `
+            <div style="text-align:center;margin-bottom:16px;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);
+                            display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                    <i class="fas fa-ban" style="color:#fff;font-size:24px;"></i>
+                </div>
+                <h2 style="margin:0;font-size:1.3rem;font-weight:700;color:#1f2937;">ปฏิเสธคำขอนี้?</h2>
+                <p style="margin:6px 0 0;color:#6b7280;font-size:0.875rem;">คำขอ <?= htmlspecialchars($request['request_code']) ?></p>
+            </div>
+            <div style="text-align:left;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-top:8px;">
+                <p style="font-size:0.8rem;font-weight:600;color:#991b1b;margin:0 0 4px;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> คำเตือน
+                </p>
+                <p style="font-size:0.8rem;color:#7f1d1d;margin:0;">การปฏิเสธจะแจ้งผู้ร้องขอทราบ และเปลี่ยนสถานะเป็น "ปฏิเสธ"</p>
+            </div>
+            ${reason ? '<div style="text-align:left;margin-top:12px;"><p style="font-size:0.75rem;font-weight:600;color:#374151;margin:0 0 4px;">เหตุผล:</p><p style="font-size:0.85rem;color:#4b5563;margin:0;background:#f9fafb;padding:10px;border-radius:8px;border:1px solid #e5e7eb;">' + reason.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p></div>' : ''}
+        `,
+        width: 420,
+        padding: '24px',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-ban" style="margin-right:6px;"></i> ยืนยันปฏิเสธ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        customClass: {
+            popup: 'swal-status-popup',
+            confirmButton: 'swal-status-confirm-btn',
+            cancelButton: 'swal-status-cancel-btn'
+        },
+        focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+        document.getElementById('rejectForm').submit();
+    }
+}
+
+// Confirm Delete Request
+async function confirmDelete() {
+    const result = await Swal.fire({
+        title: '',
+        html: `
+            <div style="text-align:center;margin-bottom:16px;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#b91c1c,#7f1d1d);
+                            display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                    <i class="fas fa-trash-alt" style="color:#fff;font-size:22px;"></i>
+                </div>
+                <h2 style="margin:0;font-size:1.3rem;font-weight:700;color:#1f2937;">ลบคำขอนี้?</h2>
+                <p style="margin:6px 0 0;color:#6b7280;font-size:0.875rem;">คำขอ <?= htmlspecialchars($request['request_code']) ?></p>
+            </div>
+            <div style="text-align:left;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-top:8px;">
+                <p style="font-size:0.8rem;font-weight:600;color:#991b1b;margin:0 0 4px;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i> คำเตือน
+                </p>
+                <p style="font-size:0.8rem;color:#7f1d1d;margin:0;">การลบจะไม่สามารถกู้คืนได้ ข้อมูลคำขอ, รายละเอียดบริการ และการมอบหมายงานทั้งหมดจะถูกลบถาวร</p>
+            </div>
+        `,
+        width: 420,
+        padding: '24px',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-alt" style="margin-right:6px;"></i> ยืนยันลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#b91c1c',
+        cancelButtonColor: '#6b7280',
+        customClass: {
+            popup: 'swal-status-popup',
+            confirmButton: 'swal-status-confirm-btn',
+            cancelButton: 'swal-status-cancel-btn'
+        },
+        focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+        document.getElementById('deleteForm').submit();
     }
 }
 
