@@ -5,6 +5,9 @@
  * CRUD with Image Upload (max 10 images per speaker location)
  */
 
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 require_once '../config/database.php';
 session_start();
 
@@ -24,10 +27,11 @@ $breadcrumb = [
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
-    
-    if (isset($_POST['action'])) {
-        $action = $_POST['action'];
+    try {
+        header('Content-Type: application/json');
+        
+        if (isset($_POST['action'])) {
+            $action = $_POST['action'];
         
         // GET all speaker locations
         if ($action === 'list') {
@@ -129,59 +133,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // UPLOAD IMAGE
         if ($action === 'upload_image') {
-            $location_id = (int)$_POST['location_id'];
-            
-            // Check image count for this location
-            $count_result = $conn->query("SELECT COUNT(*) as total FROM speaker_images WHERE location_id = $location_id");
-            $count_row = $count_result->fetch_assoc();
-            
-            if ($count_row['total'] >= 10) {
-                echo json_encode(['success' => false, 'message' => 'จำนวนรูปภาพเกินขีดจำกัด (สูงสุด 10 รูป)']);
-                exit;
-            }
-            
-            if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-                echo json_encode(['success' => false, 'message' => 'การอัปโหลดล้มเหลว']);
-                exit;
-            }
-            
-            $file = $_FILES['image'];
-            $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            
-            if (!in_array($file['type'], $allowed_types)) {
-                echo json_encode(['success' => false, 'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต (JPEG, PNG, GIF, WebP เท่านั้น)']);
-                exit;
-            }
-            
-            if ($file['size'] > 5 * 1024 * 1024) { // 5MB max
-                echo json_encode(['success' => false, 'message' => 'ไฟล์ใหญ่เกินไป (สูงสุด 5MB)']);
-                exit;
-            }
-            
-            // Create upload directory
-            $upload_dir = '../public/uploads/speaker_images/';
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0755, true);
-            }
-            
-            // Generate unique filename
-            $filename = uniqid('speaker_' . $location_id . '_') . '_' . time() . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
-            $filepath = $upload_dir . $filename;
-            
-            if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            try {
+                $location_id = (int)$_POST['location_id'];
+                
+                // Check if location exists
+                $check_stmt = $conn->prepare("SELECT id FROM speaker_locations WHERE id = ?");
+                $check_stmt->bind_param("i", $location_id);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result();
+                
+                if ($check_result->num_rows === 0) {
+                    throw new Exception('จุดติดตั้งไม่พบในระบบ');
+                }
+                
+                // Check image count for this location
+                $count_result = $conn->query("SELECT COUNT(*) as total FROM speaker_images WHERE location_id = $location_id");
+                $count_row = $count_result->fetch_assoc();
+                
+                if ($count_row['total'] >= 10) {
+                    throw new Exception('จำนวนรูปภาพเกินขีดจำกัด (สูงสุด 10 รูป)');
+                }
+                
+                if (!isset($_FILES['image'])) {
+                    throw new Exception('ไม่พบไฟล์รูปภาพ');
+                }
+                
+                if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+                    $error_messages = [
+                        UPLOAD_ERR_INI_SIZE => 'ไฟล์ใหญ่เกินที่เซิร์ฟเวอร์อนุญาต',
+                        UPLOAD_ERR_FORM_SIZE => 'ไฟล์ใหญ่เกินที่ฟอร์มระบุ',
+                        UPLOAD_ERR_PARTIAL => 'อัปโหลดไฟล์ไม่สมบูรณ์',
+                        UPLOAD_ERR_NO_FILE => 'ไม่พบไฟล์',
+                        UPLOAD_ERR_NO_TMP_DIR => 'ไม่พบโฟลเดอร์ temp',
+                        UPLOAD_ERR_CANT_WRITE => 'ไม่สามารถเขียนไฟล์ไปยังดิสก์',
+                        UPLOAD_ERR_EXTENSION => 'ส่วนขยายไฟล์ถูกบล็อกโดยเซิร์ฟเวอร์'
+                    ];
+                    $error_code = $_FILES['image']['error'];
+                    $message = $error_messages[$error_code] ?? 'เกิดข้อผิดพลาดที่ไม่รู้จัก';
+                    throw new Exception($message);
+                }
+                
+                $file = $_FILES['image'];
+                $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                
+                if (!in_array($file['type'], $allowed_types)) {
+                    throw new Exception('ประเภทไฟล์ไม่ได้รับอนุญาต (JPEG, PNG, GIF, WebP เท่านั้น)');
+                }
+                
+                if ($file['size'] > 5 * 1024 * 1024) { // 5MB max
+                    throw new Exception('ไฟล์ใหญ่เกินไป (สูงสุด 5MB)');
+                }
+                
+                // Create upload directory - use absolute path
+                $upload_dir = dirname(__DIR__) . '/public/uploads/speaker_images/';
+                if (!is_dir($upload_dir)) {
+                    if (!mkdir($upload_dir, 0755, true)) {
+                        throw new Exception('ไม่สามารถสร้างโฟลเดอร์สำหรับเก็บรูปภาพ');
+                    }
+                }
+                
+                // Generate unique filename
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $filename = 'speaker_' . $location_id . '_' . time() . '_' . uniqid() . '.' . $ext;
+                $filepath = $upload_dir . $filename;
+                
+                if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+                    throw new Exception('ไม่สามารถบันทึกไฟล์: ' . error_get_last()['message']);
+                }
+                
                 // Save to database
                 $rel_path = 'uploads/speaker_images/' . $filename;
                 $stmt = $conn->prepare("INSERT INTO speaker_images (location_id, image_path) VALUES (?, ?)");
+                if (!$stmt) {
+                    unlink($filepath);
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
+                
                 $stmt->bind_param("is", $location_id, $rel_path);
                 
                 if ($stmt->execute()) {
                     echo json_encode(['success' => true, 'message' => 'อัปโหลดรูปภาพสำเร็จ!', 'image_path' => $rel_path]);
                 } else {
                     unlink($filepath);
-                    echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการบันทึก']);
+                    throw new Exception('Database insert failed: ' . $stmt->error);
                 }
-            } else {
-                echo json_encode(['success' => false, 'message' => 'ไม่สามารถบันทึกไฟล์']);
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
             }
             exit;
         }
@@ -211,6 +248,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Action not found']);
+    }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
 
