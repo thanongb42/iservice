@@ -239,6 +239,10 @@ include __DIR__ . '/includes/header_public.php';
                             <i class="fas fa-rocket mr-2"></i>
                             เริ่มใช้บริการ
                         </a>
+                        <a href="speaker_map.php" class="inline-flex items-center bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-broadcast-tower mr-2"></i>
+                            จุดติดตั้งระบบเสียงไร้สาย
+                        </a>
                         <a href="track.php" class="inline-flex items-center bg-gradient-to-r from-green-400 to-emerald-500 text-white px-8 py-4 rounded-xl font-bold hover:from-green-500 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg">
                             <i class="fas fa-tracking mr-2"></i>
                             ติดตามงาน
