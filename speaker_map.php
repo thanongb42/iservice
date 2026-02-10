@@ -2,7 +2,7 @@
 /**
  * แผนที่จุดติดตั้งระบบกระจายเสียงชนิดไร้สาย
  * Leaflet Map - Pin Markers with Tooltip
- * เทศบาลเมืองรังสิต
+ * เทศบาลนครรังสิต
  */
 require_once 'config/database.php';
 
@@ -336,6 +336,7 @@ sort($zones);
             box-shadow: 0 6px 24px rgba(0,0,0,0.4) !important;
             backdrop-filter: blur(10px);
             max-width: 260px;
+            z-index: 9998 !important;
         }
 
         .custom-tooltip .tip-title {
@@ -376,11 +377,21 @@ sort($zones);
             border-radius: 12px !important;
             color: var(--text-light) !important;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+            z-index: 9999 !important;
         }
 
         .leaflet-popup-tip {
             background: var(--bg-panel) !important;
             border: 1px solid var(--primary-light) !important;
+            z-index: 9999 !important;
+        }
+
+        .leaflet-popup {
+            z-index: 9999 !important;
+        }
+
+        .leaflet-tooltip {
+            z-index: 9998 !important;
         }
 
         .leaflet-popup-content {
