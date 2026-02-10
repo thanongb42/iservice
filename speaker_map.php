@@ -699,6 +699,16 @@ sort($zones);
         `;
 
         marker.bindPopup(popupHtml, { maxWidth: 280 });
+        
+        // Hide tooltip when popup opens, show it again when popup closes
+        marker.on('popupopen', function() {
+            this.closeTooltip();
+        });
+        
+        marker.on('popupclose', function() {
+            this.openTooltip();
+        });
+        
         markerCluster.addLayer(marker);
         markers[loc.id] = marker;
     });
