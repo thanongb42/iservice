@@ -6,7 +6,15 @@
  */
 
 $current_page = $current_page ?? 'dashboard';
-$pending_requests = $pending_requests ?? 0;
+
+// Auto-fetch pending requests count for badge
+$pending_requests = 0;
+if (isset($conn)) {
+    $pr_query = $conn->query("SELECT COUNT(*) as cnt FROM service_requests WHERE status = 'pending'");
+    if ($pr_query) {
+        $pending_requests = intval($pr_query->fetch_assoc()['cnt']);
+    }
+}
 
 // Check if user is admin/manager (has 'manager' or 'all' role)
 $is_manager = false;
@@ -50,7 +58,17 @@ if ($is_manager) {
             'label' => '',
             'items' => [
                 ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+            ]
+        ],
+        'operation' => [
+            'label' => 'ปฏิบัติงาน',
+            'items' => [
                 ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+            ]
+        ],
+        'manage' => [
+            'label' => 'จัดการระบบ',
+            'items' => [
                 ['id' => 'user-manager', 'icon' => 'fa-users', 'label' => 'จัดการผู้ใช้งาน', 'url' => 'user-manager.php'],
                 ['id' => 'departments', 'icon' => 'fa-sitemap', 'label' => 'จัดการหน่วยงาน', 'url' => 'departments.php'],
                 ['id' => 'roles_manager', 'icon' => 'fa-user-tag', 'label' => 'จัดการบทบาท', 'url' => 'roles_manager.php'],
@@ -73,6 +91,12 @@ if ($is_manager) {
                 ['id' => 'related_agencies', 'icon' => 'fa-building', 'label' => 'หน่วยงานที่เกี่ยวข้อง', 'url' => 'related_agencies.php'],
             ]
         ],
+        'cdp' => [
+            'label' => 'CDP',
+            'items' => [
+                ['id' => 'cdp_speaker_system', 'icon' => 'fa-broadcast-tower', 'label' => 'ระบบเสียงไร้สาย', 'url' => 'cdp_speaker_system.php'],
+            ]
+        ],
         'system' => [
             'label' => 'ระบบ',
             'items' => [
@@ -82,10 +106,16 @@ if ($is_manager) {
         ]
     ];
 } else {
-    // For non-managers - show only my_tasks
+    // For non-managers - show dashboard + my_tasks
     $menu_groups = [
         'main' => [
             'label' => '',
+            'items' => [
+                ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+            ]
+        ],
+        'operation' => [
+            'label' => 'ปฏิบัติงาน',
             'items' => [
                 ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
             ]
@@ -111,7 +141,7 @@ if ($is_manager) {
 #sidebar {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
-    width: 16rem;
+    transition: width 0.3s ease-in-out;
 }
 
 /* Menu item styles */
