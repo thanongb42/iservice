@@ -139,6 +139,28 @@ sort($zones);
             font-size: 15px;
         }
 
+        .header-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            color: white;
+            border: 1px solid var(--primary-light);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .header-btn:hover {
+            background: linear-gradient(135deg, #3498db, var(--primary-light));
+            box-shadow: 0 4px 12px rgba(41, 128, 185, 0.3);
+            transform: translateY(-1px);
+        }
+
         /* === MAP === */
         #map {
             position: fixed;
@@ -529,6 +551,10 @@ sort($zones);
         </div>
     </div>
     <div class="header-stats">
+        <a href="index.php" class="header-btn">
+            <i class="fas fa-home"></i>
+            <span>กลับไปหน้าหลัก</span>
+        </a>
         <div class="stat-badge">
             <i class="fas fa-map-marker-alt"></i>
             <span>จุดติดตั้งทั้งหมด</span>
