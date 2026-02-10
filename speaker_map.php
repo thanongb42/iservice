@@ -533,9 +533,19 @@ sort($zones);
         @media (max-width: 768px) {
             .side-panel { width: 260px; }
             .side-panel:not(.collapsed) ~ .panel-toggle { left: 278px; }
-            .header-stats { display: none; }
+            .header-stats { display: flex; }
+            .stat-badge { display: none; }
+            .header-btn { padding: 6px 12px; font-size: 12px; gap: 4px; }
+            .header-btn i { font-size: 14px; }
             .header-title h1 { font-size: 14px; }
             .map-legend { bottom: 10px; right: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            .header-title h1 { font-size: 12px; }
+            .header-title p { font-size: 10px; }
+            .header-btn { padding: 5px 10px; font-size: 11px; }
+            .header-logo { height: 35px !important; }
         }
     </style>
 </head>
