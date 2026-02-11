@@ -126,7 +126,9 @@ try {
             $file_error = $_FILES['attachments']['error'][$i];
 
             if ($file_error === 0) {
-                $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                // Extract only filename (remove path from iPhone: 'images\S__144867343.jpg' -> 'S__144867343.jpg')
+                $base_name = basename(str_replace('\\', '/', $file_name));
+                $file_ext = strtolower(pathinfo($base_name, PATHINFO_EXTENSION));
                 
                 if (in_array($file_ext, $allowed_types)) {
                         if ($file_size <= 5242880) { // 5MB
@@ -299,6 +301,49 @@ try {
             $dress = clean_input($_POST['dress_code'] ?? '');
             $note = clean_input($_POST['note'] ?? '');
             $stmt->bind_param("issssssissss", $request_id, $event_name, $event_type, $event_date, $start, $end, $loc, $count, $lang, $script, $dress, $note);
+            break;
+
+        case 'LED':
+            $media_title = clean_input($_POST['media_title']);
+            $media_type = clean_input($_POST['media_type']);
+            $display_location = clean_input($_POST['display_location']);
+            $date_start = clean_input($_POST['display_date_start']);
+            $date_end = !empty($_POST['display_date_end']) ? clean_input($_POST['display_date_end']) : null;
+            $time_start = !empty($_POST['display_time_start']) ? clean_input($_POST['display_time_start']) : null;
+            $time_end = !empty($_POST['display_time_end']) ? clean_input($_POST['display_time_end']) : null;
+            $duration = intval($_POST['duration_seconds'] ?? 15);
+            $resolution = clean_input($_POST['resolution'] ?? '');
+            $purpose = clean_input($_POST['purpose']);
+            $special = clean_input($_POST['special_requirements'] ?? '');
+
+            // Handle LED media file upload (up to 200MB)
+            $media_file_path = null;
+            if (isset($_FILES['media_file']) && $_FILES['media_file']['error'] === 0) {
+                $led_file = $_FILES['media_file'];
+                $max_size = 200 * 1024 * 1024; // 200MB
+                if ($led_file['size'] > $max_size) {
+                    throw new Exception("ไฟล์สื่อมีขนาดเกิน 200 MB");
+                }
+                $allowed_ext = ['mp4', 'avi', 'mov', 'wmv', 'mkv', 'jpg', 'jpeg', 'png', 'gif', 'webm', 'webp'];
+                $ext = strtolower(pathinfo($led_file['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowed_ext)) {
+                    throw new Exception("ไฟล์ประเภท .$ext ไม่รองรับ (รองรับ: " . implode(', ', $allowed_ext) . ")");
+                }
+                $led_upload_path = __DIR__ . '/../storage/uploads/led/' . date('Y') . '/' . date('m') . '/';
+                if (!file_exists($led_upload_path)) {
+                    mkdir($led_upload_path, 0777, true);
+                }
+                $new_name = 'LED_' . $request_id . '_' . time() . '.' . $ext;
+                if (move_uploaded_file($led_file['tmp_name'], $led_upload_path . $new_name)) {
+                    $media_file_path = 'storage/uploads/led/' . date('Y') . '/' . date('m') . '/' . $new_name;
+                }
+            }
+
+            // Media URL (Google Drive, etc.)
+            $media_url = !empty($_POST['media_url']) ? clean_input($_POST['media_url']) : null;
+
+            $stmt = $conn->prepare("INSERT INTO request_led_details (request_id, media_title, media_type, display_location, display_date_start, display_date_end, display_time_start, display_time_end, duration_seconds, resolution, media_file, media_url, purpose, special_requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssssssissssss", $request_id, $media_title, $media_type, $display_location, $date_start, $date_end, $time_start, $time_end, $duration, $resolution, $media_file_path, $media_url, $purpose, $special);
             break;
     }
 
