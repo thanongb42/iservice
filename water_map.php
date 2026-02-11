@@ -393,30 +393,11 @@ if ($result && $result->num_rows > 0) {
 
         // Initialize Map
         function initMap() {
-            const centerLat = 13.7917; // เทศบาลเมืองรังสิต
-            const centerLng = 100.5087;
-            
-            map = L.map('map').setView([centerLat, centerLng], 15);
+            map = L.map('map').setView([13.985, 100.620], 14);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
-            }).addTo(map);
-
-            // Draw Rangsit municipality boundary (approximate rectangle)
-            const bounds = [
-                [13.7650, 100.4800], // Southwest
-                [13.8200, 100.5400]  // Northeast
-            ];
-            
-            L.rectangle(bounds, {
-                color: '#00b894',
-                weight: 2,
-                opacity: 0.3,
-                fill: true,
-                fillColor: '#00b894',
-                fillOpacity: 0.08,
-                dashArray: '5, 5'
             }).addTo(map);
 
             markerGroup = L.markerClusterGroup();
