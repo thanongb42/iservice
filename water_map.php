@@ -416,15 +416,17 @@ if ($result && $result->num_rows > 0) {
                     });
                     
                     const marker = L.marker([lat, lng], { icon })
-                        .bindPopup(`<div style="font-family: Sarabun; text-align: center;">
+                        .bindPopup(`<div style="font-family: Sarabun; text-align: center; max-width: 200px;">
                             <strong>${kiosk.kiosk_code}</strong><br>
                             ${kiosk.location_name || 'ตู้น้ำ'}<br>
                             <small style="color: #666;">${kiosk.address || 'สถานที่'}</small>
+                            ${kiosk.qrcode_img ? `<br><br><img src="../${kiosk.qrcode_img}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 6px; border: 2px solid #00b894;">` : ''}
                         </div>`)
-                        .bindTooltip(kiosk.kiosk_code, {
+                        .bindTooltip(`${kiosk.kiosk_code}${kiosk.qrcode_img ? '<br><small style="font-size: 11px;">QR Code มีอยู่</small>' : ''}`, {
                             permanent: false,
                             direction: 'top',
-                            offset: [0, -40]
+                            offset: [0, -40],
+                            className: 'water-tooltip'
                         });
                     
                     markers[idx] = marker;
