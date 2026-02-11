@@ -408,10 +408,11 @@ if ($result && $result->num_rows > 0) {
                     const lng = parseFloat(kiosk.longitude);
                     
                     const icon = L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iIzAwYjg5NCIvPjxwYXRoIGQ9Ik0yMCAxMGM1LDAgOSw0IDksOXMtNDEwLTktOS05LTQgNDEwLTkgOXM0IDkgOSA5eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==',
+                        iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="%2300b894" stroke="%23fff" stroke-width="2"/><path d="M20,8 c3.3,0 6,2.7 6,6 c0,4 -6,12 -6,12 s-6,-8 -6,-12 c0,-3.3 2.7,-6 6,-6" fill="%23fff" stroke="%2300b894" stroke-width="1"/><circle cx="20" cy="14" r="2" fill="%2300b894"/></svg>',
                         iconSize: [40, 40],
                         iconAnchor: [20, 40],
-                        popupAnchor: [0, -40]
+                        popupAnchor: [0, -40],
+                        className: 'water-marker'
                     });
                     
                     const marker = L.marker([lat, lng], { icon })
