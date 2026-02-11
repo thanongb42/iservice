@@ -80,6 +80,12 @@ if ($result && $result->num_rows > 0) {
             gap: 14px;
         }
 
+        .header-logo {
+            height: 45px;
+            width: auto;
+            object-fit: contain;
+        }
+
         .header-icon {
             width: 42px; height: 42px;
             background: linear-gradient(135deg, var(--accent), var(--accent-light));
@@ -318,6 +324,7 @@ if ($result && $result->num_rows > 0) {
             .header { padding: 8px 12px; }
             .header-title h1 { font-size: 14px; }
             .header-title p { display: none; }
+            .header-logo { height: 35px !important; }
             .home-btn { padding: 5px 10px; font-size: 11px; }
             .side-panel { width: 100%; border-radius: 0; left: 0; bottom: 0; }
             .side-panel.collapsed { transform: translateX(-100%); }
@@ -329,6 +336,7 @@ if ($result && $result->num_rows > 0) {
     <!-- HEADER -->
     <div class="header">
         <div class="header-left">
+            <img src="public/assets/images/logo/rangsit-small-logo.png" alt="เทศบาลนครรังสิต" class="header-logo">
             <div class="header-icon">
                 <i class="fas fa-droplet"></i>
             </div>
