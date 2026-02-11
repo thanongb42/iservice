@@ -62,6 +62,20 @@ switch ($request['service_code']) {
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
         break;
+    
+    case 'PHOTOGRAPHY':
+        $detail_stmt = $conn->prepare("SELECT * FROM request_photography_details WHERE request_id = ?");
+        $detail_stmt->bind_param("i", $request_id);
+        $detail_stmt->execute();
+        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
+        break;
+    
+    case 'MC':
+        $detail_stmt = $conn->prepare("SELECT * FROM request_mc_details WHERE request_id = ?");
+        $detail_stmt->bind_param("i", $request_id);
+        $detail_stmt->execute();
+        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
+        break;
 }
 
 // Get task assignments for this request
@@ -362,11 +376,56 @@ include __DIR__ . '/admin-layout/topbar.php';
                     <h2 class="text-xl font-bold text-gray-900 mb-4 pb-3 border-b">รายละเอียดบริการ</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <?php 
+                        // Thai field labels mapping
+                        $field_labels = [
+                            'event_name' => 'ชื่องาน/โครงการ',
+                            'event_type' => 'ประเภทงาน',
+                            'event_date' => 'วันที่จัดงาน',
+                            'event_time_start' => 'เวลาเริ่ม',
+                            'event_time_end' => 'เวลาสิ้นสุด (โดยประมาณ)',
+                            'event_location' => 'สถานที่จัดงาน',
+                            'location' => 'สถานที่',
+                            'number_of_photographers' => 'จำนวนช่างภาพ',
+                            'video_required' => 'ต้องการวิดีโอ',
+                            'drone_required' => 'ต้องการโดรน',
+                            'delivery_format' => 'รูปแบบการส่งมอบ',
+                            'special_requirements' => 'ข้อมูลเพิ่มเติม',
+                            'mc_count' => 'จำนวนพิธีกร',
+                            'language' => 'ภาษา',
+                            'script_status' => 'สถานะบทพูด',
+                            'dress_code' => 'การแต่งกาย',
+                            'requested_username' => 'ชื่อผู้ใช้',
+                            'email_format' => 'รูปแบบอีเมล',
+                            'quota_mb' => 'พื้นที่ (MB)',
+                            'purpose' => 'วัตถุประสงค์',
+                            'is_new_account' => 'บัญชีใหม่',
+                            'existing_email' => 'อีเมลเดิม',
+                            'folder_name' => 'ชื่อโฟลเดอร์',
+                            'storage_size_gb' => 'ขนาดที่ขอ (GB)',
+                            'permission_type' => 'สิทธิ์',
+                            'shared_with' => 'ผู้ใช้งานร่วม',
+                            'backup_required' => 'ต้องการ Backup',
+                        ];
+                        ?>
                         <?php foreach ($service_details as $key => $value): ?>
                             <?php if (!in_array($key, ['id', 'request_id'])): ?>
                             <div>
-                                <p class="text-sm text-gray-600 font-medium"><?= ucfirst(str_replace('_', ' ', $key)) ?></p>
-                                <p class="text-gray-900"><?= htmlspecialchars($value ?? '-') ?></p>
+                                <?php 
+                                $label = isset($field_labels[$key]) ? $field_labels[$key] : ucfirst(str_replace('_', ' ', $key));
+                                $display_value = $value;
+                                
+                                // Format dates and times
+                                if (strpos($key, '_date') !== false && $value) {
+                                    $display_value = date('d/m/Y', strtotime($value));
+                                } else if (strpos($key, '_time') !== false && $value) {
+                                    $display_value = date('H:i', strtotime($value));
+                                } else if (in_array($key, ['is_new_account', 'video_required', 'drone_required', 'backup_required'])) {
+                                    $display_value = $value ? 'ใช่' : 'ไม่ใช่';
+                                }
+                                ?>
+                                <p class="text-sm text-gray-600 font-medium"><?= $label ?></p>
+                                <p class="text-gray-900 font-bold"><?= htmlspecialchars($display_value ?? '-') ?></p>
                             </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
