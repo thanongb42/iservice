@@ -420,7 +420,7 @@ if ($result && $result->num_rows > 0) {
                             <strong>${kiosk.kiosk_code}</strong><br>
                             ${kiosk.location_name || 'ตู้น้ำ'}<br>
                             <small style="color: #666;">${kiosk.address || 'สถานที่'}</small>
-                            ${kiosk.qrcode_img ? `<br><br><img src="../${kiosk.qrcode_img}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 6px; border: 2px solid #00b894;">` : ''}
+                            ${kiosk.qrcode_img ? `<br><br><img src="${kiosk.qrcode_img}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 6px; border: 2px solid #00b894; display: block; margin: 10px auto;">` : ''}
                         </div>`)
                         .bindTooltip(`${kiosk.kiosk_code}${kiosk.qrcode_img ? '<br><small style="font-size: 11px;">QR Code มีอยู่</small>' : ''}`, {
                             permanent: false,
