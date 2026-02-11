@@ -243,6 +243,10 @@ include __DIR__ . '/includes/header_public.php';
                             <i class="fas fa-broadcast-tower mr-2"></i>
                             จุดติดตั้งระบบเสียงไร้สาย
                         </a>
+                        <a href="water_map.php" class="inline-flex items-center bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-8 py-4 rounded-xl font-bold hover:from-cyan-500 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-droplet mr-2"></i>
+                            จุดติดตั้งตู้น้ำดื่ม
+                        </a>
                         <a href="track.php" class="inline-flex items-center bg-gradient-to-r from-green-400 to-emerald-500 text-white px-8 py-4 rounded-xl font-bold hover:from-green-500 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg">
                             <i class="fas fa-tracking mr-2"></i>
                             ติดตามงาน
