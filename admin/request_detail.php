@@ -375,7 +375,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                 <?php endif; ?>
 
                 <!-- Timeline -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4 pb-3 border-b">เวลาสำคัญ</h2>
                     
                     <div class="space-y-3">
@@ -386,6 +386,16 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 <p class="text-gray-900 font-bold"><?= date('d/m/Y H:i', strtotime($request['created_at'])) ?></p>
                             </div>
                         </div>
+                        
+                        <?php if ($request['expected_completion_date']): ?>
+                        <div class="flex items-start">
+                            <i class="fas fa-hourglass-end text-orange-600 mt-1 mr-3"></i>
+                            <div>
+                                <p class="text-sm text-gray-600">วันเวลาที่ต้องทำงาน</p>
+                                <p class="text-gray-900 font-bold"><?= date('d/m/Y', strtotime($request['expected_completion_date'])) ?></p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         
                         <?php if ($request['started_at']): ?>
                         <div class="flex items-start">
@@ -408,6 +418,37 @@ include __DIR__ . '/admin-layout/topbar.php';
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <!-- Attachments -->
+                <?php if ($request['attachments']): ?>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 pb-3 border-b">ไฟล์แนบ</h2>
+                    
+                    <?php 
+                    $attachments = json_decode($request['attachments'], true);
+                    if (is_array($attachments) && !empty($attachments)): 
+                    ?>
+                    <div class="space-y-2">
+                        <?php foreach ($attachments as $file_path): ?>
+                        <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-teal-400 transition">
+                            <div class="flex items-center flex-1">
+                                <i class="fas fa-file text-teal-600 mr-3 text-lg"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900"><?= htmlspecialchars(basename($file_path)) ?></p>
+                                    <p class="text-xs text-gray-500"><?= htmlspecialchars($file_path) ?></p>
+                                </div>
+                            </div>
+                            <a href="<?= htmlspecialchars('../' . $file_path) ?>" class="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-xs font-bold transition" download>
+                                <i class="fas fa-download mr-1"></i>ดาวน์โหลด
+                            </a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <p class="text-gray-500 italic">ไม่มีไฟล์แนบ</p>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Sidebar Actions -->
