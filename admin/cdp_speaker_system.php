@@ -57,10 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $stmt->get_result();
             $location = $result->fetch_assoc();
             
-            // Get images for this location
+            // Get images for this location with fixed paths
             $img_result = $conn->query("SELECT * FROM speaker_images WHERE location_id = $id ORDER BY created_at DESC");
             $images = [];
             while ($img_row = $img_result->fetch_assoc()) {
+                // Fix the image path for admin context
+                $img_row['image_url'] = fix_asset_path($img_row['image_path'], true);
                 $images[] = $img_row;
             }
             $location['images'] = $images;
@@ -544,7 +546,7 @@ function showImageModal(location) {
     const imagesHtml = location.images && location.images.length > 0 
         ? location.images.map(img => `
             <div style="display: inline-block; position: relative; margin: 8px; width: 100px;">
-                <img src="../${img.image_path}" style="width: 100px; height: 100px; border-radius: 6px; object-fit: cover;" alt="">
+                <img src="${img.image_url}" style="width: 100px; height: 100px; border-radius: 6px; object-fit: cover;" alt="">
                 <button type="button" onclick="deleteImage(${img.id})" 
                         style="position: absolute; top: 2px; right: 2px; background: #dc2626; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">
                     ×
