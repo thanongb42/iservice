@@ -104,7 +104,10 @@ if (empty($request_code)) {
                     <div class="flex-shrink-0">
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-md text-center">
                             <div id="qrcode" class="flex justify-center mb-2"></div>
-                            <p class="text-xs text-gray-500 font-medium">สแกนเพื่อติดตามสถานะ</p>
+                            <p class="text-xs text-gray-500 font-medium mb-2">สแกนเพื่อติดตามสถานะ</p>
+                            <button onclick="downloadQR()" class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition">
+                                <i class="fas fa-download"></i> บันทึก QR Code
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -204,12 +207,30 @@ if (empty($request_code)) {
         
         new QRCode(document.getElementById("qrcode"), {
             text: trackingUrl,
-            width: 100,
-            height: 100,
-            colorDark : "#0f766e", // Teal-700
+            width: 128,
+            height: 128,
+            colorDark : "#0f766e",
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.H
         });
+
+        function downloadQR() {
+            setTimeout(() => {
+                const canvas = document.querySelector('#qrcode canvas');
+                const img    = document.querySelector('#qrcode img');
+                if (canvas) {
+                    const link = document.createElement('a');
+                    link.download = 'QRCode-<?= $request_code ?>.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else if (img) {
+                    const link = document.createElement('a');
+                    link.download = 'QRCode-<?= $request_code ?>.png';
+                    link.href = img.src;
+                    link.click();
+                }
+            }, 200);
+        }
         
         // Copy Code Function
         function copyCode(element) {
