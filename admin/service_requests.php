@@ -531,16 +531,6 @@ include 'admin-layout/topbar.php';
                 <button onclick="clearFilters()" class="text-sm text-blue-600 hover:text-blue-800">
                     <i class="fas fa-redo"></i> ล้างตัวกรอง
                 </button>
-                <div id="bulkActions" style="display: none;">
-                    <select id="bulkActionSelect" class="px-3 py-2 border border-gray-300 rounded-md mr-2">
-                        <option value="">-- เลือกการดำเนินการ --</option>
-                        <option value="update_status">อัปเดตสถานะ</option>
-                        <option value="delete">ลบที่เลือก</option>
-                    </select>
-                    <button onclick="executeBulkAction()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                        ดำเนินการ
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -550,17 +540,14 @@ include 'admin-layout/topbar.php';
                 <table id="requestsTable">
                     <thead>
                         <tr>
-                            <th style="width: 40px;">
-                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                            </th>
-                            <th class="sortable" data-col="1" onclick="sortTable(1)">รหัสคำขอ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="2" onclick="sortTable(2)">บริการ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="3" onclick="sortTable(3)">ผู้ขอ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="4" onclick="sortTable(4)">หน่วยงาน <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="5" onclick="sortTable(5)">สถานะ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="6" onclick="sortTable(6)">ความสำคัญ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="7" onclick="sortTable(7)">มอบหมายให้ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="8" onclick="sortTable(8)">วันที่สร้าง <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="0" onclick="sortTable(0)">รหัสคำขอ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="1" onclick="sortTable(1)">บริการ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="2" onclick="sortTable(2)">ผู้ขอ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="3" onclick="sortTable(3)">หน่วยงาน <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="4" onclick="sortTable(4)">สถานะ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="5" onclick="sortTable(5)">ความสำคัญ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="6" onclick="sortTable(6)">มอบหมายให้ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="7" onclick="sortTable(7)">วันที่สร้าง <span class="sort-icon">↕</span></th>
                             <th style="width: 180px;">การดำเนินการ</th>
                         </tr>
                     </thead>
@@ -571,9 +558,6 @@ include 'admin-layout/topbar.php';
                                 data-service="<?= $req['service_code'] ?? '' ?>"
                                 data-priority="<?= $req['priority'] ?? '' ?>"
                                 data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
-                                <td>
-                                    <input type="checkbox" class="request-checkbox" value="<?= $req['request_id'] ?>">
-                                </td>
                                 <td class="font-mono text-sm"><?= htmlspecialchars($req['request_code'] ?? '#' . str_pad($req['request_id'], 4, '0', STR_PAD_LEFT)) ?></td>
                                 <td><?= htmlspecialchars(isset($req['service_name']) ? $req['service_name'] : getServiceName($req['service_code'] ?? 'N/A')) ?></td>
                                 <td>
@@ -1927,18 +1911,18 @@ include 'admin-layout/topbar.php';
             function getCellValue(row, col) {
                 const cell = row.cells[col];
                 if (!cell) return '';
-                if (col === 1) {
+                if (col === 0) {
                     // Extract trailing number from REQ-2026-0032 → 32
                     const parts = cell.textContent.trim().split('-');
                     return parseInt(parts[parts.length - 1]) || 0;
                 }
-                if (col === 5) {
+                if (col === 4) {
                     return statusOrder[row.dataset.status] || 0;
                 }
-                if (col === 6) {
+                if (col === 5) {
                     return priorityOrder[row.dataset.priority] || 0;
                 }
-                if (col === 8) {
+                if (col === 7) {
                     return cell.dataset.sort || '';
                 }
                 return cell.textContent.trim().toLowerCase();
@@ -1947,7 +1931,7 @@ include 'admin-layout/topbar.php';
             allRows.sort((a, b) => {
                 const valA = getCellValue(a, colIndex);
                 const valB = getCellValue(b, colIndex);
-                if (colIndex === 1 || colIndex === 5 || colIndex === 6) {
+                if (colIndex === 0 || colIndex === 4 || colIndex === 5) {
                     return sortState.asc ? valA - valB : valB - valA;
                 }
                 if (valA < valB) return sortState.asc ? -1 : 1;
