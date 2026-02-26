@@ -356,6 +356,51 @@ include 'admin-layout/topbar.php';
             color: #16a34a;
         }
 
+        /* View toggle */
+        .view-toggle { display: inline-flex; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden; }
+        .view-btn {
+            padding: 0.5rem 0.875rem;
+            background: white;
+            color: #6b7280;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            transition: all 0.15s ease;
+        }
+        .view-btn + .view-btn { border-left: 1px solid #e5e7eb; }
+        .view-btn.active { background: #009933; color: white; }
+        .view-btn:hover:not(.active) { background: #f9fafb; }
+
+        /* Card view */
+        .req-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .req-card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .req-card-code {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+        .req-card-actions {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f3f4f6;
+            flex-wrap: wrap;
+        }
+
         /* SweetAlert Status Update Modal */
         .swal-status-popup {
             border-radius: 16px !important;
@@ -376,11 +421,21 @@ include 'admin-layout/topbar.php';
 
     <div class="px-4 sm:px-6 lg:px-8 py-6">
         <!-- Page Title -->
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">
-                <i class="fas fa-tasks text-green-600"></i> จัดการคำขอบริการ
-            </h1>
-            <p class="mt-2 text-gray-600">ดูแลและจัดการคำขอบริการต่างๆ จากผู้ใช้งาน</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    <i class="fas fa-tasks text-green-600"></i> จัดการคำขอบริการ
+                </h1>
+                <p class="mt-2 text-gray-600">ดูแลและจัดการคำขอบริการต่างๆ จากผู้ใช้งาน</p>
+            </div>
+            <div class="view-toggle">
+                <button class="view-btn active" id="btnListView" onclick="switchView('list')">
+                    <i class="fas fa-list"></i> List
+                </button>
+                <button class="view-btn" id="btnCardView" onclick="switchView('card')">
+                    <i class="fas fa-th-large"></i> Card
+                </button>
+            </div>
         </div>
 
         <!-- Statistics Cards -->
@@ -489,8 +544,8 @@ include 'admin-layout/topbar.php';
             </div>
         </div>
 
-        <!-- Requests Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- Requests Table (List View) -->
+        <div id="listView" class="bg-white rounded-lg shadow overflow-hidden">
             <div class="table-responsive">
                 <table id="requestsTable">
                     <thead>
@@ -641,6 +696,64 @@ include 'admin-layout/topbar.php';
                 </div>
             </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Card View -->
+        <div id="cardView" style="display:none;">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <?php foreach ($requests as $req): ?>
+                <?php $req_tc = $task_counts[$req['request_id']] ?? null; ?>
+                <div class="req-card"
+                     data-id="<?= $req['request_id'] ?>"
+                     data-status="<?= $req['status'] ?? '' ?>"
+                     data-service="<?= $req['service_code'] ?? '' ?>"
+                     data-priority="<?= $req['priority'] ?? '' ?>"
+                     data-search="<?= strtolower($req['request_id'] . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <span class="req-card-code">#<?= str_pad($req['request_id'], 4, '0', STR_PAD_LEFT) ?></span>
+                        <span class="status-badge status-<?= $req['status'] ?>"><?= getThaiStatus($req['status']) ?></span>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800 mb-2">
+                        <?= htmlspecialchars(isset($req['service_name']) ? $req['service_name'] : getServiceName($req['service_code'] ?? 'N/A')) ?>
+                    </p>
+                    <p class="text-sm text-gray-700"><?= htmlspecialchars($req['user_full_name'] ?? 'N/A') ?></p>
+                    <p class="text-xs text-gray-400"><?= htmlspecialchars($req['user_email'] ?? '-') ?></p>
+                    <?php if (!empty($req['department_name'])): ?>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-building mr-1"></i><?= htmlspecialchars($req['department_name']) ?>
+                    </p>
+                    <?php endif; ?>
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
+                        <span class="priority-badge priority-<?= $req['priority'] ?>"><?= getThaiPriority($req['priority']) ?></span>
+                        <?php if ($req_tc && $req_tc['total_assignments'] > 0): ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-users mr-1"></i><?= $req_tc['total_assignments'] ?> งาน
+                            <?php if ($req_tc['completed_count'] > 0): ?>
+                            (เสร็จ <?= $req_tc['completed_count'] ?>)
+                            <?php endif; ?>
+                        </span>
+                        <?php else: ?>
+                        <span class="text-xs text-gray-400">ยังไม่มอบหมาย</span>
+                        <?php endif; ?>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-clock mr-1"></i><?= formatThaiDate($req['created_at']) ?>
+                    </p>
+                    <div class="req-card-actions">
+                        <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button>
+                        <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="อัปเดตสถานะ"><i class="fas fa-edit"></i></button>
+                        <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="มอบหมายงาน"><i class="fas fa-user-tag"></i></button>
+                        <button onclick="updatePriority(<?= $req['request_id'] ?>)" class="action-btn text-orange-600 hover:bg-orange-50" title="อัปเดตความสำคัญ"><i class="fas fa-flag"></i></button>
+                        <button onclick="deleteRequest(<?= $req['request_id'] ?>)" class="action-btn text-red-600 hover:bg-red-50" title="ลบ"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if (empty($requests)): ?>
+                <div class="col-span-full text-center py-12 text-gray-400">
+                    <i class="fas fa-clipboard-list text-4xl mb-3 opacity-30 block"></i>ไม่พบคำขอบริการ
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -839,13 +952,13 @@ include 'admin-layout/topbar.php';
             const serviceFilter = document.getElementById('filterService').value;
             const priorityFilter = document.getElementById('filterPriority').value;
 
-            const rows = document.querySelectorAll('#requestsTable tbody tr');
+            const items = document.querySelectorAll('#requestsTable tbody tr, #cardView .req-card');
 
-            rows.forEach(row => {
-                const searchData = row.getAttribute('data-search');
-                const status = row.getAttribute('data-status');
-                const service = row.getAttribute('data-service');
-                const priority = row.getAttribute('data-priority');
+            items.forEach(item => {
+                const searchData = item.getAttribute('data-search');
+                const status = item.getAttribute('data-status');
+                const service = item.getAttribute('data-service');
+                const priority = item.getAttribute('data-priority');
 
                 const matchSearch = searchData.includes(searchTerm);
                 const matchStatus = !statusFilter || status === statusFilter;
@@ -853,9 +966,9 @@ include 'admin-layout/topbar.php';
                 const matchPriority = !priorityFilter || priority === priorityFilter;
 
                 if (matchSearch && matchStatus && matchService && matchPriority) {
-                    row.style.display = '';
+                    item.style.display = '';
                 } else {
-                    row.style.display = 'none';
+                    item.style.display = 'none';
                 }
             });
         }
@@ -1753,6 +1866,33 @@ include 'admin-layout/topbar.php';
                 }
             }
         }
+
+        // View toggle
+        function switchView(view) {
+            const listView = document.getElementById('listView');
+            const cardView = document.getElementById('cardView');
+            const btnList  = document.getElementById('btnListView');
+            const btnCard  = document.getElementById('btnCardView');
+
+            if (view === 'card') {
+                listView.style.display = 'none';
+                cardView.style.display = 'block';
+                btnList.classList.remove('active');
+                btnCard.classList.add('active');
+            } else {
+                cardView.style.display = 'none';
+                listView.style.display = 'block';
+                btnCard.classList.remove('active');
+                btnList.classList.add('active');
+            }
+            localStorage.setItem('serviceRequestsView', view);
+        }
+
+        // Restore saved view preference
+        (function() {
+            const saved = localStorage.getItem('serviceRequestsView');
+            if (saved === 'card') switchView('card');
+        })();
 
         // Sort functionality
         let sortState = { col: -1, asc: true };
