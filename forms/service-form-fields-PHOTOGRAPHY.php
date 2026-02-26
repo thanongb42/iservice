@@ -21,8 +21,35 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             วันที่จัดงาน <span class="text-red-500">*</span>
         </label>
-        <input type="date" name="event_date" required
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+        <div class="flex items-center space-x-2">
+            <select name="event_date_day" required
+                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">วัน</option>
+                <?php for ($d = 1; $d <= 31; $d++): ?>
+                <option value="<?= sprintf('%02d', $d) ?>"><?= $d ?></option>
+                <?php endfor; ?>
+            </select>
+            <select name="event_date_month" required
+                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">เดือน</option>
+                <?php
+                $months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                           'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+                foreach ($months as $i => $m): ?>
+                <option value="<?= sprintf('%02d', $i + 1) ?>"><?= $m ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select name="event_date_year" required
+                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">ปี (พ.ศ.)</option>
+                <?php
+                $currentYear = (int)date('Y') + 543;
+                for ($y = $currentYear; $y <= $currentYear + 5; $y++): ?>
+                <option value="<?= $y ?>"><?= $y ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <input type="hidden" name="event_date" id="event_date_combined">
     </div>
 
     <div>
@@ -120,11 +147,17 @@
 </div>
 
 <script>
-// Set minimum date to tomorrow
-const eventDateInput = document.querySelector('input[name="event_date"]');
-if (eventDateInput) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    eventDateInput.min = tomorrow.toISOString().split('T')[0];
+// Combine Thai date selects into hidden event_date field (YYYY-MM-DD in CE)
+function updateEventDate() {
+    const day   = document.querySelector('[name="event_date_day"]').value;
+    const month = document.querySelector('[name="event_date_month"]').value;
+    const yearBE = document.querySelector('[name="event_date_year"]').value;
+    if (day && month && yearBE) {
+        const yearCE = parseInt(yearBE) - 543;
+        document.getElementById('event_date_combined').value = `${yearCE}-${month}-${day}`;
+    }
 }
+document.querySelector('[name="event_date_day"]').addEventListener('change', updateEventDate);
+document.querySelector('[name="event_date_month"]').addEventListener('change', updateEventDate);
+document.querySelector('[name="event_date_year"]').addEventListener('change', updateEventDate);
 </script>
