@@ -225,14 +225,29 @@ include __DIR__ . '/admin-layout/topbar.php';
         <?php endif; ?>
 
         <!-- Header -->
+        <?php
+        $service_map = [
+            'PHOTOGRAPHY' => ['label' => 'บริการช่างภาพ',       'icon' => 'fa-camera',          'color' => 'bg-purple-100 text-purple-700 border-purple-200'],
+            'MC'          => ['label' => 'บริการพิธีกร',         'icon' => 'fa-microphone',      'color' => 'bg-pink-100 text-pink-700 border-pink-200'],
+            'IT_SUPPORT'  => ['label' => 'แจ้งซ่อมคอมพิวเตอร์', 'icon' => 'fa-computer',        'color' => 'bg-blue-100 text-blue-700 border-blue-200'],
+            'EMAIL'       => ['label' => 'ขอใช้อีเมล',           'icon' => 'fa-envelope',        'color' => 'bg-sky-100 text-sky-700 border-sky-200'],
+            'NAS'         => ['label' => 'ขอใช้พื้นที่ NAS',     'icon' => 'fa-hard-drive',      'color' => 'bg-yellow-100 text-yellow-700 border-yellow-200'],
+            'WEB_DESIGN'  => ['label' => 'ออกแบบเว็บไซต์',       'icon' => 'fa-globe',           'color' => 'bg-teal-100 text-teal-700 border-teal-200'],
+            'PRINTER'     => ['label' => 'แจ้งซ่อมปริ้นเตอร์',   'icon' => 'fa-print',           'color' => 'bg-orange-100 text-orange-700 border-orange-200'],
+            'QR_CODE'     => ['label' => 'สร้าง QR Code',        'icon' => 'fa-qrcode',          'color' => 'bg-gray-100 text-gray-700 border-gray-200'],
+            'INTERNET'    => ['label' => 'แจ้งปัญหาอินเทอร์เน็ต','icon' => 'fa-wifi',            'color' => 'bg-indigo-100 text-indigo-700 border-indigo-200'],
+            'LED'         => ['label' => 'ขอใช้จอ LED',          'icon' => 'fa-tv',              'color' => 'bg-green-100 text-green-700 border-green-200'],
+        ];
+        $svc = $service_map[$request['service_code']] ?? ['label' => htmlspecialchars($request['service_name'] ?? $request['service_code']), 'icon' => 'fa-circle-info', 'color' => 'bg-gray-100 text-gray-700 border-gray-200'];
+        ?>
         <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
             <div class="flex justify-between items-start">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900 mb-2"><?= htmlspecialchars($request['request_code']) ?></h1>
-                    <p class="text-gray-600">
-                        <i class="fas fa-service mr-2"></i>
-                        <?= htmlspecialchars($request['service_name']) ?>
-                    </p>
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-sm font-bold <?= $svc['color'] ?>">
+                        <i class="fas <?= $svc['icon'] ?>"></i>
+                        <?= $svc['label'] ?>
+                    </span>
                 </div>
                 
                 <div class="flex items-center gap-2">
