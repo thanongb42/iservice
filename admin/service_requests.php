@@ -325,6 +325,31 @@ include 'admin-layout/topbar.php';
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        /* Sortable column headers */
+        #requestsTable thead th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        #requestsTable thead th.sortable:hover {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        #requestsTable thead th.sortable.sorted {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+        #requestsTable thead th.sorted .sort-icon {
+            opacity: 1;
+            color: #16a34a;
+        }
+
         /* SweetAlert Status Update Modal */
         .swal-status-popup {
             border-radius: 16px !important;
@@ -467,14 +492,14 @@ include 'admin-layout/topbar.php';
                             <th style="width: 40px;">
                                 <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                             </th>
-                            <th>รหัสคำขอ</th>
-                            <th>บริการ</th>
-                            <th>ผู้ขอ</th>
-                            <th>หน่วยงาน</th>
-                            <th>สถานะ</th>
-                            <th>ความสำคัญ</th>
-                            <th>มอบหมายให้</th>
-                            <th>วันที่สร้าง</th>
+                            <th class="sortable" data-col="1" onclick="sortTable(1)">รหัสคำขอ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="2" onclick="sortTable(2)">บริการ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="3" onclick="sortTable(3)">ผู้ขอ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="4" onclick="sortTable(4)">หน่วยงาน <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="5" onclick="sortTable(5)">สถานะ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="6" onclick="sortTable(6)">ความสำคัญ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="7" onclick="sortTable(7)">มอบหมายให้ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="8" onclick="sortTable(8)">วันที่สร้าง <span class="sort-icon">↕</span></th>
                             <th style="width: 180px;">การดำเนินการ</th>
                         </tr>
                     </thead>
@@ -527,7 +552,7 @@ include 'admin-layout/topbar.php';
                                         <span class="text-gray-400">ยังไม่มอบหมาย</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-sm"><?= formatThaiDate($req['created_at']) ?></td>
+                                <td class="text-sm" data-sort="<?= $req['created_at'] ?>"><?= formatThaiDate($req['created_at']) ?></td>
                                 <td>
                                     <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="ดูรายละเอียด">
                                         <i class="fas fa-eye"></i>
@@ -1721,6 +1746,68 @@ include 'admin-layout/topbar.php';
                     }
                 }
             }
+        }
+
+        // Sort functionality
+        let sortState = { col: -1, asc: true };
+
+        function sortTable(colIndex) {
+            const tbody = document.querySelector('#requestsTable tbody');
+            const allRows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (sortState.col === colIndex) {
+                sortState.asc = !sortState.asc;
+            } else {
+                sortState.col = colIndex;
+                sortState.asc = true;
+            }
+
+            // Update header icons
+            document.querySelectorAll('#requestsTable thead th.sortable').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                const col = parseInt(th.dataset.col);
+                if (col === colIndex) {
+                    th.classList.add('sorted');
+                    icon.textContent = sortState.asc ? '↑' : '↓';
+                } else {
+                    th.classList.remove('sorted');
+                    icon.textContent = '↕';
+                }
+            });
+
+            const statusOrder = { pending: 1, in_progress: 2, completed: 3, cancelled: 4 };
+            const priorityOrder = { low: 1, normal: 2, medium: 2, high: 3, urgent: 4 };
+
+            function getCellValue(row, col) {
+                const cell = row.cells[col];
+                if (!cell) return '';
+                if (col === 1) {
+                    return parseInt(cell.textContent.replace(/\D/g, '')) || 0;
+                }
+                if (col === 5) {
+                    return statusOrder[row.dataset.status] || 0;
+                }
+                if (col === 6) {
+                    return priorityOrder[row.dataset.priority] || 0;
+                }
+                if (col === 8) {
+                    return cell.dataset.sort || '';
+                }
+                return cell.textContent.trim().toLowerCase();
+            }
+
+            allRows.sort((a, b) => {
+                const valA = getCellValue(a, colIndex);
+                const valB = getCellValue(b, colIndex);
+                if (colIndex === 1 || colIndex === 5 || colIndex === 6) {
+                    return sortState.asc ? valA - valB : valB - valA;
+                }
+                if (valA < valB) return sortState.asc ? -1 : 1;
+                if (valA > valB) return sortState.asc ? 1 : -1;
+                return 0;
+            });
+
+            allRows.forEach(row => tbody.appendChild(row));
         }
 
         // Close modal when clicking outside
