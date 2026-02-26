@@ -45,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ticket'])) {
                 LEFT JOIN user_roles ur ON u.user_id = ur.user_id AND ur.is_primary = 1
                 LEFT JOIN roles r ON ur.role_id = r.role_id
                 WHERE sr.request_code = ?
+                AND (ta.status IS NULL OR ta.status != 'cancelled')
+                ORDER BY ta.assignment_id DESC
                 LIMIT 1
             ");
             
@@ -226,8 +228,16 @@ include __DIR__ . '/includes/header_public.php';
                         <p class="text-gray-600 text-lg"><?php echo htmlspecialchars($tracking_data['subject']); ?></p>
                     </div>
                     <div class="flex gap-2">
-                        <span class="<?php echo get_status_badge($tracking_data['task_status'] ?? 'pending')['color']; ?> px-4 py-2 rounded-full font-semibold">
-                            <?php echo get_status_badge($tracking_data['task_status'] ?? 'pending')['label']; ?>
+                        <?php
+                        // Use request_status as primary, fallback to task_status
+                        $display_status = $tracking_data['request_status'] ?? $tracking_data['task_status'] ?? 'pending';
+                        // Map in_progress from service_requests with task accepted_at
+                        if ($display_status === 'in_progress' && $tracking_data['accepted_at'] && !$tracking_data['started_at']) {
+                            $display_status = 'accepted';
+                        }
+                        ?>
+                        <span class="<?php echo get_status_badge($display_status)['color']; ?> px-4 py-2 rounded-full font-semibold">
+                            <?php echo get_status_badge($display_status)['label']; ?>
                         </span>
                         <span class="<?php echo get_priority_color($tracking_data['priority']); ?> px-4 py-2 rounded-full font-semibold">
                             <?php 

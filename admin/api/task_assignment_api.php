@@ -254,37 +254,43 @@ if ($action === 'assign_task') {
     // Fetch start_time and end_time from service-specific details if available
     $start_time = null;
     $end_time = null;
-    
-    if ($service_code === 'PHOTOGRAPHY') {
-        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_photography_details WHERE request_id = ?";
-        $detail_stmt = $conn->prepare($detail_query);
-        $detail_stmt->bind_param('i', $request_id);
-        $detail_stmt->execute();
-        $detail_result = $detail_stmt->get_result()->fetch_assoc();
-        
-        if ($detail_result) {
-            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
-                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+
+    try {
+        if ($service_code === 'PHOTOGRAPHY') {
+            $detail_stmt = $conn->prepare("SELECT event_date, event_time_start, event_time_end FROM request_photography_details WHERE request_id = ?");
+            if ($detail_stmt) {
+                $detail_stmt->bind_param('i', $request_id);
+                $detail_stmt->execute();
+                $detail_result = $detail_stmt->get_result()->fetch_assoc();
+
+                if ($detail_result) {
+                    if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                        $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+                    }
+                    if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                        $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+                    }
+                }
             }
-            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
-                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+        } elseif ($service_code === 'MC') {
+            $detail_stmt = $conn->prepare("SELECT event_date, event_time_start, event_time_end FROM request_mc_details WHERE request_id = ?");
+            if ($detail_stmt) {
+                $detail_stmt->bind_param('i', $request_id);
+                $detail_stmt->execute();
+                $detail_result = $detail_stmt->get_result()->fetch_assoc();
+
+                if ($detail_result) {
+                    if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                        $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
+                    }
+                    if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                        $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
+                    }
+                }
             }
         }
-    } elseif ($service_code === 'MC') {
-        $detail_query = "SELECT event_date, event_time_start, event_time_end FROM request_mc_details WHERE request_id = ?";
-        $detail_stmt = $conn->prepare($detail_query);
-        $detail_stmt->bind_param('i', $request_id);
-        $detail_stmt->execute();
-        $detail_result = $detail_stmt->get_result()->fetch_assoc();
-        
-        if ($detail_result) {
-            if ($detail_result['event_date'] && $detail_result['event_time_start']) {
-                $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
-            }
-            if ($detail_result['event_date'] && $detail_result['event_time_end']) {
-                $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
-            }
-        }
+    } catch (Exception $e) {
+        // Detail tables may not exist on production - continue without time data
     }
     
     $required_roles = $SERVICE_ROLE_MAPPING[$service_code] ?? ['manager', 'all'];
@@ -323,18 +329,37 @@ if ($action === 'assign_task') {
     // Check if start_time/end_time columns exist (may not exist on Production)
     $has_time_columns = column_exists($conn, 'task_assignments', 'start_time');
     
-    // Build dynamic INSERT based on what data we have
-    $columns = ['request_id', 'assigned_to', 'assigned_by', 'priority', 'due_date', 'notes', 'status', 'created_at'];
-    $placeholders = ['?', '?', '?', '?', '?', '?', "'pending'", 'NOW()'];
-    $params = [$request_id, $assigned_to, $admin_id, $priority, $due_date, $notes];
-    $types = 'iiisss';
+    // Build dynamic INSERT based on what columns exist
+    $columns = ['request_id', 'assigned_to', 'assigned_by', 'status', 'created_at'];
+    $placeholders = ['?', '?', '?', "'pending'", 'NOW()'];
+    $params = [$request_id, $assigned_to, $admin_id];
+    $types = 'iii';
+
+    if (column_exists($conn, 'task_assignments', 'priority')) {
+        $columns[] = 'priority';
+        $placeholders[] = '?';
+        $params[] = $priority;
+        $types .= 's';
+    }
+    if (column_exists($conn, 'task_assignments', 'due_date')) {
+        $columns[] = 'due_date';
+        $placeholders[] = '?';
+        $params[] = $due_date;
+        $types .= 's';
+    }
+    if (column_exists($conn, 'task_assignments', 'notes')) {
+        $columns[] = 'notes';
+        $placeholders[] = '?';
+        $params[] = $notes;
+        $types .= 's';
+    }
     
-    // Only include assigned_as_role if it has a valid value (not null/0)
-    if (!empty($assigned_as_role)) {
-        array_splice($columns, 2, 0, ['assigned_as_role']);
-        array_splice($placeholders, 2, 0, ['?']);
-        $params = [$request_id, $assigned_to, $assigned_as_role, $admin_id, $priority, $due_date, $notes];
-        $types = 'iiiisss';
+    // Only include assigned_as_role if it has a valid value and column exists
+    if (!empty($assigned_as_role) && column_exists($conn, 'task_assignments', 'assigned_as_role')) {
+        $columns[] = 'assigned_as_role';
+        $placeholders[] = '?';
+        $params[] = $assigned_as_role;
+        $types .= 'i';
     }
     
     // Add time columns if they exist and have values
@@ -409,12 +434,12 @@ if ($action === 'update_status') {
     $update_fields = 'status = ?';
     $params = [$new_status];
     $types = 's';
-    
-    if ($new_status === 'accepted') {
+
+    if ($new_status === 'accepted' && column_exists($conn, 'task_assignments', 'accepted_at')) {
         $update_fields .= ', accepted_at = NOW()';
-    } elseif ($new_status === 'in_progress') {
+    } elseif ($new_status === 'in_progress' && column_exists($conn, 'task_assignments', 'started_at')) {
         $update_fields .= ', started_at = NOW()';
-    } elseif ($new_status === 'completed') {
+    } elseif ($new_status === 'completed' && column_exists($conn, 'task_assignments', 'completed_at')) {
         $update_fields .= ', completed_at = NOW()';
     }
     
@@ -427,37 +452,45 @@ if ($action === 'update_status') {
     $update_stmt->bind_param($types, ...$params);
     
     if ($update_stmt->execute()) {
-        // Log the status change to task history
-        $user_id = $_SESSION['user_id'];
-        $action = 'status_change';
-        $history_insert = "INSERT INTO task_history (assignment_id, action, old_status, new_status, performed_by, notes) 
-                          VALUES (?, ?, ?, ?, ?, ?)";
-        $history_stmt = $conn->prepare($history_insert);
-        // Order: assignment_id(i), action(s), old_status(s), new_status(s), performed_by(i), notes(s)
-        $history_stmt->bind_param('issssi', $assignment_id, $action, $old_status, $new_status, $user_id, $notes);
-        $history_stmt->execute();
-        
-        // If completed, check if all assignments are done and update request status
-        if ($new_status === 'completed') {
-            // Get request_id for this assignment
-            $req_query = "SELECT request_id FROM task_assignments WHERE assignment_id = ?";
-            $req_stmt = $conn->prepare($req_query);
-            $req_stmt->bind_param('i', $assignment_id);
-            $req_stmt->execute();
-            $req_result = $req_stmt->get_result()->fetch_assoc();
-            
-            if ($req_result) {
-                $request_id = $req_result['request_id'];
-                
+        // Log the status change to task history (if table exists)
+        try {
+            $user_id = $_SESSION['user_id'];
+            $action = 'status_change';
+            $history_insert = "INSERT INTO task_history (assignment_id, action, old_status, new_status, performed_by, notes)
+                              VALUES (?, ?, ?, ?, ?, ?)";
+            $history_stmt = $conn->prepare($history_insert);
+            if ($history_stmt) {
+                $history_stmt->bind_param('issssi', $assignment_id, $action, $old_status, $new_status, $user_id, $notes);
+                $history_stmt->execute();
+            }
+        } catch (Exception $e) {
+            // task_history table may not exist on production - skip logging
+        }
+
+        // Get request_id for this assignment
+        $req_query = "SELECT request_id FROM task_assignments WHERE assignment_id = ?";
+        $req_stmt = $conn->prepare($req_query);
+        $req_stmt->bind_param('i', $assignment_id);
+        $req_stmt->execute();
+        $req_result = $req_stmt->get_result()->fetch_assoc();
+
+        if ($req_result) {
+            $request_id = $req_result['request_id'];
+
+            if ($new_status === 'accepted' || $new_status === 'in_progress') {
+                // Update service_requests.status to in_progress
+                $conn->query("UPDATE service_requests SET status = 'in_progress', started_at = COALESCE(started_at, NOW()) WHERE request_id = $request_id");
+
+            } elseif ($new_status === 'completed') {
                 // Check if all assignments are completed
-                $check_query = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed 
-                               FROM task_assignments 
+                $check_query = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+                               FROM task_assignments
                                WHERE request_id = ? AND status != 'cancelled'";
                 $check_stmt = $conn->prepare($check_query);
                 $check_stmt->bind_param('i', $request_id);
                 $check_stmt->execute();
                 $check_result = $check_stmt->get_result()->fetch_assoc();
-                
+
                 // If all tasks completed, update request status
                 if ($check_result['total'] > 0 && $check_result['total'] == $check_result['completed']) {
                     $conn->query("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = $request_id");
