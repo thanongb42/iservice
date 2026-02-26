@@ -570,11 +570,11 @@ include 'admin-layout/topbar.php';
                                 data-status="<?= $req['status'] ?? '' ?>"
                                 data-service="<?= $req['service_code'] ?? '' ?>"
                                 data-priority="<?= $req['priority'] ?? '' ?>"
-                                data-search="<?= strtolower($req['request_id'] . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
+                                data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
                                 <td>
                                     <input type="checkbox" class="request-checkbox" value="<?= $req['request_id'] ?>">
                                 </td>
-                                <td class="font-mono text-sm">#<?= str_pad($req['request_id'], 4, '0', STR_PAD_LEFT) ?></td>
+                                <td class="font-mono text-sm"><?= htmlspecialchars($req['request_code'] ?? '#' . str_pad($req['request_id'], 4, '0', STR_PAD_LEFT)) ?></td>
                                 <td><?= htmlspecialchars(isset($req['service_name']) ? $req['service_name'] : getServiceName($req['service_code'] ?? 'N/A')) ?></td>
                                 <td>
                                     <?= htmlspecialchars($req['user_full_name'] ?? 'N/A') ?>
@@ -708,9 +708,9 @@ include 'admin-layout/topbar.php';
                      data-status="<?= $req['status'] ?? '' ?>"
                      data-service="<?= $req['service_code'] ?? '' ?>"
                      data-priority="<?= $req['priority'] ?? '' ?>"
-                     data-search="<?= strtolower($req['request_id'] . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
+                     data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
                     <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="req-card-code">#<?= str_pad($req['request_id'], 4, '0', STR_PAD_LEFT) ?></span>
+                        <span class="req-card-code"><?= htmlspecialchars($req['request_code'] ?? '#' . str_pad($req['request_id'], 4, '0', STR_PAD_LEFT)) ?></span>
                         <span class="status-badge status-<?= $req['status'] ?>"><?= getThaiStatus($req['status']) ?></span>
                     </div>
                     <p class="text-sm font-semibold text-gray-800 mb-2">
@@ -1928,7 +1928,9 @@ include 'admin-layout/topbar.php';
                 const cell = row.cells[col];
                 if (!cell) return '';
                 if (col === 1) {
-                    return parseInt(cell.textContent.replace(/\D/g, '')) || 0;
+                    // Extract trailing number from REQ-2026-0032 → 32
+                    const parts = cell.textContent.trim().split('-');
+                    return parseInt(parts[parts.length - 1]) || 0;
                 }
                 if (col === 5) {
                     return statusOrder[row.dataset.status] || 0;
