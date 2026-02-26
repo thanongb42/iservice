@@ -21,35 +21,14 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             วันที่จัดงาน <span class="text-red-500">*</span>
         </label>
-        <div class="flex items-center space-x-2">
-            <select name="event_date_day" required
-                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">วัน</option>
-                <?php for ($d = 1; $d <= 31; $d++): ?>
-                <option value="<?= sprintf('%02d', $d) ?>"><?= $d ?></option>
-                <?php endfor; ?>
-            </select>
-            <select name="event_date_month" required
-                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">เดือน</option>
-                <?php
-                $months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-                           'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-                foreach ($months as $i => $m): ?>
-                <option value="<?= sprintf('%02d', $i + 1) ?>"><?= $m ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select name="event_date_year" required
-                    class="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">ปี (พ.ศ.)</option>
-                <?php
-                $currentYear = (int)date('Y') + 543;
-                for ($y = $currentYear; $y <= $currentYear + 5; $y++): ?>
-                <option value="<?= $y ?>"><?= $y ?></option>
-                <?php endfor; ?>
-            </select>
+        <div class="relative">
+            <input type="text" id="event_date_display" placeholder="วว/ดด/ปปปป" required readonly
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer bg-white">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <i class="fas fa-calendar-alt"></i>
+            </span>
         </div>
-        <input type="hidden" name="event_date" id="event_date_combined">
+        <input type="hidden" name="event_date" id="event_date_hidden">
     </div>
 
     <div>
@@ -146,18 +125,26 @@
 
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 <script>
-// Combine Thai date selects into hidden event_date field (YYYY-MM-DD in CE)
-function updateEventDate() {
-    const day   = document.querySelector('[name="event_date_day"]').value;
-    const month = document.querySelector('[name="event_date_month"]').value;
-    const yearBE = document.querySelector('[name="event_date_year"]').value;
-    if (day && month && yearBE) {
-        const yearCE = parseInt(yearBE) - 543;
-        document.getElementById('event_date_combined').value = `${yearCE}-${month}-${day}`;
+flatpickr("#event_date_display", {
+    locale: "th",
+    dateFormat: "d/m/Y",
+    minDate: "today",
+    onChange: function(selectedDates, dateStr, instance) {
+        if (selectedDates.length > 0) {
+            const d = selectedDates[0];
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day   = String(d.getDate()).padStart(2, '0');
+            // store CE date for DB
+            document.getElementById('event_date_hidden').value = `${year}-${month}-${day}`;
+            // display BE year
+            const yearBE = year + 543;
+            instance.input.value = `${day}/${month}/${yearBE}`;
+        }
     }
-}
-document.querySelector('[name="event_date_day"]').addEventListener('change', updateEventDate);
-document.querySelector('[name="event_date_month"]').addEventListener('change', updateEventDate);
-document.querySelector('[name="event_date_year"]').addEventListener('change', updateEventDate);
+});
 </script>
