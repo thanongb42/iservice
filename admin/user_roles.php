@@ -216,6 +216,74 @@ include 'admin-layout/topbar.php';
         border-color: #009933;
         color: white;
     }
+
+    /* View toggle buttons */
+    .view-toggle { display: inline-flex; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden; }
+    .view-btn {
+        padding: 0.5rem 0.75rem;
+        background: white;
+        color: #6b7280;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        transition: all 0.15s ease;
+    }
+    .view-btn + .view-btn { border-left: 1px solid #e5e7eb; }
+    .view-btn.active { background: #009933; color: white; }
+    .view-btn:hover:not(.active) { background: #f9fafb; }
+
+    /* List view table */
+    #listView table { width: 100%; border-collapse: collapse; }
+    #listView th {
+        background: #f9fafb;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid #e5e7eb;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+    #listView td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    #listView tbody tr:hover td { background: #f9fafb; }
+
+    /* Pagination */
+    .pag-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.875rem 1rem;
+        border-top: 1px solid #e5e7eb;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .pag-btn {
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 0.5rem;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #374151;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+    .pag-btn:hover:not(:disabled) { background: #f3f4f6; }
+    .pag-btn.active { background: #009933; border-color: #009933; color: white; font-weight: 600; }
+    .pag-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 </style>
 
 <div>
@@ -225,10 +293,20 @@ include 'admin-layout/topbar.php';
             <h1 class="text-2xl font-semibold text-gray-800">กำหนดบทบาทผู้ใช้</h1>
             <p class="text-gray-500 text-sm mt-1">กำหนดบทบาทและหน้าที่ให้กับผู้ใช้ในระบบ</p>
         </div>
-        <a href="roles_manager.php" class="btn btn-secondary">
-            <i class="fas fa-cog"></i>
-            จัดการบทบาท
-        </a>
+        <div class="flex items-center gap-3">
+            <div class="view-toggle">
+                <button class="view-btn active" id="btnGridView" onclick="switchView('grid')" title="Card View">
+                    <i class="fas fa-th-large"></i> Card
+                </button>
+                <button class="view-btn" id="btnListView" onclick="switchView('list')" title="List View">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
+            <a href="roles_manager.php" class="btn btn-secondary">
+                <i class="fas fa-cog"></i>
+                จัดการบทบาท
+            </a>
+        </div>
     </div>
 
     <!-- Filter by Role -->
@@ -248,8 +326,8 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
-    <!-- Users Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Users Grid View -->
+    <div id="gridView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <?php foreach ($users as $u): ?>
         <div class="user-card" data-user-id="<?= $u['user_id'] ?>">
             <div class="flex items-start gap-3">
@@ -310,6 +388,88 @@ include 'admin-layout/topbar.php';
             <p>ไม่พบผู้ใช้</p>
         </div>
         <?php endif; ?>
+    </div>
+
+    <!-- Users List View (with pagination) -->
+    <div id="listView" style="display:none;" class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>Username / Email</th>
+                        <th>หน่วยงาน</th>
+                        <th>บทบาท</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="listTableBody">
+                    <?php foreach ($users as $idx => $u): ?>
+                    <tr class="list-row" data-index="<?= $idx ?>">
+                        <td class="text-gray-400 text-sm"><?= $idx + 1 ?></td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <?php if (!empty($u['profile_image']) && file_exists('../' . $u['profile_image'])): ?>
+                                <div class="user-avatar" style="width:2.25rem;height:2.25rem;flex-shrink:0;">
+                                    <img src="../<?= htmlspecialchars($u['profile_image']) ?>" alt="">
+                                </div>
+                                <?php else: ?>
+                                <div class="user-avatar bg-gray-100 text-gray-600" style="width:2.25rem;height:2.25rem;font-size:0.875rem;flex-shrink:0;">
+                                    <?= strtoupper(substr($u['first_name'] ?? $u['username'], 0, 1)) ?>
+                                </div>
+                                <?php endif; ?>
+                                <span class="font-medium text-gray-800 text-sm">
+                                    <?= htmlspecialchars(($u['prefix_name'] ?? '') . ($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <p class="text-sm text-gray-700">@<?= htmlspecialchars($u['username']) ?></p>
+                            <p class="text-xs text-gray-400"><?= htmlspecialchars($u['email']) ?></p>
+                        </td>
+                        <td class="text-sm text-gray-600">
+                            <?= $u['department_name'] ? htmlspecialchars($u['department_name']) : '<span class="text-gray-400">-</span>' ?>
+                        </td>
+                        <td>
+                            <?php if ($u['role_names']): ?>
+                                <?php
+                                $role_ids_arr = explode(',', $u['role_ids'] ?? '');
+                                foreach ($role_ids_arr as $rid):
+                                    $role = array_filter($roles, fn($r) => $r['role_id'] == $rid);
+                                    $role = reset($role);
+                                    if ($role):
+                                ?>
+                                <span class="role-tag" style="background:<?= $role['role_color'] ?>20;color:<?= $role['role_color'] ?>;">
+                                    <i class="fas <?= $role['role_icon'] ?>"></i>
+                                    <?= htmlspecialchars($role['role_name']) ?>
+                                </span>
+                                <?php endif; endforeach; ?>
+                            <?php else: ?>
+                                <span class="text-xs text-gray-400">ยังไม่มีบทบาท</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <button onclick="openAssignModal(<?= $u['user_id'] ?>, '<?= htmlspecialchars(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>', '<?= $u['role_ids'] ?? '' ?>')"
+                                    class="btn btn-sm btn-primary">
+                                <i class="fas fa-user-tag"></i> กำหนดบทบาท
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($users)): ?>
+                    <tr><td colspan="6" class="text-center py-12 text-gray-400">
+                        <i class="fas fa-users text-4xl mb-3 opacity-30 block"></i>ไม่พบผู้ใช้
+                    </td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination bar -->
+        <div class="pag-bar">
+            <span id="pagInfo" class="text-sm text-gray-500"></span>
+            <div id="pagBtns" class="flex items-center gap-1 flex-wrap"></div>
+        </div>
     </div>
 </div>
 
@@ -458,6 +618,85 @@ document.getElementById('assignForm').addEventListener('submit', async function(
 document.getElementById('assignModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
+
+// ── View toggle ──────────────────────────────────────────────
+const ITEMS_PER_PAGE = 10;
+let currentPage = 1;
+
+function switchView(view) {
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    const btnGrid  = document.getElementById('btnGridView');
+    const btnList  = document.getElementById('btnListView');
+
+    if (view === 'list') {
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+        btnGrid.classList.remove('active');
+        btnList.classList.add('active');
+        renderPage(currentPage);
+    } else {
+        listView.style.display = 'none';
+        gridView.style.display = '';
+        btnList.classList.remove('active');
+        btnGrid.classList.add('active');
+    }
+    localStorage.setItem('userRolesView', view);
+}
+
+function renderPage(page) {
+    const rows = document.querySelectorAll('#listTableBody .list-row');
+    const total = rows.length;
+    const totalPages = Math.ceil(total / ITEMS_PER_PAGE) || 1;
+    currentPage = Math.max(1, Math.min(page, totalPages));
+
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end   = start + ITEMS_PER_PAGE;
+
+    rows.forEach((row, i) => {
+        row.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+
+    // Info text
+    const showing = Math.min(end, total);
+    document.getElementById('pagInfo').textContent =
+        `แสดง ${start + 1}–${showing} จาก ${total} รายการ`;
+
+    // Build pagination buttons
+    const container = document.getElementById('pagBtns');
+    container.innerHTML = '';
+
+    const prev = document.createElement('button');
+    prev.className = 'pag-btn';
+    prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => renderPage(currentPage - 1);
+    container.appendChild(prev);
+
+    // Page number buttons (show at most 5 around current)
+    const startP = Math.max(1, currentPage - 2);
+    const endP   = Math.min(totalPages, startP + 4);
+    for (let p = startP; p <= endP; p++) {
+        const btn = document.createElement('button');
+        btn.className = 'pag-btn' + (p === currentPage ? ' active' : '');
+        btn.textContent = p;
+        btn.onclick = ((_p) => () => renderPage(_p))(p);
+        container.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.className = 'pag-btn';
+    next.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => renderPage(currentPage + 1);
+    container.appendChild(next);
+}
+
+// Restore saved view preference on load
+(function() {
+    const saved = localStorage.getItem('userRolesView');
+    if (saved === 'list') switchView('list');
+})();
 </script>
 
 <?php include 'admin-layout/footer.php'; ?>
