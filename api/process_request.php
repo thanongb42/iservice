@@ -297,14 +297,18 @@ try {
             $event_name = clean_input($_POST['event_name']);
             $event_type = clean_input($_POST['event_type']);
             $event_date = clean_input($_POST['event_date']);
-            $start = clean_input($_POST['event_time_start']);
-            $end = clean_input($_POST['event_time_end']);
+            $start_h = clean_input($_POST['event_time_start_h'] ?? '00');
+            $start_m = clean_input($_POST['event_time_start_m'] ?? '00');
+            $start = $start_h . ':' . $start_m;
+            $end_h = clean_input($_POST['event_time_end_h'] ?? '');
+            $end_m = clean_input($_POST['event_time_end_m'] ?? '');
+            $end = ($end_h !== '') ? $end_h . ':' . $end_m : '';
             $loc = clean_input($_POST['location']);
             $count = intval($_POST['mc_count']);
             $lang = clean_input($_POST['language']);
             $script = clean_input($_POST['script_status']);
             $dress = clean_input($_POST['dress_code'] ?? '');
-            $note = clean_input($_POST['note'] ?? '');
+            $note = '';
             $stmt->bind_param("issssssissss", $request_id, $event_name, $event_type, $event_date, $start, $end, $loc, $count, $lang, $script, $dress, $note);
             break;
 
