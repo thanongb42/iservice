@@ -79,14 +79,6 @@
         </label>
     </div>
 
-    <div>
-        <label class="flex items-center space-x-2">
-            <input type="checkbox" name="drone_required" value="1"
-                   class="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500">
-            <span class="text-sm font-medium text-gray-700">ต้องการถ่ายด้วย Drone (ถ้ามี)</span>
-        </label>
-    </div>
-
     <div class="md:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-2">
             ความต้องการพิเศษ

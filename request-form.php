@@ -175,7 +175,7 @@ include __DIR__ . '/includes/header_public.php';
                         </div>
                         <?php endif; ?>
 
-                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC' && $service_code !== 'INTERNET'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">วันที่ต้องการให้เสร็จ</label>
                             <input type="date" name="target_date"
