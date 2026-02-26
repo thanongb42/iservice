@@ -111,36 +111,70 @@ if (empty($request_code)) {
 
                 <!-- Timeline Steps -->
                 <div class="border-t border-gray-100 pt-8 pb-4 mb-6">
-                    <h3 class="font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-tasks text-teal-600 mr-2"></i>ขันตอนการดำเนินการต่อไป
+                    <h3 class="font-bold text-gray-800 mb-8 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center">
+                            <i class="fas fa-list-check text-white text-sm"></i>
+                        </span>
+                        ขั้นตอนการดำเนินการต่อไป
                     </h3>
-                    
-                    <div class="relative">
-                        <!-- Connecting Line -->
-                        <div class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-100 -translate-y-1/2 z-0"></div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                            <!-- Step 1 -->
-                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
-                                <div class="w-10 h-10 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-teal-50">1</div>
+
+                    <div class="flex flex-col md:flex-row items-stretch gap-0">
+
+                        <!-- Step 1 -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 group">
+                            <div class="flex md:flex-col items-center md:items-center w-full">
+                                <!-- Circle -->
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-14 h-14 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-200 ring-4 ring-teal-50 z-10 relative transition-transform group-hover:scale-110">
+                                        <i class="fas fa-inbox text-xl"></i>
+                                    </div>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">1</span>
+                                </div>
+                                <!-- Connector (right on desktop, bottom on mobile) -->
+                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gradient-to-b from-teal-300 to-blue-300 mx-auto mt-1 mb-1 ml-7"></div>
+                                <div class="hidden md:block h-0.5 flex-1 bg-gradient-to-r from-teal-300 to-blue-300 mt-7 -mx-1"></div>
+                            </div>
+                            <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
                                 <h4 class="font-bold text-gray-800 text-sm">รับเรื่องและตรวจสอบ</h4>
-                                <p class="text-xs text-gray-500 mt-1">เจ้าหน้าที่จะตรวจสอบข้อมูลความถูกต้องเบื้องต้น</p>
-                            </div>
-                            
-                            <!-- Step 2 -->
-                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
-                                <div class="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-blue-50">2</div>
-                                <h4 class="font-bold text-gray-800 text-sm">ดำเนินการแก้ไข/บริการ</h4>
-                                <p class="text-xs text-gray-500 mt-1">ส่งต่อหน่วยงานที่เกี่ยวข้องเพื่อดำเนินการ</p>
-                            </div>
-                            
-                            <!-- Step 3 -->
-                            <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm text-center md:text-left md:border-none md:shadow-none md:bg-transparent">
-                                <div class="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-lg font-bold mb-3 mx-auto md:mx-0 border-2 border-white shadow-sm ring-2 ring-green-50">3</div>
-                                <h4 class="font-bold text-gray-800 text-sm">แจ้งผลการดำเนินการ</h4>
-                                <p class="text-xs text-gray-500 mt-1">แจ้งผลให้ท่านทราบเมื่อดำเนินการเสร็จสิ้น</p>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">เจ้าหน้าที่ตรวจสอบข้อมูล<br class="hidden md:block">ความถูกต้องเบื้องต้น</p>
                             </div>
                         </div>
+
+                        <!-- Step 2 -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 group">
+                            <div class="flex md:flex-col items-center md:items-center w-full">
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-14 h-14 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-200 ring-4 ring-blue-50 z-10 relative transition-transform group-hover:scale-110">
+                                        <i class="fas fa-gears text-xl"></i>
+                                    </div>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">2</span>
+                                </div>
+                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gradient-to-b from-blue-300 to-green-300 mx-auto mt-1 mb-1 ml-7"></div>
+                                <div class="hidden md:block h-0.5 flex-1 bg-gradient-to-r from-blue-300 to-green-300 mt-7 -mx-1"></div>
+                            </div>
+                            <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
+                                <h4 class="font-bold text-gray-800 text-sm">ดำเนินการแก้ไข/บริการ</h4>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">ส่งต่อหน่วยงานที่เกี่ยวข้อง<br class="hidden md:block">เพื่อดำเนินการ</p>
+                            </div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 group">
+                            <div class="flex md:flex-col items-center md:items-center w-full">
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-200 ring-4 ring-green-50 z-10 relative transition-transform group-hover:scale-110">
+                                        <i class="fas fa-bell text-xl"></i>
+                                    </div>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">3</span>
+                                </div>
+                                <div class="hidden md:block h-0.5 flex-1 opacity-0 mt-7"></div>
+                            </div>
+                            <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
+                                <h4 class="font-bold text-gray-800 text-sm">แจ้งผลการดำเนินการ</h4>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">แจ้งผลให้ท่านทราบ<br class="hidden md:block">เมื่อดำเนินการเสร็จสิ้น</p>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
