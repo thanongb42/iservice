@@ -243,14 +243,19 @@ try {
             $event_name = clean_input($_POST['event_name']);
             $event_type = clean_input($_POST['event_type']);
             $event_date = clean_input($_POST['event_date']);
-            $time_start = clean_input($_POST['event_time_start']);
-            $time_end = clean_input($_POST['event_time_end']);
+            $time_start_h = clean_input($_POST['event_time_start_h'] ?? '00');
+            $time_start_m = clean_input($_POST['event_time_start_m'] ?? '00');
+            $time_start = $time_start_h . ':' . $time_start_m;
+            $time_end_h = clean_input($_POST['event_time_end_h'] ?? '');
+            $time_end_m = clean_input($_POST['event_time_end_m'] ?? '');
+            $time_end = ($time_end_h !== '') ? $time_end_h . ':' . $time_end_m : '';
             $event_loc = clean_input($_POST['event_location']);
             $photographers = intval($_POST['number_of_photographers']);
-            $video = intval($_POST['video_required']);
-            $drone = intval($_POST['drone_required']);
+            $photo_types = $_POST['photo_type'] ?? [];
+            $video = in_array('video', $photo_types) ? 1 : 0;
+            $drone = 0;
             $delivery = clean_input($_POST['delivery_format']);
-            $special = clean_input($_POST['special_requirements'] ?? '');
+            $special = clean_input($_POST['notes'] ?? '');
             $stmt->bind_param("isssssiiiiss", $request_id, $event_name, $event_type, $event_date, $time_start, $time_end, $event_loc, $photographers, $video, $drone, $delivery, $special);
             break;
 
