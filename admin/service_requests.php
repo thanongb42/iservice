@@ -268,14 +268,20 @@ include 'admin-layout/topbar.php';
 
         th {
             background-color: #f9fafb;
-            padding: 0.75rem;
+            padding: 0.875rem 1rem;
             text-align: left;
             font-weight: 600;
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             border-bottom: 2px solid #e5e7eb;
         }
 
         td {
-            padding: 0.75rem;
+            padding: 1rem;
+            font-size: 0.875rem;
+            color: #374151;
             border-bottom: 1px solid #e5e7eb;
         }
 
