@@ -29,16 +29,46 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             เวลาเริ่ม <span class="text-red-500">*</span>
         </label>
-        <input type="time" name="event_time_start" required
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+        <div class="flex items-center space-x-2">
+            <select name="event_time_start_h" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">ชั่วโมง</option>
+                <?php for ($h = 0; $h <= 23; $h++): ?>
+                <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
+                <?php endfor; ?>
+            </select>
+            <span class="text-gray-500 font-bold">:</span>
+            <select name="event_time_start_m" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">นาที</option>
+                <?php for ($m = 0; $m <= 55; $m += 5): ?>
+                <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
     </div>
 
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
             เวลาสิ้นสุด (โดยประมาณ)
         </label>
-        <input type="time" name="event_time_end"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+        <div class="flex items-center space-x-2">
+            <select name="event_time_end_h"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">ชั่วโมง</option>
+                <?php for ($h = 0; $h <= 23; $h++): ?>
+                <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
+                <?php endfor; ?>
+            </select>
+            <span class="text-gray-500 font-bold">:</span>
+            <select name="event_time_end_m"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                <option value="">นาที</option>
+                <?php for ($m = 0; $m <= 55; $m += 5): ?>
+                <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
     </div>
 
     <div class="md:col-span-2">
