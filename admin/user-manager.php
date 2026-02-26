@@ -99,6 +99,31 @@ include 'admin-layout/topbar.php';
         .role-staff { background-color: #f5f3ff; color: #7c3aed; }
         .role-user { background-color: #f9fafb; color: #6b7280; }
 
+        /* Sortable column headers */
+        #usersTable thead th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        #usersTable thead th.sortable:hover {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        #usersTable thead th.sortable.sorted {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+        #usersTable thead th.sorted .sort-icon {
+            opacity: 1;
+            color: #16a34a;
+        }
+
         /* Clean Table */
         #usersTable {
             width: 100%;
@@ -504,13 +529,13 @@ include 'admin-layout/topbar.php';
                 <table id="usersTable">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>ผู้ใช้</th>
-                            <th>ชื่อ-นามสกุล</th>
-                            <th>Email</th>
-                            <th>หน่วยงาน</th>
-                            <th>บทบาท</th>
-                            <th>สถานะ</th>
+                            <th class="sortable" data-col="0" onclick="sortTable(0)">ID <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="1" onclick="sortTable(1)">ผู้ใช้ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="2" onclick="sortTable(2)">ชื่อ-นามสกุล <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="3" onclick="sortTable(3)">Email <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="4" onclick="sortTable(4)">หน่วยงาน <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="5" onclick="sortTable(5)">บทบาท <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="6" onclick="sortTable(6)">สถานะ <span class="sort-icon">↕</span></th>
                             <th class="text-center">จัดการ</th>
                         </tr>
                     </thead>
@@ -854,6 +879,60 @@ include 'admin-layout/topbar.php';
         filterRole.addEventListener('change', filterTable);
         filterStatus.addEventListener('change', filterTable);
 
+        // Sort functionality
+        let sortState = { col: -1, asc: true };
+
+        function sortTable(colIndex) {
+            const tbody = document.querySelector('#usersTable tbody');
+            const allRows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (sortState.col === colIndex) {
+                sortState.asc = !sortState.asc;
+            } else {
+                sortState.col = colIndex;
+                sortState.asc = true;
+            }
+
+            // Update header icons
+            document.querySelectorAll('#usersTable thead th.sortable').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                const col = parseInt(th.dataset.col);
+                if (col === colIndex) {
+                    th.classList.add('sorted');
+                    icon.textContent = sortState.asc ? '↑' : '↓';
+                } else {
+                    th.classList.remove('sorted');
+                    icon.textContent = '↕';
+                }
+            });
+
+            function getCellValue(row, col) {
+                const cell = row.cells[col];
+                if (!cell) return '';
+                if (col === 0) {
+                    return parseInt(cell.textContent.replace(/\D/g, '')) || 0;
+                }
+                if (col === 1) {
+                    const span = cell.querySelector('span.font-medium');
+                    return (span ? span.textContent : cell.textContent).trim().toLowerCase();
+                }
+                return cell.textContent.trim().toLowerCase();
+            }
+
+            allRows.sort((a, b) => {
+                const valA = getCellValue(a, colIndex);
+                const valB = getCellValue(b, colIndex);
+                if (colIndex === 0) {
+                    return sortState.asc ? valA - valB : valB - valA;
+                }
+                if (valA < valB) return sortState.asc ? -1 : 1;
+                if (valA > valB) return sortState.asc ? 1 : -1;
+                return 0;
+            });
+
+            allRows.forEach(row => tbody.appendChild(row));
+        }
+
         // Modal functions
         function openAddUserModal() {
             document.getElementById('modalTitle').textContent = 'เพิ่มผู้ใช้ใหม่';
@@ -870,39 +949,9 @@ include 'admin-layout/topbar.php';
             document.getElementById('userModal').classList.remove('active');
         }
 
-        // View user details
-        async function viewUser(userId) {
-            try {
-                const response = await fetch(`api/user_manager_api.php?action=get&id=${userId}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    const user = data.user;
-                    Swal.fire({
-                        title: 'ข้อมูลผู้ใช้',
-                        html: `
-                            <div class="text-left space-y-2">
-                                <p><strong>รหัส:</strong> ${user.user_id}</p>
-                                <p><strong>ชื่อผู้ใช้:</strong> ${user.username}</p>
-                                <p><strong>ชื่อ-นามสกุล:</strong> ${user.full_name}</p>
-                                <p><strong>Email:</strong> ${user.email}</p>
-                                <p><strong>โทรศัพท์:</strong> ${user.phone || '-'}</p>
-                                <p><strong>หน่วยงาน:</strong> ${user.department_name || '-'}</p>
-                                <p><strong>ตำแหน่ง:</strong> ${user.position || '-'}</p>
-                                <p><strong>บทบาท:</strong> ${user.role}</p>
-                                <p><strong>สถานะ:</strong> ${user.status}</p>
-                                <p><strong>Login ล่าสุด:</strong> ${user.last_login || 'ยังไม่เคย'}</p>
-                                <p><strong>วันที่สร้าง:</strong> ${user.created_at}</p>
-                            </div>
-                        `,
-                        icon: 'info',
-                        confirmButtonColor: '#14b8a6'
-                    });
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
-            }
+        // View user details - redirect to detail page
+        function viewUser(userId) {
+            window.location.href = `user_detail.php?id=${userId}`;
         }
 
         // Edit user
