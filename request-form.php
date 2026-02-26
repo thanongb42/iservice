@@ -160,7 +160,7 @@ include __DIR__ . '/includes/header_public.php';
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
-                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 ความสำคัญ <span class="text-red-500">*</span>
@@ -195,7 +195,7 @@ include __DIR__ . '/includes/header_public.php';
                     <!-- Include service-specific form fields based on service_code -->
                     <?php include "forms/service-form-fields-{$service_code}.php"; ?>
 
-                    <?php if ($service_code !== 'QR_CODE' && $service_code !== 'PHOTOGRAPHY'): ?>
+                    <?php if ($service_code !== 'QR_CODE' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC'): ?>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุเพิ่มเติม</label>
                         <textarea name="notes" rows="4"
