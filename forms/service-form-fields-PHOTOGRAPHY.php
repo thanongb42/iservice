@@ -72,11 +72,19 @@
     </div>
 
     <div>
-        <label class="flex items-center space-x-2">
-            <input type="checkbox" name="video_required" value="1"
-                   class="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500">
-            <span class="text-sm font-medium text-gray-700">ต้องการถ่ายวิดีโอด้วย</span>
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">ประเภทการถ่าย</label>
+        <div class="flex items-center space-x-6">
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" name="photo_type[]" value="photo"
+                       class="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500">
+                <span class="text-sm font-medium text-gray-700">ภาพนิ่ง</span>
+            </label>
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" name="photo_type[]" value="video"
+                       class="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-2 focus:ring-teal-500">
+                <span class="text-sm font-medium text-gray-700">ภาพวิดีโอ</span>
+            </label>
+        </div>
     </div>
 
     <div class="md:col-span-2">
