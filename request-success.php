@@ -140,38 +140,38 @@ if (empty($request_code)) {
                             </div>
                         </div>
 
-                        <!-- Step 2 -->
-                        <div class="flex md:flex-col items-start md:items-center flex-1 group">
+                        <!-- Step 2 (inactive) -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 opacity-40">
                             <div class="flex md:flex-col items-center md:items-center w-full">
                                 <div class="relative flex-shrink-0">
-                                    <div class="w-14 h-14 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-200 ring-4 ring-blue-50 z-10 relative transition-transform group-hover:scale-110">
+                                    <div class="w-14 h-14 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center ring-4 ring-gray-100 z-10 relative">
                                         <i class="fas fa-gears text-xl"></i>
                                     </div>
-                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">2</span>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-gray-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">2</span>
                                 </div>
-                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gradient-to-b from-blue-300 to-green-300 mx-auto mt-1 mb-1 ml-7"></div>
-                                <div class="hidden md:block h-0.5 flex-1 bg-gradient-to-r from-blue-300 to-green-300 mt-7 -mx-1"></div>
+                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gray-200 mx-auto mt-1 mb-1 ml-7"></div>
+                                <div class="hidden md:block h-0.5 flex-1 bg-gray-200 mt-7 -mx-1"></div>
                             </div>
                             <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
-                                <h4 class="font-bold text-gray-800 text-sm">ดำเนินการแก้ไข/บริการ</h4>
-                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">ส่งต่อหน่วยงานที่เกี่ยวข้อง<br class="hidden md:block">เพื่อดำเนินการ</p>
+                                <h4 class="font-semibold text-gray-500 text-sm">ดำเนินการแก้ไข/บริการ</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">ส่งต่อหน่วยงานที่เกี่ยวข้อง<br class="hidden md:block">เพื่อดำเนินการ</p>
                             </div>
                         </div>
 
-                        <!-- Step 3 -->
-                        <div class="flex md:flex-col items-start md:items-center flex-1 group">
+                        <!-- Step 3 (inactive) -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 opacity-40">
                             <div class="flex md:flex-col items-center md:items-center w-full">
                                 <div class="relative flex-shrink-0">
-                                    <div class="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-200 ring-4 ring-green-50 z-10 relative transition-transform group-hover:scale-110">
+                                    <div class="w-14 h-14 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center ring-4 ring-gray-100 z-10 relative">
                                         <i class="fas fa-bell text-xl"></i>
                                     </div>
-                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">3</span>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-gray-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">3</span>
                                 </div>
                                 <div class="hidden md:block h-0.5 flex-1 opacity-0 mt-7"></div>
                             </div>
                             <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
-                                <h4 class="font-bold text-gray-800 text-sm">แจ้งผลการดำเนินการ</h4>
-                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">แจ้งผลให้ท่านทราบ<br class="hidden md:block">เมื่อดำเนินการเสร็จสิ้น</p>
+                                <h4 class="font-semibold text-gray-500 text-sm">แจ้งผลการดำเนินการ</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">แจ้งผลให้ท่านทราบ<br class="hidden md:block">เมื่อดำเนินการเสร็จสิ้น</p>
                             </div>
                         </div>
 
