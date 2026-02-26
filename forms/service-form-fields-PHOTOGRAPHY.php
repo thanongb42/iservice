@@ -87,14 +87,6 @@
         </div>
     </div>
 
-    <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ความต้องการพิเศษ
-        </label>
-        <textarea name="special_requirements" rows="3"
-                  placeholder="ระบุความต้องการพิเศษ เช่น ต้องการภาพกลุ่ม, ภาพบุคคลสำคัญ, มุมภาพเฉพาะ"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
-    </div>
 </div>
 
 <script>
