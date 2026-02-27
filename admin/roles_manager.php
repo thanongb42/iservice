@@ -111,6 +111,74 @@ include 'admin-layout/topbar.php';
     .action-btn-edit:hover { color: #009933; }
     .action-btn-delete:hover { color: #ef4444; background: #fef2f2; }
 
+    /* View toggle */
+    .view-toggle { display: inline-flex; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden; }
+    .view-btn {
+        padding: 0.5rem 0.75rem;
+        background: white;
+        color: #6b7280;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        transition: all 0.15s ease;
+    }
+    .view-btn + .view-btn { border-left: 1px solid #e5e7eb; }
+    .view-btn.active { background: #009933; color: white; }
+    .view-btn:hover:not(.active) { background: #f9fafb; }
+
+    /* List view table */
+    #listView table { width: 100%; border-collapse: collapse; }
+    #listView th {
+        background: #f9fafb;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid #e5e7eb;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+    #listView td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    #listView tbody tr:hover td { background: #f9fafb; }
+
+    /* Pagination */
+    .pag-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.875rem 1rem;
+        border-top: 1px solid #e5e7eb;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .pag-btn {
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 0.5rem;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #374151;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+    .pag-btn:hover:not(:disabled) { background: #f3f4f6; }
+    .pag-btn.active { background: #009933; border-color: #009933; color: white; font-weight: 600; }
+    .pag-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
     /* Modal */
     .modal {
         display: none;
@@ -240,10 +308,20 @@ include 'admin-layout/topbar.php';
             <h1 class="text-2xl font-semibold text-gray-800">จัดการบทบาท</h1>
             <p class="text-gray-500 text-sm mt-1">กำหนดบทบาทและหน้าที่สำหรับการมอบหมายงาน</p>
         </div>
-        <button onclick="openAddModal()" class="btn btn-primary">
-            <i class="fas fa-plus"></i>
-            เพิ่มบทบาท
-        </button>
+        <div class="flex items-center gap-3">
+            <div class="view-toggle">
+                <button class="view-btn" id="btnGridView" onclick="switchView('grid')" title="Card View">
+                    <i class="fas fa-th-large"></i> Card
+                </button>
+                <button class="view-btn active" id="btnListView" onclick="switchView('list')" title="List View">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
+            <button onclick="openAddModal()" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                เพิ่มบทบาท
+            </button>
+        </div>
     </div>
 
     <!-- Stats -->
@@ -294,8 +372,8 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 
-    <!-- Roles Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Roles Grid View -->
+    <div id="gridView" style="display:none;" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <?php foreach ($roles as $role): ?>
         <div class="role-card" data-role-id="<?= $role['role_id'] ?>">
             <div class="flex items-start justify-between mb-3">
@@ -356,9 +434,97 @@ include 'admin-layout/topbar.php';
         <div class="col-span-full text-center py-12 text-gray-400">
             <i class="fas fa-user-tag text-4xl mb-3 opacity-30"></i>
             <p>ยังไม่มีบทบาทในระบบ</p>
-            <p class="text-sm mt-2">กรุณาเรียกใช้ <a href="../setup_roles.php" class="text-green-600 hover:underline">setup_roles.php</a> เพื่อสร้างข้อมูลเริ่มต้น</p>
         </div>
         <?php endif; ?>
+    </div>
+
+    <!-- Roles List View (with pagination) -->
+    <div id="listView" class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>บทบาท</th>
+                        <th>คำอธิบาย</th>
+                        <th>สิทธิ์</th>
+                        <th class="text-center">ผู้ใช้</th>
+                        <th class="text-center">สถานะ</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="listTableBody">
+                    <?php foreach ($roles as $idx => $role): ?>
+                    <tr class="list-row" data-index="<?= $idx ?>">
+                        <td class="text-gray-400 text-sm"><?= $idx + 1 ?></td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="role-icon" style="width:2.25rem;height:2.25rem;flex-shrink:0;background:<?= $role['role_color'] ?>20;color:<?= $role['role_color'] ?>;">
+                                    <i class="fas <?= htmlspecialchars($role['role_icon']) ?>"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 text-sm"><?= htmlspecialchars($role['role_name']) ?></p>
+                                    <p class="text-xs text-gray-400"><?= htmlspecialchars($role['role_code']) ?></p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-sm text-gray-600 max-w-xs">
+                            <span class="line-clamp-2"><?= htmlspecialchars($role['description'] ?? '-') ?></span>
+                        </td>
+                        <td>
+                            <div class="flex flex-wrap gap-1">
+                                <?php if ($role['can_assign']): ?>
+                                <span class="role-badge badge-assign"><i class="fas fa-hand-point-right"></i> มอบหมายได้</span>
+                                <?php endif; ?>
+                                <?php if ($role['can_be_assigned']): ?>
+                                <span class="role-badge badge-receive"><i class="fas fa-inbox"></i> รับงานได้</span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <a href="user_roles.php?role=<?= $role['role_id'] ?>"
+                               class="inline-flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium">
+                                <i class="fas fa-users"></i>
+                                <?= $user_counts[$role['role_id']] ?? 0 ?> คน
+                            </a>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($role['is_active']): ?>
+                            <span class="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
+                                <i class="fas fa-circle text-green-500" style="font-size:0.45rem;"></i> ใช้งาน
+                            </span>
+                            <?php else: ?>
+                            <span class="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
+                                <i class="fas fa-circle text-gray-400" style="font-size:0.45rem;"></i> ปิด
+                            </span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button class="action-btn action-btn-edit" onclick="editRole(<?= $role['role_id'] ?>)" title="แก้ไข">
+                                    <i class="fas fa-pen text-sm"></i>
+                                </button>
+                                <?php if ($role['role_code'] !== 'all'): ?>
+                                <button class="action-btn action-btn-delete" onclick="deleteRole(<?= $role['role_id'] ?>, '<?= htmlspecialchars(addslashes($role['role_name'])) ?>')" title="ลบ">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </button>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($roles)): ?>
+                    <tr><td colspan="7" class="text-center py-12 text-gray-400">
+                        <i class="fas fa-user-tag text-4xl mb-3 opacity-30 block"></i>ยังไม่มีบทบาทในระบบ
+                    </td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="pag-bar">
+            <span id="pagInfo" class="text-sm text-gray-500"></span>
+            <div id="pagBtns" class="flex items-center gap-1 flex-wrap"></div>
+        </div>
     </div>
 </div>
 
@@ -583,6 +749,82 @@ document.getElementById('roleForm').addEventListener('submit', function(e) {
 document.getElementById('roleModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
+
+// ── View toggle ──────────────────────────────────────────────
+const ITEMS_PER_PAGE = 15;
+let currentPage = 1;
+
+function switchView(view) {
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    const btnGrid  = document.getElementById('btnGridView');
+    const btnList  = document.getElementById('btnListView');
+
+    if (view === 'list') {
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+        btnGrid.classList.remove('active');
+        btnList.classList.add('active');
+        renderPage(currentPage);
+    } else {
+        listView.style.display = 'none';
+        gridView.style.display = '';
+        btnList.classList.remove('active');
+        btnGrid.classList.add('active');
+    }
+    localStorage.setItem('rolesManagerView', view);
+}
+
+function renderPage(page) {
+    const rows = document.querySelectorAll('#listTableBody .list-row');
+    const total = rows.length;
+    const totalPages = Math.ceil(total / ITEMS_PER_PAGE) || 1;
+    currentPage = Math.max(1, Math.min(page, totalPages));
+
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end   = start + ITEMS_PER_PAGE;
+
+    rows.forEach((row, i) => {
+        row.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+
+    const showing = Math.min(end, total);
+    document.getElementById('pagInfo').textContent =
+        `แสดง ${start + 1}–${showing} จาก ${total} รายการ`;
+
+    const container = document.getElementById('pagBtns');
+    container.innerHTML = '';
+
+    const prev = document.createElement('button');
+    prev.className = 'pag-btn';
+    prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => renderPage(currentPage - 1);
+    container.appendChild(prev);
+
+    const startP = Math.max(1, currentPage - 2);
+    const endP   = Math.min(totalPages, startP + 4);
+    for (let p = startP; p <= endP; p++) {
+        const btn = document.createElement('button');
+        btn.className = 'pag-btn' + (p === currentPage ? ' active' : '');
+        btn.textContent = p;
+        btn.onclick = ((_p) => () => renderPage(_p))(p);
+        container.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.className = 'pag-btn';
+    next.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => renderPage(currentPage + 1);
+    container.appendChild(next);
+}
+
+// Default: list view (option 2), restore saved preference
+(function() {
+    const saved = localStorage.getItem('rolesManagerView') || 'list';
+    switchView(saved);
+})();
 </script>
 
 <?php include 'admin-layout/footer.php'; ?>
