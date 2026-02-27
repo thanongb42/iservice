@@ -32,10 +32,10 @@ set_exception_handler(function($e) {
     while (ob_get_level()) ob_end_clean();
     header('Content-Type: application/json; charset=utf-8');
     http_response_code(500);
+    error_log('task_assignment_api error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     echo json_encode([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage(),
-        'debug' => ['file' => basename($e->getFile()), 'line' => $e->getLine()]
+        'message' => 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     ]);
     exit();
 });
@@ -68,7 +68,8 @@ try {
 } catch (Exception $e) {
     while (ob_get_level()) ob_end_clean();
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'DB config error: ' . $e->getMessage()]);
+    error_log('task_assignment_api DB config error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล']);
     exit();
 }
 ob_end_clean();
@@ -479,7 +480,9 @@ if ($action === 'update_status') {
 
             if ($new_status === 'accepted' || $new_status === 'in_progress') {
                 // Update service_requests.status to in_progress
-                $conn->query("UPDATE service_requests SET status = 'in_progress', started_at = COALESCE(started_at, NOW()) WHERE request_id = $request_id");
+                $upd_ip = $conn->prepare("UPDATE service_requests SET status = 'in_progress', started_at = COALESCE(started_at, NOW()) WHERE request_id = ?");
+                $upd_ip->bind_param("i", $request_id);
+                $upd_ip->execute();
 
             } elseif ($new_status === 'completed') {
                 // Check if all assignments are completed
@@ -493,7 +496,9 @@ if ($action === 'update_status') {
 
                 // If all tasks completed, update request status
                 if ($check_result['total'] > 0 && $check_result['total'] == $check_result['completed']) {
-                    $conn->query("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = $request_id");
+                    $upd_done = $conn->prepare("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = ?");
+                    $upd_done->bind_param("i", $request_id);
+                    $upd_done->execute();
                 }
             }
         }

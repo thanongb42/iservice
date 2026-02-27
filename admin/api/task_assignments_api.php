@@ -176,7 +176,9 @@ function assignTask() {
         logTaskHistory($assignment_id, 'assigned', null, 'pending', $assigned_by, 'มอบหมายงานใหม่');
 
         // Update service request status if pending
-        $conn->query("UPDATE service_requests SET status = 'in_progress' WHERE request_id = $request_id AND status = 'pending'");
+        $upd_req = $conn->prepare("UPDATE service_requests SET status = 'in_progress' WHERE request_id = ? AND status = 'pending'");
+        $upd_req->bind_param("i", $request_id);
+        $upd_req->execute();
 
         $response['success'] = true;
         $response['message'] = 'มอบหมายงานสำเร็จ';
@@ -493,7 +495,9 @@ function checkAndUpdateRequestStatus($request_id) {
 
     if ($result['total'] > 0 && $result['total'] == $result['completed']) {
         // All tasks completed, update request status
-        $conn->query("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = $request_id");
+        $upd_done = $conn->prepare("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = ?");
+        $upd_done->bind_param("i", $request_id);
+        $upd_done->execute();
     }
 }
 ?>

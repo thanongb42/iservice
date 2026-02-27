@@ -108,12 +108,15 @@ function updateOrganizationSettings() {
 
     // Update or insert settings using INSERT ON DUPLICATE KEY UPDATE
     foreach ($settings as $key => $value) {
+        // Skip null values (keep existing)
+        if ($value === null) continue;
         $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
                                 VALUES (?, ?, 'text')
                                 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
         $stmt->bind_param('ss', $key, $value);
         if (!$stmt->execute()) {
-            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+            error_log('system_settings_api save error for ' . $key . ': ' . $stmt->error);
+            throw new Exception('ไม่สามารถบันทึกการตั้งค่าได้ กรุณาลองใหม่');
         }
         $stmt->close();
     }
@@ -126,19 +129,23 @@ function updateEmailSettings() {
         'smtp_host' => $_POST['smtp_host'] ?? '',
         'smtp_port' => $_POST['smtp_port'] ?? '',
         'smtp_username' => $_POST['smtp_username'] ?? '',
-        'smtp_password' => $_POST['smtp_password'] ?? '',
+        // Only update smtp_password if a new value is provided
+        'smtp_password' => (!empty($_POST['smtp_password'])) ? $_POST['smtp_password'] : null,
         'smtp_encryption' => $_POST['smtp_encryption'] ?? 'tls',
         'email_from_name' => $_POST['email_from_name'] ?? '',
         'email_from_address' => $_POST['email_from_address'] ?? '',
     ];
 
     foreach ($settings as $key => $value) {
+        // Skip null values (e.g., smtp_password left blank = keep existing)
+        if ($value === null) continue;
         $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
                                 VALUES (?, ?, 'text')
                                 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
         $stmt->bind_param('ss', $key, $value);
         if (!$stmt->execute()) {
-            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+            error_log('system_settings_api updateEmailSettings error for ' . $key . ': ' . $stmt->error);
+            throw new Exception('ไม่สามารถบันทึกการตั้งค่าได้ กรุณาลองใหม่');
         }
         $stmt->close();
     }

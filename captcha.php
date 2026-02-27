@@ -10,7 +10,7 @@ if (!extension_loaded('gd')) {
 $characters = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // Removed I, O to avoid confusion
 $captcha_code = '';
 for ($i = 0; $i < 6; $i++) {
-    $captcha_code .= $characters[rand(0, strlen($characters) - 1)];
+    $captcha_code .= $characters[random_int(0, strlen($characters) - 1)];
 }
 
 $_SESSION["captcha_code"] = $captcha_code;

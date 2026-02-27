@@ -162,7 +162,9 @@ function deleteRole() {
     }
 
     // Delete user_roles first (or they'll be deleted by FK cascade)
-    $conn->query("DELETE FROM user_roles WHERE role_id = $role_id");
+    $del_ur = $conn->prepare("DELETE FROM user_roles WHERE role_id = ?");
+    $del_ur->bind_param("i", $role_id);
+    $del_ur->execute();
 
     // Delete role
     $stmt = $conn->prepare("DELETE FROM roles WHERE role_id = ?");
@@ -245,7 +247,9 @@ function assignUserRole() {
 
     // If setting as primary, unset other primaries
     if ($is_primary) {
-        $conn->query("UPDATE user_roles SET is_primary = 0 WHERE user_id = $user_id AND role_id != $role_id");
+        $upd_primary = $conn->prepare("UPDATE user_roles SET is_primary = 0 WHERE user_id = ? AND role_id != ?");
+        $upd_primary->bind_param("ii", $user_id, $role_id);
+        $upd_primary->execute();
     }
 
     if ($stmt->execute()) {

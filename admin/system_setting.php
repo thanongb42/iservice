@@ -377,8 +377,8 @@ include 'admin-layout/topbar.php';
                         </div>
                         <div class="form-group">
                             <label>SMTP Password</label>
-                            <input type="password" name="smtp_password" value="<?= htmlspecialchars(getSetting('smtp_password')) ?>" placeholder="••••••••">
-                            <small>รหัสผ่าน SMTP</small>
+                            <input type="password" name="smtp_password" value="" placeholder="<?= getSetting('smtp_password') ? '••••••••' : 'ยังไม่ได้ตั้งค่า' ?>" autocomplete="new-password">
+                            <small>รหัสผ่าน SMTP (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</small>
                         </div>
                     </div>
                 </div>

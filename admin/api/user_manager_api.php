@@ -62,7 +62,8 @@ try {
             break;
     }
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log('user_manager_api error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง']);
 }
 
 function getUser($conn) {
@@ -164,7 +165,8 @@ function addUser($conn) {
             'user_id' => $conn->insert_id
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'ไม่สามารถเพิ่มผู้ใช้ได้: ' . $stmt->error]);
+        error_log('user_manager_api addUser error: ' . $stmt->error);
+        echo json_encode(['success' => false, 'message' => 'ไม่สามารถเพิ่มผู้ใช้ได้ กรุณาลองใหม่อีกครั้ง']);
     }
 }
 
@@ -304,7 +306,8 @@ function editUser($conn) {
             'message' => 'อัปเดตข้อมูลเรียบร้อยแล้ว'
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'ไม่สามารถอัปเดตข้อมูลได้: ' . $stmt->error]);
+        error_log('user_manager_api updateUser error: ' . $stmt->error);
+        echo json_encode(['success' => false, 'message' => 'ไม่สามารถอัปเดตข้อมูลได้ กรุณาลองใหม่อีกครั้ง']);
     }
 }
 
@@ -350,7 +353,8 @@ function deleteUser($conn) {
             echo json_encode(['success' => false, 'message' => 'ไม่พบผู้ใช้ที่ต้องการลบ']);
         }
     } else {
-        echo json_encode(['success' => false, 'message' => 'ไม่สามารถลบผู้ใช้ได้: ' . $stmt->error]);
+        error_log('user_manager_api deleteUser error: ' . $stmt->error);
+        echo json_encode(['success' => false, 'message' => 'ไม่สามารถลบผู้ใช้ได้ กรุณาลองใหม่อีกครั้ง']);
     }
 }
 

@@ -22,8 +22,8 @@ $breadcrumb = [
 
 // Get filter parameters
 $report_type = $_GET['type'] ?? 'overview';
-$date_from = $_GET['from'] ?? date('Y-m-01');
-$date_to = $_GET['to'] ?? date('Y-m-t');
+$date_from = (isset($_GET['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['from'])) ? $_GET['from'] : date('Y-m-01');
+$date_to   = (isset($_GET['to'])   && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to']))   ? $_GET['to']   : date('Y-m-t');
 $department_id = $_GET['dept'] ?? null;
 
 // ======= DATA FETCHING =======
@@ -699,13 +699,16 @@ include 'admin-layout/topbar.php';
                     </thead>
                     <tbody>
                         <?php
-                        $requests_query = $conn->query("
+                        $rq_stmt = $conn->prepare("
                             SELECT sr.request_id, sr.service_name, sr.user_id, sr.status, sr.created_at, u.username
                             FROM service_requests sr
                             LEFT JOIN users u ON sr.user_id = u.user_id
-                            WHERE DATE(sr.created_at) BETWEEN '$date_from' AND '$date_to'
+                            WHERE DATE(sr.created_at) BETWEEN ? AND ?
                             ORDER BY sr.created_at DESC
                         ");
+                        $rq_stmt->bind_param("ss", $date_from, $date_to);
+                        $rq_stmt->execute();
+                        $requests_query = $rq_stmt->get_result();
                         while ($req = $requests_query->fetch_assoc()):
                             $badge_class = 'status-' . strtolower(str_replace(' ', '-', $req['status']));
                         ?>

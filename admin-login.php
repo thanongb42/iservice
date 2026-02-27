@@ -89,6 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // Regenerate session ID to prevent session fixation
+    session_regenerate_id(true);
+
     // Set session
     $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['username'] = $user['username'];
