@@ -264,6 +264,9 @@ include 'admin-layout/topbar.php';
             <button class="tab-btn" onclick="showTab(event, 'backup')">
                 <i class="fas fa-database"></i> Backup Database
             </button>
+            <button class="tab-btn" onclick="showTab(event, 'db_manage'); loadBackupList(); loadTableCounts();">
+                <i class="fas fa-trash-alt text-red-500"></i> จัดการข้อมูล
+            </button>
         </div>
 
         <!-- ORGANIZATION SETTINGS TAB -->
@@ -485,6 +488,81 @@ include 'admin-layout/topbar.php';
                     </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- DATABASE MANAGE TAB -->
+        <div id="db_manage" class="tab-content">
+
+            <!-- Danger zone banner -->
+            <div class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4 mb-5">
+                <i class="fas fa-exclamation-triangle text-red-500 text-xl mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold text-red-700">เขตอันตราย — ล้างข้อมูลคำขอทั้งหมด</p>
+                    <p class="text-sm text-red-600 mt-0.5">ใช้สำหรับลบข้อมูลทดสอบออกเพื่อเริ่มใช้งานจริง ระบบจะสำรองข้อมูลอัตโนมัติก่อนล้างทุกครั้ง</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+                <!-- LEFT: Backup list -->
+                <div class="lg:col-span-3 settings-group">
+                    <h3 class="flex items-center gap-2">
+                        <i class="fas fa-archive text-blue-500"></i>
+                        ไฟล์สำรองข้อมูล
+                        <button onclick="loadBackupList()" class="ml-auto text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg transition">
+                            <i class="fas fa-sync-alt"></i> รีเฟรช
+                        </button>
+                    </h3>
+
+                    <div class="mb-4 flex gap-2">
+                        <button onclick="createBackupOnly()"
+                            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-download"></i> สำรองข้อมูลตอนนี้
+                        </button>
+                    </div>
+
+                    <div id="backupListContainer">
+                        <div class="text-center py-6 text-gray-400 text-sm">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> กำลังโหลด...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Table counts + Truncate -->
+                <div class="lg:col-span-2 space-y-4">
+
+                    <!-- Row counts -->
+                    <div class="settings-group">
+                        <h3 class="flex items-center gap-2">
+                            <i class="fas fa-table text-gray-500"></i>
+                            จำนวนข้อมูลในระบบ
+                            <button onclick="loadTableCounts()" class="ml-auto text-xs bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 px-2 py-1 rounded-lg transition">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </h3>
+                        <div id="tableCountsContainer" class="text-sm space-y-1 text-gray-600">
+                            <div class="text-center py-3 text-gray-400">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Truncate action -->
+                    <div class="settings-group border-2 border-red-200">
+                        <h3 class="flex items-center gap-2 text-red-700">
+                            <i class="fas fa-fire text-red-500"></i>
+                            ล้างข้อมูลคำขอทั้งหมด
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">ระบบจะสำรองข้อมูลอัตโนมัติก่อน แล้วจึงล้าง<br>สามารถ restore กลับได้จากรายการ backup ด้านซ้าย</p>
+                        <button onclick="confirmTruncate()"
+                            id="truncateBtn"
+                            class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                            <i class="fas fa-trash-alt"></i> สำรอง แล้วล้างข้อมูล
+                        </button>
+                    </div>
+
+                </div>
             </div>
         </div>
 
@@ -865,6 +943,241 @@ async function deleteNotifEmail(id, serviceId) {
         }
     }
 }
+
+// ===== DB Manage Tab =====
+
+const DB_API = 'api/db_manage_api.php';
+
+async function loadBackupList() {
+    const container = document.getElementById('backupListContainer');
+    container.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> กำลังโหลด...</div>';
+    const res  = await fetch(DB_API + '?action=list_backups');
+    const data = await res.json();
+    if (!data.success) { container.innerHTML = '<p class="text-red-500 text-sm">' + data.message + '</p>'; return; }
+
+    if (data.backups.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">ยังไม่มีไฟล์ backup</p>';
+        return;
+    }
+
+    let html = '<div class="space-y-2">';
+    data.backups.forEach(b => {
+        html += `
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+            <div>
+                <p class="text-xs font-mono font-semibold text-gray-700">${b.filename}</p>
+                <p class="text-xs text-gray-400 mt-0.5">${b.created} &bull; ${b.size_fmt}</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+                <a href="${DB_API}?action=download_backup&filename=${encodeURIComponent(b.filename)}"
+                   class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg transition" title="Download">
+                    <i class="fas fa-download"></i>
+                </a>
+                <button onclick="restoreBackup('${b.filename}')"
+                    class="text-xs bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 px-2 py-1 rounded-lg transition" title="Restore">
+                    <i class="fas fa-undo"></i> Restore
+                </button>
+                <button onclick="deleteBackup('${b.filename}')"
+                    class="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 px-2 py-1 rounded-lg transition" title="ลบ">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+async function loadTableCounts() {
+    const container = document.getElementById('tableCountsContainer');
+    container.innerHTML = '<div class="text-center py-3 text-gray-400"><i class="fas fa-spinner fa-spin"></i></div>';
+    const res  = await fetch(DB_API + '?action=table_counts');
+    const data = await res.json();
+    if (!data.success) { container.innerHTML = '<p class="text-red-500 text-sm">' + data.message + '</p>'; return; }
+
+    let html = '';
+    const tableLabels = {
+        'service_requests'         : 'คำขอบริการ',
+        'task_assignments'         : 'งานที่มอบหมาย',
+        'task_history'             : 'ประวัติงาน',
+        'request_email_details'    : 'รายละเอียด Email',
+        'request_internet_details' : 'รายละเอียด Internet',
+        'request_it_support_details':'รายละเอียด IT Support',
+        'request_led_details'      : 'รายละเอียด LED',
+        'request_mc_details'       : 'รายละเอียด MC',
+        'request_nas_details'      : 'รายละเอียด NAS',
+        'request_photography_details':'รายละเอียด ถ่ายภาพ',
+        'request_printer_details'  : 'รายละเอียด Printer',
+        'request_qrcode_details'   : 'รายละเอียด QRCode',
+        'request_webdesign_details': 'รายละเอียด WebDesign',
+    };
+    let total = 0;
+    for (const [tbl, count] of Object.entries(data.counts)) {
+        const label = tableLabels[tbl] || tbl;
+        const color = count > 0 ? 'text-gray-800 font-semibold' : 'text-gray-400';
+        if (count > 0) total += count;
+        html += `<div class="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
+            <span class="text-xs text-gray-500 truncate max-w-[160px]" title="${tbl}">${label}</span>
+            <span class="text-xs ${color} ml-2 flex-shrink-0">${count < 0 ? '—' : count + ' rows'}</span>
+        </div>`;
+    }
+    html += `<div class="flex justify-between items-center pt-2 mt-1 border-t-2 border-gray-300">
+        <span class="text-xs font-bold text-gray-700">รวมทั้งหมด</span>
+        <span class="text-xs font-bold text-red-600">${total} rows</span>
+    </div>`;
+    container.innerHTML = html;
+}
+
+async function createBackupOnly() {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังสำรอง...';
+    try {
+        const fd = new FormData();
+        fd.append('action', 'create_backup');
+        const res  = await fetch(DB_API, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'สำรองข้อมูลสำเร็จ', html: `ไฟล์: <code>${data.filename}</code><br>${data.rows} rows &bull; ${data.size_fmt}`, confirmButtonColor: '#009933' });
+            loadBackupList();
+        } else {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: e.message });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> สำรองข้อมูลตอนนี้';
+    }
+}
+
+async function confirmTruncate() {
+    // Step 1: warn
+    const warn = await Swal.fire({
+        icon: 'warning',
+        title: 'ล้างข้อมูลคำขอทั้งหมด?',
+        html: `ระบบจะ<strong>สำรองข้อมูลอัตโนมัติก่อน</strong> แล้วจึงลบ<br>
+               คำขอ, งานมอบหมาย และรายละเอียดทั้งหมด<br><br>
+               <span class="text-red-600 font-semibold">ข้อมูลที่ไม่ backup จะหายถาวร</span>`,
+        showCancelButton: true,
+        confirmButtonText: 'ต่อไป — ยืนยัน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+    });
+    if (!warn.isConfirmed) return;
+
+    // Step 2: type confirmation
+    const typed = await Swal.fire({
+        title: 'พิมพ์ยืนยัน',
+        html: `พิมพ์ <code class="bg-gray-100 px-1 rounded">DELETE_ALL_REQUESTS</code> เพื่อยืนยัน`,
+        input: 'text',
+        inputPlaceholder: 'DELETE_ALL_REQUESTS',
+        showCancelButton: true,
+        confirmButtonText: 'ล้างข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        inputValidator: (v) => v !== 'DELETE_ALL_REQUESTS' ? 'พิมพ์ไม่ถูกต้อง' : null,
+    });
+    if (!typed.isConfirmed) return;
+
+    // Step 3: execute
+    const btn = document.getElementById('truncateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังสำรองและล้างข้อมูล...';
+    try {
+        const fd = new FormData();
+        fd.append('action', 'truncate_requests');
+        fd.append('confirm', 'DELETE_ALL_REQUESTS');
+        const res  = await fetch(DB_API, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            await Swal.fire({
+                icon: 'success',
+                title: 'ล้างข้อมูลสำเร็จ',
+                html: `สำรองข้อมูลไว้แล้ว: <code>${data.backup}</code><br>(${data.backup_rows} rows)<br><br>ข้อมูลทั้งหมดถูกลบออกแล้ว`,
+                confirmButtonColor: '#009933',
+            });
+            loadBackupList();
+            loadTableCounts();
+        } else {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: e.message });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> สำรอง แล้วล้างข้อมูล';
+    }
+}
+
+async function restoreBackup(filename) {
+    const confirm = await Swal.fire({
+        icon: 'question',
+        title: 'Restore ข้อมูล?',
+        html: `จะ restore จากไฟล์:<br><code class="text-xs">${filename}</code><br><br>
+               <span class="text-orange-600 font-semibold">ข้อมูลปัจจุบันทั้งหมดจะถูกแทนที่</span>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-undo mr-1"></i> Restore',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+    });
+    if (!confirm.isConfirmed) return;
+
+    await Swal.fire({
+        title: 'กำลัง Restore...',
+        html: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+        const fd = new FormData();
+        fd.append('action', 'restore_backup');
+        fd.append('filename', filename);
+        const res  = await fetch(DB_API, { method: 'POST', body: fd });
+        const data = await res.json();
+        Swal.close();
+        if (data.success) {
+            await Swal.fire({ icon: 'success', title: 'Restore สำเร็จ', text: data.message, confirmButtonColor: '#009933' });
+            loadTableCounts();
+        } else {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+        }
+    } catch(e) {
+        Swal.close();
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: e.message });
+    }
+}
+
+async function deleteBackup(filename) {
+    const confirm = await Swal.fire({
+        icon: 'warning',
+        title: 'ลบไฟล์ backup?',
+        text: filename,
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+    });
+    if (!confirm.isConfirmed) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_backup');
+    fd.append('filename', filename);
+    const res  = await fetch(DB_API, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+        Swal.fire({ icon: 'success', title: 'ลบแล้ว', timer: 1200, showConfirmButton: false });
+        loadBackupList();
+    } else {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+    }
+}
+
+// Auto-load when tab opens (called inline from the tab button onclick)
 
 async function toggleEmailActive(id, isActive, serviceId) {
     const actionText = isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
