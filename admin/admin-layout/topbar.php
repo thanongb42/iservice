@@ -58,7 +58,7 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
 ?>
 
 <!-- Main Content Wrapper Start -->
-<div id="mainContent" class="main-content-transition ml-0 lg:ml-[280px] min-h-screen">
+<div id="mainContent" class="main-content-transition ml-0 lg:ml-[280px] min-h-screen flex flex-col">
     <!-- Top Navbar -->
     <nav class="bg-white shadow-md sticky top-0 z-30">
         <div class="flex items-center justify-between px-4 py-3">
@@ -231,4 +231,4 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
     </script>
 
     <!-- Main Content Area Start -->
-    <main class="p-4 md:p-6 lg:p-8">
+    <main class="p-4 md:p-6 lg:p-8 flex-1">

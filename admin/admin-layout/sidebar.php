@@ -78,6 +78,7 @@ if ($is_manager) {
         'services' => [
             'label' => 'บริการ',
             'items' => [
+                ['id' => 'create_job', 'icon' => 'fa-plus-circle', 'label' => 'สร้างงาน', 'url' => 'create_job.php'],
                 ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
                 ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
             ]

@@ -2,7 +2,7 @@
     <!-- Main Content Area End -->
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white mt-8 py-6">
+    <footer class="bg-gray-800 text-white py-4">
         <div class="max-w-7xl mx-auto px-4 text-center">
             <p>&copy; <?php echo date('Y'); ?> เทศบาลนครรังสิต. All rights reserved.</p>
             <p class="text-sm text-gray-400 mt-2">ระบบบริการดิจิทัล iService v2.0.0</p>
