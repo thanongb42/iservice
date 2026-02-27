@@ -80,7 +80,25 @@ try {
         $dept_name = $dept_result ? $dept_result['department_name'] : '';
     }
 
-    $name = clean_input($_POST['requester_name'] ?? '');
+    // Build requester name from prefix + firstname + lastname
+    $prefix_id = intval($_POST['requester_prefix_id'] ?? 0);
+    $prefix_name = '';
+    if ($prefix_id > 0) {
+        $pfx_q = $conn->prepare("SELECT prefix_name FROM prefixes WHERE prefix_id = ?");
+        $pfx_q->bind_param('i', $prefix_id);
+        $pfx_q->execute();
+        $pfx_row = $pfx_q->get_result()->fetch_assoc();
+        $prefix_name = $pfx_row ? $pfx_row['prefix_name'] : '';
+    }
+    $firstname = clean_input($_POST['requester_firstname'] ?? '');
+    $lastname  = clean_input($_POST['requester_lastname'] ?? '');
+    // Fallback: ถ้าส่งมาเป็น requester_name เดิม (backward compat)
+    if (empty($firstname) && !empty($_POST['requester_name'])) {
+        $name = clean_input($_POST['requester_name']);
+    } else {
+        $name = trim($prefix_name . $firstname . ' ' . $lastname);
+    }
+
     $email = clean_input($_POST['requester_email'] ?? '');
     $phone = clean_input($_POST['requester_phone'] ?? '');
     $position = clean_input($_POST['position'] ?? '');
@@ -151,17 +169,16 @@ try {
     }
 
     // 5. Insert Main Request
-    // Columns updated to match service_requests table schema
     $stmt = $conn->prepare("INSERT INTO service_requests (
-        user_id, request_code, service_code, service_name, 
-        requester_name, requester_email, requester_phone, requester_position, 
-        department_id, department_name, subject, description, 
+        user_id, request_code, service_code, service_name,
+        requester_prefix_id, requester_name, requester_email, requester_phone, requester_position,
+        department_id, department_name, subject, description,
         priority, expected_completion_date, attachments
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $stmt->bind_param("isssssssissssss", 
+    $stmt->bind_param("issssisssissssss",
         $user_id, $request_code, $service_code, $service_name,
-        $name, $email, $phone, $position,
+        $prefix_id, $name, $email, $phone, $position,
         $dept_id, $dept_name, $subject, $description,
         $priority, $target_date, $attachments_json
     );
@@ -215,13 +232,14 @@ try {
             break;
 
         case 'INTERNET':
-            $stmt = $conn->prepare("INSERT INTO request_internet_details (request_id, request_type, location, building, room_number, current_issue) VALUES (?, ?, ?, ?, ?, ?)");
-            $req_type = clean_input($_POST['request_type']);
-            $location = clean_input($_POST['location']);
-            $building = clean_input($_POST['building'] ?? '');
-            $room = clean_input($_POST['room_number'] ?? '');
-            $issue = clean_input($_POST['current_issue'] ?? '');
-            $stmt->bind_param("isssss", $request_id, $req_type, $location, $building, $room, $issue);
+            $stmt = $conn->prepare("INSERT INTO request_internet_details (request_id, request_type, location, building, room_number, current_issue, citizen_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $req_type   = clean_input($_POST['request_type']);
+            $location   = clean_input($_POST['location']);
+            $building   = clean_input($_POST['building'] ?? '');
+            $room       = clean_input($_POST['room_number'] ?? '');
+            $issue      = clean_input($_POST['current_issue'] ?? '');
+            $citizen_id = !empty($_POST['citizen_id']) ? clean_input($_POST['citizen_id']) : null;
+            $stmt->bind_param("issssss", $request_id, $req_type, $location, $building, $room, $issue, $citizen_id);
             break;
 
         case 'QR_CODE':

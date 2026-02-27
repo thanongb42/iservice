@@ -27,6 +27,15 @@ if (!$service) {
     exit;
 }
 
+// Load prefixes for name field
+$prefixes = [];
+$pfx_result = $conn->query("SELECT prefix_id, prefix_name FROM prefixes ORDER BY prefix_id ASC");
+if ($pfx_result) {
+    while ($row = $pfx_result->fetch_assoc()) {
+        $prefixes[] = $row;
+    }
+}
+
 // Load nav menu
 $nav_menus = get_menu_structure();
 $nav_html = render_nav_menu($nav_menus);
@@ -85,12 +94,26 @@ include __DIR__ . '/includes/header_public.php';
                 <div class="mb-8">
                     <h3 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">ข้อมูลผู้ขอ</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- คำนำหน้า + ชื่อ + นามสกุล -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 ชื่อ-นามสกุล <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="requester_name" required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            <div class="flex gap-2">
+                                <select name="requester_prefix_id" required
+                                        class="w-36 flex-shrink-0 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white text-sm">
+                                    <option value="">คำนำหน้า</option>
+                                    <?php foreach ($prefixes as $pfx): ?>
+                                    <option value="<?= $pfx['prefix_id'] ?>"><?= htmlspecialchars($pfx['prefix_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text" name="requester_firstname" required
+                                       placeholder="ชื่อ"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                                <input type="text" name="requester_lastname" required
+                                       placeholder="นามสกุล"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            </div>
                         </div>
 
                         <div>

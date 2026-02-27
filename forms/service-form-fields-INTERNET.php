@@ -50,4 +50,16 @@ if (empty($internet_request_types)) {
                   placeholder="อธิบายปัญหาที่พบ เช่น ต่อไม่ได้บางครั้ง, ช้ามากในช่วงเช้า"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
     </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+            หมายเลขบัตรประชาชน
+        </label>
+        <input type="text" name="citizen_id"
+               maxlength="13" pattern="[0-9]{13}"
+               inputmode="numeric"
+               placeholder="เลขบัตรประชาชน 13 หลัก"
+               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+        <p class="text-xs text-gray-400 mt-1">หมายเลขบัตรประชาชน 13 หลัก</p>
+    </div>
 </div>
