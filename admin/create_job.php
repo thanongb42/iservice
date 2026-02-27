@@ -27,6 +27,15 @@ while ($row = $services_result->fetch_assoc()) {
     $services[] = $row;
 }
 
+// Fetch prefixes for name field
+$prefixes = [];
+$pfx_result = $conn->query("SELECT prefix_id, prefix_name FROM prefixes WHERE is_active = 1 ORDER BY display_order ASC");
+if ($pfx_result) {
+    while ($row = $pfx_result->fetch_assoc()) {
+        $prefixes[] = $row;
+    }
+}
+
 // Fetch Level-1 departments only (children are loaded via AJAX)
 $depts_result = $conn->query("SELECT department_id, department_name, level_type FROM departments WHERE status = 'active' AND level = 1 ORDER BY department_name ASC");
 $departments = [];
@@ -138,9 +147,21 @@ include 'admin-layout/topbar.php';
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                            <input type="text" name="requester_name" id="requester_name" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                placeholder="กรอกชื่อ-นามสกุล">
+                            <div class="flex gap-2">
+                                <select name="requester_prefix_id" required
+                                    class="w-36 flex-shrink-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white">
+                                    <option value="">คำนำหน้า *</option>
+                                    <?php foreach ($prefixes as $pfx): ?>
+                                    <option value="<?php echo $pfx['prefix_id']; ?>"><?php echo htmlspecialchars($pfx['prefix_name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text" name="requester_firstname" required
+                                    class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
+                                    placeholder="ชื่อ *">
+                                <input type="text" name="requester_lastname" required
+                                    class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
+                                    placeholder="นามสกุล *">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>

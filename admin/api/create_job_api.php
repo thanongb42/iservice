@@ -30,8 +30,26 @@ $conn->begin_transaction();
 try {
     // 1. Validate required fields
     $service_code = isset($_POST['service_code']) ? clean_input($_POST['service_code']) : '';
-    $requester_name = clean_input($_POST['requester_name'] ?? '');
     $dept_id = intval($_POST['department_id'] ?? 0);
+
+    // Build full name from prefix + firstname + lastname
+    $prefix_id = intval($_POST['requester_prefix_id'] ?? 0);
+    $prefix_name = '';
+    if ($prefix_id > 0) {
+        $pfx_stmt = $conn->prepare("SELECT prefix_name FROM prefixes WHERE prefix_id = ?");
+        $pfx_stmt->bind_param('i', $prefix_id);
+        $pfx_stmt->execute();
+        $pfx_row = $pfx_stmt->get_result()->fetch_assoc();
+        $prefix_name = $pfx_row ? $pfx_row['prefix_name'] : '';
+    }
+    $firstname = clean_input($_POST['requester_firstname'] ?? '');
+    $lastname  = clean_input($_POST['requester_lastname'] ?? '');
+    if (!empty($firstname)) {
+        $requester_name = trim($prefix_name . $firstname . ' ' . $lastname);
+    } else {
+        // backward compat: accept old single-field submissions
+        $requester_name = clean_input($_POST['requester_name'] ?? '');
+    }
 
     if (empty($service_code) || empty($requester_name) || $dept_id <= 0) {
         throw new Exception('กรุณากรอกข้อมูลที่จำเป็น: ประเภทบริการ, ชื่อผู้ขอรับบริการ, หน่วยงาน');
@@ -113,14 +131,14 @@ try {
 
     $stmt = $conn->prepare("INSERT INTO service_requests (
         user_id, request_code, service_code, service_name,
-        requester_name, requester_email, requester_phone, requester_position,
+        requester_prefix_id, requester_name, requester_email, requester_phone, requester_position,
         department_id, department_name, subject, description,
         priority, expected_completion_date, attachments, admin_notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $stmt->bind_param('isssssssissssssss',
+    $stmt->bind_param('issssisssisssssss',
         $admin_user_id, $request_code, $service_code, $service_name,
-        $requester_name, $requester_email, $requester_phone, $requester_position,
+        $prefix_id, $requester_name, $requester_email, $requester_phone, $requester_position,
         $dept_id, $dept_name, $subject, $description,
         $priority, $expected_date, $attachments_json, $admin_note
     );
