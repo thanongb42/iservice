@@ -66,7 +66,7 @@ try {
 
                 $upload_dir = '../../uploads/tech_news/';
                 if (!file_exists($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
+                    mkdir($upload_dir, 0755, true);
                 }
 
                 $new_filename = 'tech_' . time() . '_' . uniqid() . '.' . $ext;

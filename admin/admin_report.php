@@ -110,7 +110,7 @@ include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
 <main class="main-content-transition lg:ml-0">
 
@@ -340,200 +340,280 @@ include 'admin-layout/topbar.php';
 
             <!-- Charts Section -->
             <div style="margin-bottom: 2rem;">
-                <!-- Service Requests by Type - Bar Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-bar"></i> คำขอตามประเภทบริการ</h3>
-                    <canvas id="chartTypeBar" style="max-height: 300px;"></canvas>
-                </div>
+                <!-- 2-column grid for charts -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem;">
+                    <!-- Service Requests by Type - Bar Chart -->
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> คำขอตามประเภทบริการ</h3>
+                        <div id="chartTypeBar" style="width: 100%; height: 350px;"></div>
+                    </div>
 
-                <!-- Service Requests by Type - Pie Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-pie"></i> สัดส่วนคำขอบริการ</h3>
-                    <canvas id="chartTypePie" style="max-height: 300px;"></canvas>
-                </div>
+                    <!-- Service Requests by Type - Pie Chart -->
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-pie"></i> สัดส่วนคำขอบริการ</h3>
+                        <div id="chartTypePie" style="width: 100%; height: 350px;"></div>
+                    </div>
 
-                <!-- Service Requests by Day - Line Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-line"></i> คำขอรายวัน (30 วันล่าสุด)</h3>
-                    <canvas id="chartDay" style="max-height: 300px;"></canvas>
-                </div>
+                    <!-- Service Requests by Day - Line Chart -->
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h3><i class="fas fa-chart-line"></i> คำขอรายวัน (30 วันล่าสุด)</h3>
+                        <div id="chartDay" style="width: 100%; height: 350px;"></div>
+                    </div>
 
-                <!-- Service Requests by Month - Line Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-line"></i> คำขอรายเดือน (12 เดือนล่าสุด)</h3>
-                    <canvas id="chartMonth" style="max-height: 300px;"></canvas>
-                </div>
+                    <!-- Service Requests by Month - Line Chart -->
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h3><i class="fas fa-chart-line"></i> คำขอรายเดือน (12 เดือนล่าสุด)</h3>
+                        <div id="chartMonth" style="width: 100%; height: 350px;"></div>
+                    </div>
 
-                <!-- Service Requests by Year - Bar Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-bar"></i> คำขอรายปี</h3>
-                    <canvas id="chartYear" style="max-height: 300px;"></canvas>
-                </div>
+                    <!-- Service Requests by Year - Bar Chart -->
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> คำขอรายปี</h3>
+                        <div id="chartYear" style="width: 100%; height: 350px;"></div>
+                    </div>
 
-                <!-- Service Requests by Status - Pie Chart -->
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-pie"></i> สถานะคำขอบริการ</h3>
-                    <canvas id="chartStatus" style="max-height: 300px;"></canvas>
+                    <!-- Service Requests by Status - Pie Chart -->
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-pie"></i> สถานะคำขอบริการ</h3>
+                        <div id="chartStatus" style="width: 100%; height: 350px;"></div>
+                    </div>
                 </div>
             </div>
 
             <script>
-            // Color palettes
-            const colors = {
-                bar: ['#0d9488', '#0f766e', '#06b6d4', '#0891b2', '#06a7d2', '#0e7490'],
-                status: {
-                    'pending': '#fbbf24',
-                    'in_progress': '#60a5fa',
-                    'completed': '#34d399',
-                    'cancelled': '#f87171'
-                }
+            // Vibrant contrasting colors
+            const vibrantColors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                '#FF9F40', '#E74C3C', '#2ECC71', '#3498DB', '#F39C12',
+                '#8E44AD', '#1ABC9C', '#E91E63', '#00BCD4', '#FF5722'
+            ];
+            const statusColorMap = {
+                'pending': '#FFCE56',
+                'in_progress': '#36A2EB',
+                'completed': '#2ECC71',
+                'cancelled': '#E74C3C'
+            };
+            const statusLabelMap = {
+                'pending': 'รอดำเนินการ',
+                'in_progress': 'กำลังดำเนินการ',
+                'completed': 'เสร็จสิ้น',
+                'cancelled': 'ยกเลิก'
             };
 
-            // Chart 1: Service Requests by Type (Bar)
+            // PHP data
             const typeData = <?= json_encode($requests_by_type) ?>;
-            const ctxTypeBar = document.getElementById('chartTypeBar').getContext('2d');
-            new Chart(ctxTypeBar, {
-                type: 'bar',
-                data: {
-                    labels: typeData.map(d => d.service_name || d.service_code),
-                    datasets: [{
-                        label: 'จำนวนคำขอ',
-                        data: typeData.map(d => d.count),
-                        backgroundColor: typeData.map((_, i) => colors.bar[i % colors.bar.length]),
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Chart 2: Service Requests by Type (Pie)
-            const ctxTypePie = document.getElementById('chartTypePie').getContext('2d');
-            new Chart(ctxTypePie, {
-                type: 'pie',
-                data: {
-                    labels: typeData.map(d => d.service_name || d.service_code),
-                    datasets: [{
-                        data: typeData.map(d => d.count),
-                        backgroundColor: typeData.map((_, i) => colors.bar[i % colors.bar.length])
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-
-            // Chart 3: Service Requests by Day (Line)
             const dayData = <?= json_encode($requests_by_day) ?>;
-            const ctxDay = document.getElementById('chartDay').getContext('2d');
-            new Chart(ctxDay, {
-                type: 'line',
-                data: {
-                    labels: dayData.map(d => {
-                        const date = new Date(d.date);
-                        return date.toLocaleDateString('th-TH');
-                    }),
-                    datasets: [{
-                        label: 'จำนวนคำขอ',
-                        data: dayData.map(d => d.count),
-                        borderColor: '#0d9488',
-                        backgroundColor: 'rgba(13, 148, 136, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#0d9488'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: true } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Chart 4: Service Requests by Month (Line)
             const monthData = <?= json_encode($requests_by_month) ?>;
-            const ctxMonth = document.getElementById('chartMonth').getContext('2d');
-            new Chart(ctxMonth, {
-                type: 'line',
-                data: {
-                    labels: monthData.map(d => {
-                        const [year, month] = d.month.split('-');
-                        const date = new Date(year, parseInt(month) - 1);
-                        return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short' });
-                    }),
-                    datasets: [{
-                        label: 'จำนวนคำขอ',
-                        data: monthData.map(d => d.count),
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#3b82f6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: true } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Chart 5: Service Requests by Year (Bar)
             const yearData = <?= json_encode($requests_by_year) ?>;
-            const ctxYear = document.getElementById('chartYear').getContext('2d');
-            new Chart(ctxYear, {
-                type: 'bar',
-                data: {
-                    labels: yearData.map(d => 'ปี ' + (d.year + 543)),
-                    datasets: [{
-                        label: 'จำนวนคำขอ',
-                        data: yearData.map(d => d.count),
-                        backgroundColor: '#10b981',
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Chart 6: Service Requests by Status (Pie)
             const statusData = <?= json_encode($request_status) ?>;
-            const ctxStatus = document.getElementById('chartStatus').getContext('2d');
-            const statusLabels = Object.keys(statusData);
-            const statusColors = statusLabels.map(s => colors.status[s] || '#9ca3af');
-            new Chart(ctxStatus, {
-                type: 'pie',
-                data: {
-                    labels: statusLabels.map(s => {
-                        const labels = { 'pending': 'รอดำเนินการ', 'in_progress': 'กำลังดำเนินการ', 'completed': 'เสร็จสิ้น', 'cancelled': 'ยกเลิก' };
-                        return labels[s] || s;
-                    }),
-                    datasets: [{
-                        data: statusLabels.map(s => statusData[s]),
-                        backgroundColor: statusColors
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { position: 'bottom' } }
-                }
+
+            // Load Google Charts
+            google.charts.load('current', { packages: ['corechart', 'bar'] });
+            google.charts.setOnLoadCallback(drawAllCharts);
+
+            function drawAllCharts() {
+                drawTypeBar();
+                drawTypePie();
+                drawDayLine();
+                drawMonthLine();
+                drawYearBar();
+                drawStatusPie();
+            }
+
+            // Chart 1: คำขอตามประเภทบริการ (Column)
+            function drawTypeBar() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'บริการ');
+                data.addColumn('number', 'จำนวนคำขอ');
+                data.addColumn({ type: 'number', role: 'annotation' });
+                data.addColumn({ type: 'string', role: 'style' });
+
+                typeData.forEach((d, i) => {
+                    data.addRow([
+                        d.service_name || d.service_code,
+                        parseInt(d.count),
+                        parseInt(d.count),
+                        vibrantColors[i % vibrantColors.length]
+                    ]);
+                });
+
+                const options = {
+                    legend: 'none',
+                    chartArea: { width: '80%', height: '70%' },
+                    annotations: {
+                        alwaysOutside: true,
+                        textStyle: { fontSize: 13, fontName: 'Sarabun', bold: true, color: '#333' }
+                    },
+                    vAxis: { minValue: 0, format: '#,###', textStyle: { fontSize: 12 } },
+                    hAxis: { textStyle: { fontSize: 11 }, slantedText: true, slantedTextAngle: 30 },
+                    bar: { groupWidth: '60%' },
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.ColumnChart(document.getElementById('chartTypeBar'));
+                chart.draw(data, options);
+            }
+
+            // Chart 2: สัดส่วนคำขอบริการ (Pie)
+            function drawTypePie() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'บริการ');
+                data.addColumn('number', 'จำนวน');
+
+                typeData.forEach(d => {
+                    data.addRow([d.service_name || d.service_code, parseInt(d.count)]);
+                });
+
+                const options = {
+                    colors: vibrantColors.slice(0, typeData.length),
+                    pieSliceText: 'value',
+                    pieSliceTextStyle: { fontSize: 13, bold: true },
+                    legend: { position: 'labeled', textStyle: { fontSize: 12, fontName: 'Sarabun' } },
+                    chartArea: { width: '90%', height: '85%' },
+                    pieHole: 0,
+                    sliceVisibilityThreshold: 0,
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.PieChart(document.getElementById('chartTypePie'));
+                chart.draw(data, options);
+            }
+
+            // Chart 3: คำขอรายวัน (Line)
+            function drawDayLine() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'วันที่');
+                data.addColumn('number', 'จำนวนคำขอ');
+                data.addColumn({ type: 'number', role: 'annotation' });
+
+                dayData.forEach(d => {
+                    const date = new Date(d.date);
+                    const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+                    const count = parseInt(d.count);
+                    data.addRow([label, count, count]);
+                });
+
+                const options = {
+                    colors: ['#E74C3C'],
+                    curveType: 'function',
+                    legend: { position: 'none' },
+                    chartArea: { width: '88%', height: '70%' },
+                    pointSize: 6,
+                    pointShape: 'circle',
+                    lineWidth: 3,
+                    annotations: {
+                        textStyle: { fontSize: 10, fontName: 'Sarabun', color: '#E74C3C', bold: true },
+                        stem: { length: 8, color: 'transparent' }
+                    },
+                    vAxis: { minValue: 0, format: '#,###', textStyle: { fontSize: 11 } },
+                    hAxis: { textStyle: { fontSize: 10 }, slantedText: true, slantedTextAngle: 45, showTextEvery: Math.ceil(dayData.length / 10) },
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.LineChart(document.getElementById('chartDay'));
+                chart.draw(data, options);
+            }
+
+            // Chart 4: คำขอรายเดือน (Line)
+            function drawMonthLine() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'เดือน');
+                data.addColumn('number', 'จำนวนคำขอ');
+                data.addColumn({ type: 'number', role: 'annotation' });
+
+                monthData.forEach(d => {
+                    const [year, month] = d.month.split('-');
+                    const date = new Date(year, parseInt(month) - 1);
+                    const thaiYear = parseInt(year) + 543;
+                    const label = date.toLocaleDateString('th-TH', { month: 'short' }) + ' ' + thaiYear;
+                    const count = parseInt(d.count);
+                    data.addRow([label, count, count]);
+                });
+
+                const options = {
+                    colors: ['#9966FF'],
+                    curveType: 'function',
+                    legend: { position: 'none' },
+                    chartArea: { width: '88%', height: '70%' },
+                    pointSize: 8,
+                    pointShape: 'diamond',
+                    lineWidth: 3,
+                    annotations: {
+                        textStyle: { fontSize: 12, fontName: 'Sarabun', color: '#7B42D6', bold: true },
+                        stem: { length: 10, color: 'transparent' }
+                    },
+                    vAxis: { minValue: 0, format: '#,###', textStyle: { fontSize: 11 } },
+                    hAxis: { textStyle: { fontSize: 11 }, slantedText: true, slantedTextAngle: 30 },
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.LineChart(document.getElementById('chartMonth'));
+                chart.draw(data, options);
+            }
+
+            // Chart 5: คำขอรายปี (Column)
+            function drawYearBar() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'ปี');
+                data.addColumn('number', 'จำนวนคำขอ');
+                data.addColumn({ type: 'number', role: 'annotation' });
+                data.addColumn({ type: 'string', role: 'style' });
+
+                yearData.forEach((d, i) => {
+                    const thaiYear = 'ปี ' + (parseInt(d.year) + 543);
+                    const count = parseInt(d.count);
+                    data.addRow([thaiYear, count, count, vibrantColors[i % vibrantColors.length]]);
+                });
+
+                const options = {
+                    legend: 'none',
+                    chartArea: { width: '80%', height: '70%' },
+                    annotations: {
+                        alwaysOutside: true,
+                        textStyle: { fontSize: 14, fontName: 'Sarabun', bold: true, color: '#333' }
+                    },
+                    vAxis: { minValue: 0, format: '#,###', textStyle: { fontSize: 12 } },
+                    hAxis: { textStyle: { fontSize: 13, fontName: 'Sarabun', bold: true } },
+                    bar: { groupWidth: '50%' },
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.ColumnChart(document.getElementById('chartYear'));
+                chart.draw(data, options);
+            }
+
+            // Chart 6: สถานะคำขอบริการ (Pie)
+            function drawStatusPie() {
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'สถานะ');
+                data.addColumn('number', 'จำนวน');
+
+                const statusKeys = Object.keys(statusData);
+                const sliceColors = [];
+
+                statusKeys.forEach(s => {
+                    data.addRow([statusLabelMap[s] || s, parseInt(statusData[s])]);
+                    sliceColors.push(statusColorMap[s] || '#9ca3af');
+                });
+
+                const options = {
+                    colors: sliceColors,
+                    pieSliceText: 'percentage',
+                    pieSliceTextStyle: { fontSize: 14, bold: true, color: '#fff' },
+                    legend: { position: 'labeled', textStyle: { fontSize: 13, fontName: 'Sarabun' } },
+                    chartArea: { width: '90%', height: '85%' },
+                    sliceVisibilityThreshold: 0,
+                    animation: { startup: true, duration: 800, easing: 'out' }
+                };
+
+                const chart = new google.visualization.PieChart(document.getElementById('chartStatus'));
+                chart.draw(data, options);
+            }
+
+            // Responsive: redraw on window resize
+            window.addEventListener('resize', function() {
+                clearTimeout(window._chartResizeTimer);
+                window._chartResizeTimer = setTimeout(drawAllCharts, 200);
             });
             </script>
 

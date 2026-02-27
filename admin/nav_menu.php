@@ -10,6 +10,11 @@ require_once '../config/database.php';
 // Start session
 session_start();
 
+// Generate CSRF Token
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $page_title = 'จัดการเมนูนำทาง';
 $current_page = 'nav_menu';
 $breadcrumb = [
@@ -50,6 +55,12 @@ function normalizeMenuOrder($conn) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     
+    // Verify CSRF Token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        echo json_encode(['success' => false, 'message' => 'Security validation failed (CSRF)']);
+        exit;
+    }
+
     if (isset($_POST['action'])) {
         $action = $_POST['action'];
         
@@ -368,6 +379,7 @@ include 'admin-layout/topbar.php';
 
 <script>
 const parentMenus = <?= json_encode($parent_menu_array) ?>;
+const csrfToken = "<?= $_SESSION['csrf_token'] ?>";
 
 function buildMenuForm(data = null) {
     const isEdit = data !== null;
@@ -454,6 +466,7 @@ function collectFormData(isEdit) {
 
 function saveMenu(formValues) {
     const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
     formData.append('action', 'save');
 
     for (const [key, value] of Object.entries(formValues)) {
@@ -506,7 +519,7 @@ function openEditModal(id) {
     fetch('nav_menu.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=get&id=' + id
+        body: 'action=get&id=' + id + '&csrf_token=' + csrfToken
     })
     .then(r => r.json())
     .then(data => {
@@ -542,6 +555,7 @@ function deleteMenu(id) {
     }).then((result) => {
         if (result.isConfirmed) {
             const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
             formData.append('action', 'delete');
             formData.append('id', id);
             
@@ -578,6 +592,7 @@ function resetOrder() {
     }).then((result) => {
         if (result.isConfirmed) {
             const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
             formData.append('action', 'reset_order');
             fetch('nav_menu.php', { method: 'POST', body: formData })
                 .then(r => r.json())
@@ -596,6 +611,7 @@ function resetOrder() {
 // --- Reorder functions ---
 function saveOrder(ids, parentId) {
     const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
     formData.append('action', 'reorder');
     if (parentId !== null && parentId !== undefined) {
         formData.append('parent_id', parentId);
@@ -677,6 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function toggleStatus(id) {
     const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
     formData.append('action', 'toggle');
     formData.append('id', id);
     

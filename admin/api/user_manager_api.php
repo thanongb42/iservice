@@ -10,8 +10,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 header('Content-Type: application/json');
 
-// Get action
-$action = $_REQUEST['action'] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
+
+$action = '';
+if ($method === 'GET') {
+    $action = $_GET['action'] ?? '';
+} else {
+    $action = $_POST['action'] ?? '';
+}
 
 try {
     switch ($action) {
@@ -20,15 +26,27 @@ try {
             break;
 
         case 'add':
-            addUser($conn);
+            if ($method === 'POST') {
+                addUser($conn);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            }
             break;
 
         case 'edit':
-            editUser($conn);
+            if ($method === 'POST') {
+                editUser($conn);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            }
             break;
 
         case 'delete':
-            deleteUser($conn);
+            if ($method === 'POST') {
+                deleteUser($conn);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            }
             break;
 
         case 'check_username':
@@ -178,6 +196,28 @@ function editUser($conn) {
     $department_id = !empty($_POST['department_id']) ? intval($_POST['department_id']) : null;
     $position = trim($_POST['position'] ?? '');
     $password = $_POST['password'] ?? '';
+
+    // Validate prefix_id
+    if ($prefix_id) {
+        $stmt = $conn->prepare("SELECT prefix_id FROM prefixes WHERE prefix_id = ?");
+        $stmt->bind_param("i", $prefix_id);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'คำนำหน้าที่เลือกไม่ถูกต้อง']);
+            return;
+        }
+    }
+
+    // Validate department_id
+    if ($department_id) {
+        $stmt = $conn->prepare("SELECT department_id FROM departments WHERE department_id = ?");
+        $stmt->bind_param("i", $department_id);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'หน่วยงานที่เลือกไม่ถูกต้อง']);
+            return;
+        }
+    }
 
     // Validate username format
     if (!preg_match('/^[a-zA-Z0-9_]{4,20}$/', $username)) {

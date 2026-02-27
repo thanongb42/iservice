@@ -39,7 +39,7 @@ function handle_file_upload($file, $upload_dir, $allowed_types = []) {
 
     // Create upload directory if not exists
     if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
+        mkdir($upload_dir, 0755, true);
     }
 
     // Generate unique filename

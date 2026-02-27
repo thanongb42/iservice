@@ -660,6 +660,7 @@ include 'admin-layout/topbar.php';
     }
 </style>
 
+<main class="main-content-transition lg:ml-0">
 <div class="p-6">
     <!-- Page Header -->
     <div class="mb-6">
@@ -788,6 +789,7 @@ include 'admin-layout/topbar.php';
                     <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
                 </div>
             <?php endif; ?>
+        </div>
 
         <!-- Calendar View Tab -->
         <div id="calendar-view" class="tab-content">
@@ -1178,6 +1180,14 @@ include 'admin-layout/topbar.php';
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอัปเดตสถานะได้', 'error');
         }
     }
+
+    // Initialize table on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('tableBody')) {
+            initializeTable();
+            window.tasksTableInitialized = true;
+        }
+    });
 
 </script>
 

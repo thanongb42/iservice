@@ -39,16 +39,21 @@ for($i=0; $i<500; $i++) {
     imagesetpixel($image, rand(0, $width), rand(0, $height), $pixel_color);
 }
 
-// Add text (using simple font if built-in, or try to load a font if we had one)
-// Using built-in font for simplicity and robustness
-$font_size = 5; // Built-in font size (1-5)
-$text_x = ($width - (imagefontwidth($font_size) * strlen($captcha_code))) / 2;
-$text_y = ($height - imagefontheight($font_size)) / 2;
+// Add text with slight character rotation/offset for better security
+$font_size = 5; 
+$char_width = imagefontwidth($font_size);
+$total_text_width = $char_width * strlen($captcha_code);
+$x = ($width - $total_text_width) / 2;
 
-imagestring($image, $font_size, $text_x, $text_y, $captcha_code, $text_color);
-
-// Use a wave filter manually if possible or just simple distortion? 
-// For simplicity, just the text is fine for now, user asked for captcha.
+for ($i = 0; $i < strlen($captcha_code); $i++) {
+    $y = rand(10, $height - 25);
+    // Draw character
+    imagechar($image, $font_size, $x + ($i * $char_width), $y, $captcha_code[$i], $text_color);
+    
+    // Add a few extra random lines over characters
+    if($i % 2 == 0)
+        imageline($image, $x, rand(0, $height), $x + $total_text_width, rand(0, $height), $text_color);
+}
 
 // Output
 header("Content-type: image/png");

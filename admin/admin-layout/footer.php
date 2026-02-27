@@ -172,6 +172,8 @@
     // Toggle user dropdown
     function toggleUserDropdown() {
         const dropdown = document.getElementById('userDropdown');
+        const notifDropdown = document.getElementById('notifDropdown');
+        if (notifDropdown) notifDropdown.classList.add('hidden');
         if (dropdown) dropdown.classList.toggle('hidden');
     }
 

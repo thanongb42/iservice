@@ -221,23 +221,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #fbbf24;
             text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
         }
-        .info-box {
-            background: #f0fdfa;
-            border: 1px solid #14b8a6;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .info-box p {
-            color: #0f766e;
-            font-size: 0.875rem;
-            margin: 0;
-        }
-        .info-box strong {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #0d9488;
-        }
     </style>
 </head>
 <body>

@@ -198,6 +198,7 @@ if ($result && $result->num_rows > 0) {
         }
 
         .panel-toggle:hover { background: var(--primary-light); }
+        .panel-toggle .toggle-label { display: none; }
         .side-panel:not(.collapsed) ~ .panel-toggle { left: 340px; }
 
         /* === PANEL CONTENT === */
@@ -317,6 +318,7 @@ if ($result && $result->num_rows > 0) {
             .header-stats { display: none; }
             .side-panel { width: 280px; }
             .side-panel.collapsed { transform: translateX(-290px); }
+            .panel-toggle { left: 10px; }
             .side-panel:not(.collapsed) ~ .panel-toggle { left: 300px; }
         }
 
@@ -326,9 +328,60 @@ if ($result && $result->num_rows > 0) {
             .header-title p { display: none; }
             .header-logo { height: 35px !important; }
             .home-btn { padding: 5px 10px; font-size: 11px; }
-            .side-panel { width: 100%; border-radius: 0; left: 0; bottom: 0; }
-            .side-panel.collapsed { transform: translateX(-100%); }
-            .side-panel:not(.collapsed) ~ .panel-toggle { left: 10px; }
+
+            .side-panel {
+                width: 100vw;
+                border-radius: 0;
+                left: 0;
+                top: 62px;
+                bottom: 0;
+                transform: translateX(-100vw);
+                transition: transform 0.3s ease;
+            }
+
+            .side-panel.collapsed {
+                transform: translateX(-100vw);
+            }
+
+            .side-panel:not(.collapsed) {
+                transform: translateX(0);
+                z-index: 9999;
+                box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+            }
+
+            /* Mobile toggle tab - left edge */
+            .panel-toggle {
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 10000;
+                width: 32px;
+                height: 80px;
+                border-radius: 0 10px 10px 0;
+                background: linear-gradient(180deg, var(--accent), var(--accent-light));
+                border: none;
+                color: #fff;
+                font-size: 16px;
+                box-shadow: 2px 2px 12px rgba(0, 184, 148, 0.4);
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .panel-toggle .toggle-label {
+                display: flex;
+                writing-mode: vertical-rl;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 1px;
+            }
+
+            .side-panel:not(.collapsed) ~ .panel-toggle {
+                left: auto;
+                right: 0;
+                border-radius: 10px 0 0 10px;
+                background: rgba(231, 76, 60, 0.9);
+                box-shadow: -2px 2px 12px rgba(231, 76, 60, 0.4);
+            }
         }
     </style>
 </head>
@@ -378,7 +431,8 @@ if ($result && $result->num_rows > 0) {
 
     <!-- PANEL TOGGLE BUTTON -->
     <button class="panel-toggle" id="panelToggle" onclick="togglePanel()">
-        <i class="fas fa-chevron-left"></i>
+        <i class="fas fa-list" id="toggleIcon"></i>
+        <span class="toggle-label">รายการ</span>
     </button>
 
     <!-- Leaflet -->
@@ -415,12 +469,15 @@ if ($result && $result->num_rows > 0) {
                         className: 'water-marker'
                     });
                     
+                    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
                     const marker = L.marker([lat, lng], { icon })
-                        .bindPopup(`<div style="font-family: Sarabun; text-align: center; max-width: 200px;">
+                        .bindPopup(`<div style="font-family: Sarabun; text-align: center; max-width: 220px;">
                             <strong>${kiosk.kiosk_code}</strong><br>
                             ${kiosk.location_name || 'ตู้น้ำ'}<br>
                             <small style="color: #666;">${kiosk.address || 'สถานที่'}</small>
                             ${kiosk.qrcode_img ? `<br><br><img src="${kiosk.qrcode_img}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 6px; border: 2px solid #00b894; display: block; margin: 10px auto;">` : ''}
+                            <br><a href="${googleMapsUrl}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 14px; background: #4285F4; color: #fff; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fas fa-diamond-turn-right"></i> นำทาง</a>
                         </div>`)
                         .bindTooltip(`${kiosk.kiosk_code}${kiosk.qrcode_img ? '<br><small style="font-size: 11px;">QR Code มีอยู่</small>' : ''}`, {
                             permanent: false,
@@ -472,11 +529,16 @@ if ($result && $result->num_rows > 0) {
                 const pos = markers[idx].getLatLng();
                 map.setView(pos, 17);
                 markers[idx].openPopup();
-                
+
                 // Highlight in list
                 document.querySelectorAll('.item').forEach((el, i) => {
                     el.classList.toggle('active', i === idx);
                 });
+
+                // Auto-collapse sidebar on mobile
+                if (window.innerWidth <= 480) {
+                    togglePanel();
+                }
             }
         }
 
@@ -493,15 +555,32 @@ if ($result && $result->num_rows > 0) {
 
         // Toggle Panel
         function togglePanel() {
-            document.getElementById('sidePanel').classList.toggle('collapsed');
-            document.getElementById('panelToggle').querySelector('i').classList.toggle('fa-chevron-left');
-            document.getElementById('panelToggle').querySelector('i').classList.toggle('fa-chevron-right');
+            const panel = document.getElementById('sidePanel');
+            const icon = document.getElementById('toggleIcon');
+            const label = document.querySelector('.toggle-label');
+            panel.classList.toggle('collapsed');
+
+            const isMobile = window.innerWidth <= 480;
+            if (isMobile) {
+                const isCollapsed = panel.classList.contains('collapsed');
+                icon.className = isCollapsed ? 'fas fa-list' : 'fas fa-times';
+                label.textContent = isCollapsed ? 'รายการ' : 'ปิด';
+            } else {
+                icon.classList.toggle('fa-chevron-left');
+                icon.classList.toggle('fa-chevron-right');
+            }
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
             renderList();
+
+            // Default collapsed on mobile
+            if (window.innerWidth <= 480) {
+                document.getElementById('sidePanel').classList.add('collapsed');
+                document.getElementById('toggleIcon').className = 'fas fa-list';
+            }
         });
     </script>
 </body>

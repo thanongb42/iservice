@@ -22,6 +22,25 @@ if (!isset($user) || !is_array($user)) {
 }
 
 $pending_requests = $pending_requests ?? 0;
+
+// Fetch recent service requests for notification dropdown (latest 10)
+$recent_requests = [];
+if (isset($conn)) {
+    $notif_query = $conn->query("
+        SELECT sr.request_id, sr.service_name, sr.status, sr.created_at,
+               COALESCE(u.first_name, u.username) as requester_name
+        FROM service_requests sr
+        LEFT JOIN users u ON sr.user_id = u.user_id
+        ORDER BY sr.created_at DESC
+        LIMIT 10
+    ");
+    if ($notif_query) {
+        while ($row = $notif_query->fetch_assoc()) {
+            $recent_requests[] = $row;
+        }
+    }
+}
+
 $breadcrumb = $breadcrumb ?? [
     ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
     ['label' => $page_title ?? 'แดชบอร์ด']
@@ -92,12 +111,73 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
             <!-- Right Menu -->
             <div class="flex items-center space-x-4">
                 <!-- Notifications -->
-                <button class="relative text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100" title="การแจ้งเตือน">
-                    <i class="fas fa-bell text-xl"></i>
-                    <?php if ($pending_requests > 0): ?>
-                    <span class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"><?php echo $pending_requests; ?></span>
-                    <?php endif; ?>
-                </button>
+                <div class="relative">
+                    <button onclick="toggleNotifDropdown()" class="relative text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100" title="การแจ้งเตือน">
+                        <i class="fas fa-bell text-xl"></i>
+                        <?php if ($pending_requests > 0): ?>
+                        <span class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse"><?php echo $pending_requests; ?></span>
+                        <?php endif; ?>
+                    </button>
+
+                    <!-- Notification Dropdown -->
+                    <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                            <h4 class="font-semibold text-gray-800 text-sm"><i class="fas fa-bell mr-1"></i> การแจ้งเตือน</h4>
+                            <?php if ($pending_requests > 0): ?>
+                            <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full"><?php echo $pending_requests; ?> รอดำเนินการ</span>
+                            <?php endif; ?>
+                        </div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <?php if (empty($recent_requests)): ?>
+                                <div class="px-4 py-8 text-center text-gray-400">
+                                    <i class="fas fa-inbox text-3xl mb-2"></i>
+                                    <p class="text-sm">ยังไม่มีการแจ้งเตือน</p>
+                                </div>
+                            <?php else: ?>
+                                <?php
+                                $status_config = [
+                                    'pending'     => ['label' => 'รอดำเนินการ',    'color' => '#EF4444', 'bg' => '#FEF2F2', 'icon' => 'fa-clock'],
+                                    'accepted'    => ['label' => 'รับงานแล้ว',     'color' => '#F59E0B', 'bg' => '#FFFBEB', 'icon' => 'fa-hand-paper'],
+                                    'in_progress' => ['label' => 'กำลังดำเนินการ', 'color' => '#F59E0B', 'bg' => '#FFFBEB', 'icon' => 'fa-spinner'],
+                                    'completed'   => ['label' => 'เสร็จสิ้น',      'color' => '#10B981', 'bg' => '#ECFDF5', 'icon' => 'fa-check-circle'],
+                                    'cancelled'   => ['label' => 'ยกเลิก',         'color' => '#6B7280', 'bg' => '#F3F4F6', 'icon' => 'fa-times-circle'],
+                                ];
+                                foreach ($recent_requests as $req):
+                                    $st = $req['status'];
+                                    $cfg = $status_config[$st] ?? ['label' => $st, 'color' => '#6B7280', 'bg' => '#F3F4F6', 'icon' => 'fa-question-circle'];
+                                    $time_ago = '';
+                                    $diff = time() - strtotime($req['created_at']);
+                                    if ($diff < 60) $time_ago = 'เมื่อสักครู่';
+                                    elseif ($diff < 3600) $time_ago = floor($diff / 60) . ' นาทีที่แล้ว';
+                                    elseif ($diff < 86400) $time_ago = floor($diff / 3600) . ' ชั่วโมงที่แล้ว';
+                                    elseif ($diff < 604800) $time_ago = floor($diff / 86400) . ' วันที่แล้ว';
+                                    else $time_ago = date('d/m/Y', strtotime($req['created_at']));
+                                ?>
+                                <a href="request_detail.php?id=<?php echo $req['request_id']; ?>" class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 transition-colors" style="text-decoration:none;">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5" style="background: <?php echo $cfg['bg']; ?>;">
+                                            <i class="fas <?php echo $cfg['icon']; ?>" style="color: <?php echo $cfg['color']; ?>; font-size: 0.85rem;"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-800 truncate">#<?php echo $req['request_id']; ?> <?php echo htmlspecialchars($req['service_name'] ?? ''); ?></p>
+                                            <p class="text-xs text-gray-500 mt-0.5">โดย <?php echo htmlspecialchars($req['requester_name'] ?? '-'); ?></p>
+                                            <div class="flex items-center justify-between mt-1">
+                                                <span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full" style="background: <?php echo $cfg['bg']; ?>; color: <?php echo $cfg['color']; ?>;">
+                                                    <?php echo $cfg['label']; ?>
+                                                </span>
+                                                <span class="text-xs text-gray-400"><?php echo $time_ago; ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                        <a href="service_requests.php" class="block px-4 py-3 text-center text-sm font-semibold text-green-600 hover:bg-green-50 border-t border-gray-200 transition-colors" style="text-decoration:none;">
+                            ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
 
                 <!-- User Dropdown -->
                 <div class="relative">
@@ -130,6 +210,25 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
             </div>
         </div>
     </nav>
+
+    <script>
+    // Toggle notification dropdown
+    function toggleNotifDropdown() {
+        const dropdown = document.getElementById('notifDropdown');
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown) userDropdown.classList.add('hidden');
+        if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const notifDropdown = document.getElementById('notifDropdown');
+        const notifBtn = event.target.closest('button[onclick="toggleNotifDropdown()"]');
+        if (notifDropdown && !notifBtn && !notifDropdown.contains(event.target)) {
+            notifDropdown.classList.add('hidden');
+        }
+    });
+    </script>
 
     <!-- Main Content Area Start -->
     <main class="p-4 md:p-6 lg:p-8">

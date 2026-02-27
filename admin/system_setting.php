@@ -38,6 +38,44 @@ function getSetting($key, $default = '') {
     return $settings[$key]['value'] ?? $default;
 }
 
+// Fetch services for email notification tab
+$all_services = [];
+$svc_result = $conn->query("SELECT id, service_code, service_name, icon, color_code FROM my_service ORDER BY display_order ASC");
+if ($svc_result) {
+    while ($row = $svc_result->fetch_assoc()) {
+        $all_services[] = $row;
+    }
+}
+
+// Auto-create service_notification_emails table if not exists
+$conn->query("
+    CREATE TABLE IF NOT EXISTS `service_notification_emails` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `service_id` int(11) NOT NULL,
+      `email` varchar(255) NOT NULL,
+      `name` varchar(100) DEFAULT NULL,
+      `is_active` tinyint(1) NOT NULL DEFAULT 1,
+      `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `unique_service_email` (`service_id`, `email`),
+      KEY `service_id` (`service_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+");
+
+// Fetch notification emails grouped by service
+$notification_emails = [];
+$ne_result = $conn->query("
+    SELECT sne.*, ms.service_name, ms.service_code
+    FROM service_notification_emails sne
+    JOIN my_service ms ON sne.service_id = ms.id
+    ORDER BY ms.display_order ASC, sne.name ASC
+");
+if ($ne_result) {
+    while ($row = $ne_result->fetch_assoc()) {
+        $notification_emails[$row['service_id']][] = $row;
+    }
+}
+
 ?>
 <?php
 include 'admin-layout/header.php';
@@ -220,6 +258,9 @@ include 'admin-layout/topbar.php';
             <button class="tab-btn" onclick="showTab(event, 'email')">
                 <i class="fas fa-envelope"></i> ตั้งค่า Email
             </button>
+            <button class="tab-btn" onclick="showTab(event, 'email_list')">
+                <i class="fas fa-mail-bulk"></i> Email แจ้งเตือนบริการ
+            </button>
             <button class="tab-btn" onclick="showTab(event, 'backup')">
                 <i class="fas fa-database"></i> Backup Database
             </button>
@@ -370,6 +411,83 @@ include 'admin-layout/topbar.php';
             </form>
         </div>
 
+        <!-- EMAIL NOTIFICATION LIST TAB -->
+        <div id="email_list" class="tab-content">
+            <div class="settings-group">
+                <h3><i class="fas fa-mail-bulk text-green-600"></i> จัดการอีเมลแจ้งเตือนตามบริการ</h3>
+                <p class="text-sm text-gray-600 mb-4">กำหนดอีเมลที่ต้องการให้ระบบแจ้งเตือนเมื่อมีคำขอบริการแต่ละประเภทเข้ามา</p>
+
+                <?php if (empty($all_services)): ?>
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                        <p>ยังไม่มีบริการในระบบ กรุณาเพิ่มบริการก่อน</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($all_services as $svc):
+                        $svc_emails = $notification_emails[$svc['id']] ?? [];
+                    ?>
+                    <div class="border border-gray-200 rounded-lg mb-4 overflow-hidden" id="svc-block-<?= $svc['id'] ?>">
+                        <!-- Service Header -->
+                        <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm bg-<?= htmlspecialchars($svc['color_code'] ?? 'blue') ?>-500">
+                                    <i class="<?= htmlspecialchars($svc['icon'] ?? 'fas fa-star') ?>"></i>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-gray-800"><?= htmlspecialchars($svc['service_name']) ?></span>
+                                    <span class="text-xs text-gray-400 ml-2"><?= htmlspecialchars($svc['service_code']) ?></span>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold" id="email-count-<?= $svc['id'] ?>"><?= count($svc_emails) ?> อีเมล</span>
+                            </div>
+                            <button onclick="addEmailToService(<?= $svc['id'] ?>, '<?= htmlspecialchars(addslashes($svc['service_name'])) ?>')"
+                                    class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition">
+                                <i class="fas fa-plus mr-1"></i> เพิ่มอีเมล
+                            </button>
+                        </div>
+
+                        <!-- Email List -->
+                        <div class="px-4 py-2" id="email-list-<?= $svc['id'] ?>">
+                            <?php if (empty($svc_emails)): ?>
+                                <p class="text-sm text-gray-400 py-3 text-center empty-msg">ยังไม่มีอีเมลแจ้งเตือนสำหรับบริการนี้</p>
+                            <?php else: ?>
+                                <?php foreach ($svc_emails as $em): ?>
+                                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 email-row" data-id="<?= $em['id'] ?>">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-envelope text-gray-400"></i>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars($em['email']) ?></span>
+                                            <?php if (!empty($em['name'])): ?>
+                                                <span class="text-xs text-gray-400 ml-1">(<?= htmlspecialchars($em['name']) ?>)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!$em['is_active']): ?>
+                                            <span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">ปิดใช้งาน</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="editNotifEmail(<?= $em['id'] ?>, '<?= htmlspecialchars(addslashes($em['email'])) ?>', '<?= htmlspecialchars(addslashes($em['name'] ?? '')) ?>', <?= $svc['id'] ?>)"
+                                                class="text-blue-400 hover:text-blue-600" title="แก้ไข">
+                                            <i class="fas fa-edit text-sm"></i>
+                                        </button>
+                                        <button onclick="toggleEmailActive(<?= $em['id'] ?>, <?= $em['is_active'] ? 0 : 1 ?>, <?= $svc['id'] ?>)"
+                                                class="text-gray-400 hover:text-gray-600" title="เปิด/ปิดใช้งาน">
+                                            <i class="fas fa-toggle-<?= $em['is_active'] ? 'on text-green-500' : 'off text-red-400' ?> text-lg"></i>
+                                        </button>
+                                        <button onclick="deleteNotifEmail(<?= $em['id'] ?>, <?= $svc['id'] ?>)"
+                                                class="text-red-400 hover:text-red-600" title="ลบ">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- BACKUP SETTINGS TAB -->
         <div id="backup" class="tab-content">
             <form action="api/system_settings_api.php" method="POST">
@@ -490,20 +608,22 @@ include 'admin-layout/topbar.php';
 
     function showTab(event, tabName) {
         event.preventDefault();
-        
+
         // Hide all tabs
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
         });
-        
+
         // Remove active from all buttons
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        
+
         // Show selected tab
         document.getElementById(tabName).classList.add('active');
-        event.target.classList.add('active');
+        // Handle click on <i> inside button
+        const btn = event.target.closest('.tab-btn');
+        if (btn) btn.classList.add('active');
     }
     
 function testEmailConnection() {
@@ -565,6 +685,243 @@ function createManualBackup() {
         btn.innerHTML = '<i class="fas fa-plus"></i> Backup ตอนนี้';
         alert('✗ เกิดข้อผิดพลาด: ' + err.message);
     });
+}
+
+// ===== Email Notification List Functions =====
+function addEmailToService(serviceId, serviceName) {
+    Swal.fire({
+        title: '<i class="fas fa-plus text-green-600"></i> เพิ่มอีเมลแจ้งเตือน',
+        html: `
+            <p class="text-sm text-gray-600 mb-3">บริการ: <strong>${serviceName}</strong></p>
+            <div style="text-align:left;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:4px;">อีเมล <span class="text-red-500">*</span></label>
+                <input type="email" id="swal-notif-email" placeholder="user@example.com" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem; margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:4px;">ชื่อผู้รับ</label>
+                <input type="text" id="swal-notif-name" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem;">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-plus mr-1"></i> เพิ่ม',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#009933',
+        cancelButtonColor: '#6b7280',
+        preConfirm: () => {
+            const email = document.getElementById('swal-notif-email').value.trim();
+            const name = document.getElementById('swal-notif-name').value.trim();
+            if (!email) {
+                Swal.showValidationMessage('กรุณากรอกอีเมล');
+                return false;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                Swal.showValidationMessage('รูปแบบอีเมลไม่ถูกต้อง');
+                return false;
+            }
+            return { email, name };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'add');
+                formData.append('service_id', serviceId);
+                formData.append('email', result.value.email);
+                formData.append('name', result.value.name);
+
+                const res = await fetch('api/service_emails_api.php', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'สำเร็จ', text: data.message, timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+            }
+        }
+    });
+}
+
+function editNotifEmail(id, currentEmail, currentName, serviceId) {
+    Swal.fire({
+        title: '<i class="fas fa-edit text-blue-600"></i> แก้ไขอีเมลแจ้งเตือน',
+        html: `
+            <div style="text-align:left;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:4px;">อีเมล <span class="text-red-500">*</span></label>
+                <input type="email" id="swal-edit-email" value="${currentEmail}" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem; margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#374151; margin-bottom:4px;">ชื่อผู้รับ</label>
+                <input type="text" id="swal-edit-name" value="${currentName}" placeholder="ชื่อ-นามสกุล (ไม่บังคับ)" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem;">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-save mr-1"></i> บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6b7280',
+        preConfirm: () => {
+            const email = document.getElementById('swal-edit-email').value.trim();
+            const name = document.getElementById('swal-edit-name').value.trim();
+            if (!email) {
+                Swal.showValidationMessage('กรุณากรอกอีเมล');
+                return false;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                Swal.showValidationMessage('รูปแบบอีเมลไม่ถูกต้อง');
+                return false;
+            }
+            return { email, name };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'edit');
+                formData.append('id', id);
+                formData.append('email', result.value.email);
+                formData.append('name', result.value.name);
+
+                const res = await fetch('api/service_emails_api.php', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Update DOM in-place
+                    const row = document.querySelector(`.email-row[data-id="${id}"]`);
+                    if (row) {
+                        const emailSpan = row.querySelector('.text-sm.font-medium.text-gray-700');
+                        const nameSpan = row.querySelector('.text-xs.text-gray-400.ml-1');
+                        const editBtn = row.querySelector('button[onclick^="editNotifEmail"]');
+
+                        if (emailSpan) emailSpan.textContent = result.value.email;
+                        if (result.value.name) {
+                            if (nameSpan) {
+                                nameSpan.textContent = '(' + result.value.name + ')';
+                            } else {
+                                const newName = document.createElement('span');
+                                newName.className = 'text-xs text-gray-400 ml-1';
+                                newName.textContent = '(' + result.value.name + ')';
+                                emailSpan.parentElement.appendChild(newName);
+                            }
+                        } else {
+                            if (nameSpan) nameSpan.remove();
+                        }
+
+                        // Update onclick with new values
+                        const escapedEmail = result.value.email.replace(/'/g, "\\'");
+                        const escapedName = result.value.name.replace(/'/g, "\\'");
+                        editBtn.setAttribute('onclick', `editNotifEmail(${id}, '${escapedEmail}', '${escapedName}', ${serviceId})`);
+                    }
+                    Swal.fire({ icon: 'success', title: 'สำเร็จ', text: data.message, timer: 1200, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+            }
+        }
+    });
+}
+
+async function deleteNotifEmail(id, serviceId) {
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'ยืนยันการลบ',
+        text: 'ต้องการลบอีเมลแจ้งเตือนนี้หรือไม่?',
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('id', id);
+
+            const res = await fetch('api/service_emails_api.php', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.success) {
+                // Remove row from DOM
+                const row = document.querySelector(`.email-row[data-id="${id}"]`);
+                if (row) row.remove();
+                // Update count
+                const list = document.getElementById('email-list-' + serviceId);
+                const remaining = list.querySelectorAll('.email-row').length;
+                document.getElementById('email-count-' + serviceId).textContent = remaining + ' อีเมล';
+                if (remaining === 0) {
+                    list.innerHTML = '<p class="text-sm text-gray-400 py-3 text-center empty-msg">ยังไม่มีอีเมลแจ้งเตือนสำหรับบริการนี้</p>';
+                }
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: data.message, timer: 1200, showConfirmButton: false });
+            } else {
+                Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+        }
+    }
+}
+
+async function toggleEmailActive(id, isActive, serviceId) {
+    const actionText = isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+    const confirm = await Swal.fire({
+        icon: 'question',
+        title: 'ยืนยัน' + actionText,
+        text: 'ต้องการ' + actionText + 'อีเมลแจ้งเตือนนี้หรือไม่?',
+        showCancelButton: true,
+        confirmButtonText: actionText,
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: isActive ? '#009933' : '#ef4444',
+        cancelButtonColor: '#6b7280'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'toggle_active');
+        formData.append('id', id);
+        formData.append('is_active', isActive);
+
+        const res = await fetch('api/service_emails_api.php', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.success) {
+            // Update DOM in-place
+            const row = document.querySelector(`.email-row[data-id="${id}"]`);
+            if (row) {
+                const toggleBtn = row.querySelector('button[onclick^="toggleEmailActive"]');
+                const toggleIcon = toggleBtn.querySelector('i');
+                const statusBadge = row.querySelector('.bg-red-100.text-red-600');
+
+                if (isActive) {
+                    // Now active
+                    toggleBtn.setAttribute('onclick', `toggleEmailActive(${id}, 0, ${serviceId})`);
+                    toggleIcon.className = 'fas fa-toggle-on text-green-500 text-lg';
+                    if (statusBadge) statusBadge.remove();
+                } else {
+                    // Now inactive
+                    toggleBtn.setAttribute('onclick', `toggleEmailActive(${id}, 1, ${serviceId})`);
+                    toggleIcon.className = 'fas fa-toggle-off text-red-400 text-lg';
+                    if (!statusBadge) {
+                        const badge = document.createElement('span');
+                        badge.className = 'text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full';
+                        badge.textContent = 'ปิดใช้งาน';
+                        row.querySelector('.flex.items-center.gap-3').appendChild(badge);
+                    }
+                }
+            }
+            Swal.fire({ icon: 'success', title: 'สำเร็จ', text: data.message, timer: 1200, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: data.message });
+        }
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+    }
 }
 </script>
 </main>

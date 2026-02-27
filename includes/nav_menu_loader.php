@@ -27,8 +27,10 @@ function get_menu_structure() {
             $parent['children'] = [];
 
             // Get child menus
-            $child_query = "SELECT * FROM nav_menu WHERE parent_id = {$parent['id']} AND is_active = 1 ORDER BY menu_order ASC";
-            $child_result = $conn->query($child_query);
+            $child_stmt = $conn->prepare("SELECT * FROM nav_menu WHERE parent_id = ? AND is_active = 1 ORDER BY menu_order ASC");
+            $child_stmt->bind_param("i", $parent['id']);
+            $child_stmt->execute();
+            $child_result = $child_stmt->get_result();
 
             if ($child_result) {
                 while ($child = $child_result->fetch_assoc()) {
