@@ -112,43 +112,41 @@ if (empty($request_code)) {
                     </div>
                 </div>
 
-                <!-- Timeline Steps -->
+                <!-- Tracking Status Progress -->
                 <div class="border-t border-gray-100 pt-8 pb-4 mb-6">
                     <h3 class="font-bold text-gray-800 mb-8 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center">
                             <i class="fas fa-list-check text-white text-sm"></i>
                         </span>
-                        ขั้นตอนการดำเนินการต่อไป
+                        สถานะการดำเนินการ
                     </h3>
 
                     <div class="flex flex-col md:flex-row items-stretch gap-0">
 
-                        <!-- Step 1 -->
+                        <!-- Step 1: ส่งคำร้องสำเร็จ (active) -->
                         <div class="flex md:flex-col items-start md:items-center flex-1 group">
-                            <div class="flex md:flex-col items-center md:items-center w-full">
-                                <!-- Circle -->
+                            <div class="flex md:flex-col items-center w-full">
                                 <div class="relative flex-shrink-0">
-                                    <div class="w-14 h-14 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-200 ring-4 ring-teal-50 z-10 relative transition-transform group-hover:scale-110">
-                                        <i class="fas fa-inbox text-xl"></i>
+                                    <div class="w-14 h-14 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-200 ring-4 ring-teal-50 z-10 relative">
+                                        <i class="fas fa-paper-plane text-xl"></i>
                                     </div>
                                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">1</span>
                                 </div>
-                                <!-- Connector (right on desktop, bottom on mobile) -->
-                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gradient-to-b from-teal-300 to-blue-300 mx-auto mt-1 mb-1 ml-7"></div>
-                                <div class="hidden md:block h-0.5 flex-1 bg-gradient-to-r from-teal-300 to-blue-300 mt-7 -mx-1"></div>
+                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gradient-to-b from-teal-300 to-gray-200 mx-auto mt-1 mb-1 ml-7"></div>
+                                <div class="hidden md:block h-0.5 flex-1 bg-gradient-to-r from-teal-300 to-gray-200 mt-7 -mx-1"></div>
                             </div>
                             <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
-                                <h4 class="font-bold text-gray-800 text-sm">รับเรื่องและตรวจสอบ</h4>
-                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">เจ้าหน้าที่ตรวจสอบข้อมูล<br class="hidden md:block">ความถูกต้องเบื้องต้น</p>
+                                <h4 class="font-bold text-teal-700 text-sm">ส่งคำร้องสำเร็จ</h4>
+                                <p class="text-xs text-teal-600 mt-1 leading-relaxed">ระบบได้รับคำร้อง<br class="hidden md:block">เรียบร้อยแล้ว</p>
                             </div>
                         </div>
 
-                        <!-- Step 2 (inactive) -->
+                        <!-- Step 2: เจ้าหน้าที่รับเรื่อง (inactive) -->
                         <div class="flex md:flex-col items-start md:items-center flex-1 opacity-40">
-                            <div class="flex md:flex-col items-center md:items-center w-full">
+                            <div class="flex md:flex-col items-center w-full">
                                 <div class="relative flex-shrink-0">
                                     <div class="w-14 h-14 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center ring-4 ring-gray-100 z-10 relative">
-                                        <i class="fas fa-gears text-xl"></i>
+                                        <i class="fas fa-user-check text-xl"></i>
                                     </div>
                                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-gray-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">2</span>
                                 </div>
@@ -156,25 +154,43 @@ if (empty($request_code)) {
                                 <div class="hidden md:block h-0.5 flex-1 bg-gray-200 mt-7 -mx-1"></div>
                             </div>
                             <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
-                                <h4 class="font-semibold text-gray-500 text-sm">ดำเนินการแก้ไข/บริการ</h4>
-                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">ส่งต่อหน่วยงานที่เกี่ยวข้อง<br class="hidden md:block">เพื่อดำเนินการ</p>
+                                <h4 class="font-semibold text-gray-500 text-sm">เจ้าหน้าที่รับเรื่อง</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">เจ้าหน้าที่ตรวจสอบ<br class="hidden md:block">และรับคำร้อง</p>
                             </div>
                         </div>
 
-                        <!-- Step 3 (inactive) -->
+                        <!-- Step 3: มอบหมายงาน (inactive) -->
                         <div class="flex md:flex-col items-start md:items-center flex-1 opacity-40">
-                            <div class="flex md:flex-col items-center md:items-center w-full">
+                            <div class="flex md:flex-col items-center w-full">
                                 <div class="relative flex-shrink-0">
                                     <div class="w-14 h-14 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center ring-4 ring-gray-100 z-10 relative">
-                                        <i class="fas fa-bell text-xl"></i>
+                                        <i class="fas fa-people-arrows text-xl"></i>
                                     </div>
                                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-gray-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">3</span>
+                                </div>
+                                <div class="flex-1 md:hidden w-0.5 h-8 bg-gray-200 mx-auto mt-1 mb-1 ml-7"></div>
+                                <div class="hidden md:block h-0.5 flex-1 bg-gray-200 mt-7 -mx-1"></div>
+                            </div>
+                            <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-6 md:pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
+                                <h4 class="font-semibold text-gray-500 text-sm">มอบหมายงาน</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">มอบหมายให้ผู้มีหน้าที่<br class="hidden md:block">ดำเนินการแล้ว</p>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: เสร็จสิ้น (inactive) -->
+                        <div class="flex md:flex-col items-start md:items-center flex-1 opacity-40">
+                            <div class="flex md:flex-col items-center w-full">
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-14 h-14 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center ring-4 ring-gray-100 z-10 relative">
+                                        <i class="fas fa-circle-check text-xl"></i>
+                                    </div>
+                                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-gray-400 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">4</span>
                                 </div>
                                 <div class="hidden md:block h-0.5 flex-1 opacity-0 mt-7"></div>
                             </div>
                             <div class="md:text-center mt-0 md:mt-4 ml-4 md:ml-0 pb-0 pl-0 md:pl-2 pr-0 md:pr-2">
-                                <h4 class="font-semibold text-gray-500 text-sm">แจ้งผลการดำเนินการ</h4>
-                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">แจ้งผลให้ท่านทราบ<br class="hidden md:block">เมื่อดำเนินการเสร็จสิ้น</p>
+                                <h4 class="font-semibold text-gray-500 text-sm">เสร็จสิ้น</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">ดำเนินการ<br class="hidden md:block">เสร็จสมบูรณ์</p>
                             </div>
                         </div>
 

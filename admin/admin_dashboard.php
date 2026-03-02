@@ -239,7 +239,7 @@ include 'admin-layout/topbar.php';
             <i class="fas fa-history text-teal-600 mr-2"></i>กิจกรรมล่าสุด
         </h2>
         <div class="space-y-4">
-            <?php if ($recent_requests && $recent_requests->num_rows > 0): ?>
+            <?php if ($recent_requests instanceof mysqli_result && $recent_requests->num_rows > 0): ?>
                 <?php while ($request = $recent_requests->fetch_assoc()): ?>
                 <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg">
                     <div class="w-10 h-10 <?php
@@ -302,7 +302,7 @@ include 'admin-layout/topbar.php';
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                <?php if ($recent_users && $recent_users->num_rows > 0): ?>
+                <?php if ($recent_users instanceof mysqli_result && $recent_users->num_rows > 0): ?>
                     <?php while ($u = $recent_users->fetch_assoc()): ?>
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-4 whitespace-nowrap">

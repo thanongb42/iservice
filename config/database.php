@@ -30,6 +30,7 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 
+    
     // Set charset
     $conn->set_charset(DB_CHARSET);
 

@@ -4,6 +4,135 @@
  * ใช้สำหรับส่งอีเมลแจ้งเตือนต่างๆ
  */
 
+/**
+ * Notify admin/staff users via Email when a new request is submitted
+ */
+function notify_admins_new_request($request_id, $conn) {
+    // Fetch request details
+    $stmt = $conn->prepare("SELECT r.*, m.service_name FROM service_requests r JOIN my_service m ON r.service_code = m.service_code WHERE r.request_id = ?");
+    $stmt->bind_param("i", $request_id);
+    $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+    if (!$request) return;
+
+    // Fetch all admin users with email
+    $result = $conn->query("SELECT CONCAT(COALESCE(p.prefix_name, ''), u.first_name, ' ', u.last_name) AS full_name, u.email FROM users u LEFT JOIN prefixes p ON u.prefix_id = p.prefix_id WHERE u.role IN ('admin','staff') AND u.status = 'active' AND u.email != '' AND u.email IS NOT NULL");
+    if (!$result || $result->num_rows === 0) return;
+
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $tracking_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
+    $admin_url    = "$protocol://$host/iservice/admin/service_requests.php";
+
+    $subject = "[iService] คำร้องใหม่: " . $request['service_name'] . " (" . $request['request_code'] . ")";
+    $message = "
+    <html><head><style>
+        body{font-family:'Sarabun',sans-serif;color:#333;margin:0;padding:0}
+        .header{background:#0d9488;color:#fff;padding:20px;text-align:center}
+        .content{padding:24px;background:#f9fafb}
+        .info-box{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0}
+        .label{color:#6b7280;font-size:13px}
+        .value{font-weight:600;color:#111827}
+        .btn{display:inline-block;margin:4px;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px}
+        .btn-teal{background:#0d9488;color:#fff}
+        .btn-gray{background:#6b7280;color:#fff}
+        .footer{padding:12px;text-align:center;font-size:12px;color:#9ca3af;background:#f3f4f6}
+    </style></head><body>
+    <div class='header'><h2 style='margin:0'>📋 มีคำร้องใหม่เข้ามา</h2></div>
+    <div class='content'>
+        <p>มีคำร้องบริการใหม่ถูกส่งเข้าระบบ กรุณาตรวจสอบและดำเนินการ</p>
+        <div class='info-box'>
+            <table width='100%' cellspacing='0' cellpadding='6'>
+                <tr><td class='label'>รหัสคำร้อง</td><td class='value'>" . $request['request_code'] . "</td></tr>
+                <tr><td class='label'>บริการ</td><td class='value'>" . htmlspecialchars($request['service_name']) . "</td></tr>
+                <tr><td class='label'>ผู้ยื่นคำร้อง</td><td class='value'>" . htmlspecialchars($request['requester_name']) . "</td></tr>
+                <tr><td class='label'>หน่วยงาน</td><td class='value'>" . htmlspecialchars($request['department_name'] ?? '-') . "</td></tr>
+                <tr><td class='label'>วันที่ส่ง</td><td class='value'>" . date('d/m/Y H:i', strtotime($request['created_at'])) . "</td></tr>
+            </table>
+        </div>
+        <div style='text-align:center;margin-top:20px'>
+            <a href='$admin_url' class='btn btn-teal'>จัดการคำร้อง</a>
+            <a href='$tracking_url' class='btn btn-gray'>ดูสถานะ</a>
+        </div>
+    </div>
+    <div class='footer'>ระบบ iService เทศบาลนครรังสิต — แจ้งเตือนอัตโนมัติ</div>
+    </body></html>";
+
+    $headers  = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8\r\n";
+    $headers .= "From: iService Alert <noreply@rangsitcity.go.th>\r\n";
+
+    $is_localhost = in_array($_SERVER['SERVER_NAME'], ['localhost', '127.0.0.1']);
+
+    while ($user = $result->fetch_assoc()) {
+        if ($is_localhost) {
+            $log = "[ADMIN_NOTIFY] To: {$user['email']} | {$request['request_code']} | {$request['service_name']}\n";
+            file_put_contents(__DIR__ . '/../storage/email_log.txt', $log, FILE_APPEND);
+        } else {
+            @mail($user['email'], $subject, $message, $headers);
+        }
+    }
+}
+
+/**
+ * Send LINE group notification when a new request is submitted
+ * ต้องตั้งค่า line_channel_token และ line_group_id ใน system_settings
+ */
+function send_line_notification($request_id, $conn) {
+    // Load LINE settings from system_settings
+    $res = $conn->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('line_channel_token','line_group_id')");
+    if (!$res) return;
+
+    $settings = [];
+    while ($row = $res->fetch_assoc()) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+
+    $token    = $settings['line_channel_token'] ?? '';
+    $group_id = $settings['line_group_id'] ?? '';
+    if (empty($token) || empty($group_id)) return;
+
+    // Fetch request details
+    $stmt = $conn->prepare("SELECT r.*, m.service_name FROM service_requests r JOIN my_service m ON r.service_code = m.service_code WHERE r.request_id = ?");
+    $stmt->bind_param("i", $request_id);
+    $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+    if (!$request) return;
+
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $tracking_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
+
+    $text  = "📋 คำร้องใหม่เข้าระบบ\n";
+    $text .= "────────────────\n";
+    $text .= "รหัส: " . $request['request_code'] . "\n";
+    $text .= "บริการ: " . $request['service_name'] . "\n";
+    $text .= "ผู้ยื่น: " . $request['requester_name'] . "\n";
+    $text .= "หน่วยงาน: " . ($request['department_name'] ?? '-') . "\n";
+    $text .= "วันที่: " . date('d/m/Y H:i', strtotime($request['created_at'])) . "\n";
+    $text .= "────────────────\n";
+    $text .= "ติดตาม: " . $tracking_url;
+
+    $payload = json_encode([
+        'to' => $group_id,
+        'messages' => [['type' => 'text', 'text' => $text]]
+    ]);
+
+    $ch = curl_init('https://api.line.me/v2/bot/message/push');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $token,
+        ],
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
 function send_request_notification($request_id, $conn) {
     // Check if we are running in a local environment without SMTP
     $is_localhost = ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1');

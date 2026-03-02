@@ -135,7 +135,7 @@ include __DIR__ . '/includes/header_public.php';
                             </label>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- Level 1: สำนัก/กอง -->
-                                <div>
+                                <div id="dept_wrap1">
                                     <label class="block text-xs text-gray-600 mb-1">ระดับ 1: สำนัก/กอง</label>
                                     <select id="dept_level1" name="dept_level1" required
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
@@ -144,31 +144,28 @@ include __DIR__ . '/includes/header_public.php';
                                 </div>
 
                                 <!-- Level 2: ส่วน -->
-                                <div>
+                                <div id="dept_wrap2" class="hidden">
                                     <label class="block text-xs text-gray-600 mb-1">ระดับ 2: ส่วน</label>
                                     <select id="dept_level2" name="dept_level2"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                            disabled>
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                                         <option value="">-- เลือกส่วน --</option>
                                     </select>
                                 </div>
 
                                 <!-- Level 3: ฝ่าย/กลุ่มงาน -->
-                                <div>
+                                <div id="dept_wrap3" class="hidden">
                                     <label class="block text-xs text-gray-600 mb-1">ระดับ 3: ฝ่าย/กลุ่มงาน</label>
                                     <select id="dept_level3" name="dept_level3"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                            disabled>
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                                         <option value="">-- เลือกฝ่าย/กลุ่มงาน --</option>
                                     </select>
                                 </div>
 
                                 <!-- Level 4: งาน -->
-                                <div>
+                                <div id="dept_wrap4" class="hidden">
                                     <label class="block text-xs text-gray-600 mb-1">ระดับ 4: งาน</label>
                                     <select id="dept_level4" name="dept_level4"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                            disabled>
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                                         <option value="">-- เลือกงาน --</option>
                                     </select>
                                 </div>
@@ -183,7 +180,7 @@ include __DIR__ . '/includes/header_public.php';
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                         </div>
 
-                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC' && $service_code !== 'LED'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 ความสำคัญ <span class="text-red-500">*</span>
@@ -198,7 +195,7 @@ include __DIR__ . '/includes/header_public.php';
                         </div>
                         <?php endif; ?>
 
-                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY'): ?>
+                        <?php if ($service_code !== 'EMAIL' && $service_code !== 'MC' && $service_code !== 'INTERNET' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'LED'): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">วันที่ต้องการให้เสร็จ</label>
                             <input type="date" name="target_date"
@@ -293,10 +290,10 @@ include __DIR__ . '/includes/header_public.php';
             // Department cascade - only init if elements exist (not QR_CODE)
             if (document.getElementById('dept_level1')) {
                 const levels = [
-                    { el: document.getElementById('dept_level1'), label: '-- เลือกสำนัก/กอง --' },
-                    { el: document.getElementById('dept_level2'), label: '-- เลือกส่วน --' },
-                    { el: document.getElementById('dept_level3'), label: '-- เลือกฝ่าย/กลุ่มงาน --' },
-                    { el: document.getElementById('dept_level4'), label: '-- เลือกงาน --' }
+                    { el: document.getElementById('dept_level1'), wrap: document.getElementById('dept_wrap1'), label: '-- เลือกสำนัก/กอง --' },
+                    { el: document.getElementById('dept_level2'), wrap: document.getElementById('dept_wrap2'), label: '-- เลือกส่วน --' },
+                    { el: document.getElementById('dept_level3'), wrap: document.getElementById('dept_wrap3'), label: '-- เลือกฝ่าย/กลุ่มงาน --' },
+                    { el: document.getElementById('dept_level4'), wrap: document.getElementById('dept_wrap4'), label: '-- เลือกงาน --' }
                 ];
 
                 const finalInput = document.getElementById('department_final');
@@ -322,7 +319,9 @@ include __DIR__ . '/includes/header_public.php';
                                     option.textContent = dept.department_name;
                                     select.appendChild(option);
                                 });
-                                select.disabled = false;
+                                levelObj.wrap.classList.remove('hidden');
+                            } else {
+                                levelObj.wrap.classList.add('hidden');
                             }
                         })
                         .catch(err => console.error('Error loading departments:', err));
@@ -331,12 +330,13 @@ include __DIR__ . '/includes/header_public.php';
                 levels.forEach((obj, index) => {
                     obj.el.addEventListener('change', function() {
                         const selectedId = this.value;
-                        for(let i = index + 1; i < levels.length; i++) {
-                            const lower = levels[i];
-                            lower.el.innerHTML = `<option value="">${lower.el.getAttribute('data-placeholder') || lower.label}</option>`;
-                            lower.el.disabled = true;
-                            lower.el.value = '';
+                        // Hide and reset all levels below current
+                        for (let i = index + 1; i < levels.length; i++) {
+                            levels[i].el.innerHTML = `<option value="">${levels[i].label}</option>`;
+                            levels[i].el.value = '';
+                            levels[i].wrap.classList.add('hidden');
                         }
+                        // Load next level if a value was selected
                         if (selectedId && index < levels.length - 1) {
                             loadDepartments(index + 1, selectedId);
                         }

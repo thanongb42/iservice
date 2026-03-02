@@ -1,5 +1,23 @@
+# ── Deny direct access to sensitive files ────────────────────────────────
+<FilesMatch "^\.env|^\.env\.|composer\.(json|lock)$|package\.json$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_header.c>
+    # ── Upgrade all insecure (http://) sub-resources to https:// automatically
+    Header always set Content-Security-Policy "upgrade-insecure-requests"
+    # ── HSTS: tell browsers to always use HTTPS for 1 year (enable after confirming HTTPS works)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # ── Force HTTP → HTTPS redirect ──────────────────────────────────────────
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+    # ────────────────────────────────────────────────────────────────────────
+
     RewriteBase /iservice/
 
     # Skip rewrite for actual files and directories

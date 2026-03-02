@@ -660,9 +660,7 @@ include 'admin-layout/topbar.php';
     }
 </style>
 
-<main class="main-content-transition lg:ml-0">
-<div class="p-6">
-    <!-- Page Header -->
+<!-- Page Header -->
     <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-800 mb-2">
             <i class="fas fa-tasks text-blue-600"></i> งานของฉัน
@@ -822,7 +820,6 @@ include 'admin-layout/topbar.php';
             </div>
         </div>
     </div>
-</div>
 
 <script>
     // Get all tasks data from PHP

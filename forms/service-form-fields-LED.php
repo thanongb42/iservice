@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="md:col-span-2">
         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -6,6 +8,26 @@
         <input type="text" name="media_title" required
                placeholder="เช่น ประชาสัมพันธ์งานลอยกระทง 2569"
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+    </div>
+
+    <div class="md:col-span-2 grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                วันเริ่มแสดง <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="led_date_start" name="display_date_start" required
+                   placeholder="เลือกวันที่"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white cursor-pointer">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                วันสิ้นสุดการแสดง
+            </label>
+            <input type="text" id="led_date_end" name="display_date_end"
+                   placeholder="เลือกวันที่ (ถ้ามี)"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white cursor-pointer">
+        </div>
     </div>
 
     <div>
@@ -18,80 +40,6 @@
             <option value="image">ภาพนิ่ง (Image)</option>
             <option value="video">วิดีโอ (Video)</option>
             <option value="animation">แอนิเมชัน (Animation/GIF)</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ตำแหน่งจอ LED <span class="text-red-500">*</span>
-        </label>
-        <select name="display_location" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="">-- เลือกตำแหน่งจอ --</option>
-            <option value="หน้าอาคารสำนักงาน">หน้าอาคารสำนักงาน</option>
-            <option value="ห้องโถงชั้น 1">ห้องโถงชั้น 1</option>
-            <option value="ลานจอดรถ">ลานจอดรถ</option>
-            <option value="อื่นๆ">อื่นๆ (ระบุในหมายเหตุ)</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            วันเริ่มแสดง <span class="text-red-500">*</span>
-        </label>
-        <input type="date" name="display_date_start" required
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            วันสิ้นสุดการแสดง
-        </label>
-        <input type="date" name="display_date_end"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            เวลาเริ่มแสดง
-        </label>
-        <input type="time" name="display_time_start"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-        <p class="text-xs text-gray-400 mt-1">หากต้องการแสดงตลอดทั้งวัน ไม่ต้องระบุ</p>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            เวลาสิ้นสุดแสดง
-        </label>
-        <input type="time" name="display_time_end"
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ระยะเวลาแสดงต่อรอบ (วินาที)
-        </label>
-        <select name="duration_seconds"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="10">10 วินาที</option>
-            <option value="15" selected>15 วินาที</option>
-            <option value="30">30 วินาที</option>
-            <option value="60">60 วินาที</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ความละเอียดไฟล์
-        </label>
-        <select name="resolution"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-            <option value="">-- ไม่ระบุ --</option>
-            <option value="1920x1080">1920x1080 (Full HD)</option>
-            <option value="3840x2160">3840x2160 (4K)</option>
-            <option value="1080x1920">1080x1920 (แนวตั้ง Full HD)</option>
-            <option value="อื่นๆ">อื่นๆ</option>
         </select>
     </div>
 
@@ -123,43 +71,52 @@
             </div>
         </div>
     </div>
-
-    <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            วัตถุประสงค์/รายละเอียดสื่อ <span class="text-red-500">*</span>
-        </label>
-        <textarea name="purpose" rows="3" required
-                  placeholder="ระบุวัตถุประสงค์ เช่น ประชาสัมพันธ์กิจกรรม, แจ้งข่าวสาร, โฆษณาโครงการ"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
-    </div>
-
-    <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-            ความต้องการพิเศษ
-        </label>
-        <textarea name="special_requirements" rows="2"
-                  placeholder="เช่น ต้องการให้ออกแบบสื่อให้, ต้องการแสดงซ้ำทุกๆ 5 นาที, มีไฟล์สื่อแนบมาด้วย"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"></textarea>
-    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 <script>
-// Set minimum date to tomorrow
-const ledDateStart = document.querySelector('input[name="display_date_start"]');
-const ledDateEnd = document.querySelector('input[name="display_date_end"]');
-if (ledDateStart) {
+(function() {
+    const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    function thaiFormatDate(date) {
+        return date.getDate() + ' ' + thaiMonths[date.getMonth()] + ' ' + (date.getFullYear() + 543);
+    }
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    ledDateStart.min = tomorrow.toISOString().split('T')[0];
 
-    // Ensure end date >= start date
-    ledDateStart.addEventListener('change', function() {
-        if (ledDateEnd) {
-            ledDateEnd.min = this.value;
-            if (ledDateEnd.value && ledDateEnd.value < this.value) {
-                ledDateEnd.value = this.value;
+    const fpStart = flatpickr('#led_date_start', {
+        locale: 'th',
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'j M Y',
+        allowInput: false,
+        monthSelectorType: 'static',
+        minDate: tomorrow,
+        formatDate: function(date, format) {
+            if (format === 'j M Y') return thaiFormatDate(date);
+            return flatpickr.formatDate(date, format);
+        },
+        onChange: function(selectedDates) {
+            if (selectedDates[0]) {
+                fpEnd.set('minDate', selectedDates[0]);
             }
         }
     });
-}
+
+    const fpEnd = flatpickr('#led_date_end', {
+        locale: 'th',
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'j M Y',
+        allowInput: false,
+        monthSelectorType: 'static',
+        minDate: tomorrow,
+        formatDate: function(date, format) {
+            if (format === 'j M Y') return thaiFormatDate(date);
+            return flatpickr.formatDate(date, format);
+        }
+    });
+})();
 </script>

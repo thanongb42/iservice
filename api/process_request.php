@@ -176,7 +176,7 @@ try {
         priority, expected_completion_date, attachments
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $stmt->bind_param("issssisssissssss",
+    $stmt->bind_param("isssissssissssss",
         $user_id, $request_code, $service_code, $service_name,
         $prefix_id, $name, $email, $phone, $position,
         $dept_id, $dept_name, $subject, $description,
@@ -333,15 +333,15 @@ try {
         case 'LED':
             $media_title = clean_input($_POST['media_title']);
             $media_type = clean_input($_POST['media_type']);
-            $display_location = clean_input($_POST['display_location']);
+            $display_location = clean_input($_POST['display_location'] ?? '');
             $date_start = clean_input($_POST['display_date_start']);
             $date_end = !empty($_POST['display_date_end']) ? clean_input($_POST['display_date_end']) : null;
-            $time_start = !empty($_POST['display_time_start']) ? clean_input($_POST['display_time_start']) : null;
-            $time_end = !empty($_POST['display_time_end']) ? clean_input($_POST['display_time_end']) : null;
-            $duration = intval($_POST['duration_seconds'] ?? 15);
-            $resolution = clean_input($_POST['resolution'] ?? '');
-            $purpose = clean_input($_POST['purpose']);
-            $special = clean_input($_POST['special_requirements'] ?? '');
+            $time_start = null;
+            $time_end = null;
+            $duration = 15;
+            $resolution = '';
+            $purpose = '';
+            $special = '';
 
             // Handle LED media file upload (up to 200MB)
             $media_file_path = null;
@@ -370,7 +370,7 @@ try {
             $media_url = !empty($_POST['media_url']) ? clean_input($_POST['media_url']) : null;
 
             $stmt = $conn->prepare("INSERT INTO request_led_details (request_id, media_title, media_type, display_location, display_date_start, display_date_end, display_time_start, display_time_end, duration_seconds, resolution, media_file, media_url, purpose, special_requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("isssssssissssss", $request_id, $media_title, $media_type, $display_location, $date_start, $date_end, $time_start, $time_end, $duration, $resolution, $media_file_path, $media_url, $purpose, $special);
+            $stmt->bind_param("isssssssisssss", $request_id, $media_title, $media_type, $display_location, $date_start, $date_end, $time_start, $time_end, $duration, $resolution, $media_file_path, $media_url, $purpose, $special);
             break;
     }
 
@@ -381,8 +381,10 @@ try {
     // 7. Success
     $conn->commit();
 
-    // Send Notification (fire and forget basically)
-    send_request_notification($request_id, $conn);
+    // Send notifications
+    send_request_notification($request_id, $conn);   // Email to requester
+    notify_admins_new_request($request_id, $conn);    // Email to admin/staff
+    send_line_notification($request_id, $conn);       // LINE group
 
     $response['success'] = true;
     $response['message'] = "ส่งคำขอเรียบร้อยแล้ว รหัสคำขอของคุณคือ: $request_code";
