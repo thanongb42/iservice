@@ -223,6 +223,6 @@ error_log('line_login_callback: successful login user_id=' . $user['user_id'] . 
 
 // ── 8. Redirect to dashboard ───────────────────────────────────────────────────
 
-$redirect = ($user['role'] === 'admin') ? 'admin/index.php' : 'index.php';
+$redirect = ($user['role'] === 'admin') ? 'admin/index.php' : ($user['role'] === 'staff' ? 'admin/my_tasks.php' : 'index.php');
 header('Location: ' . $redirect);
 exit;

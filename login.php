@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         echo json_encode([
             'success' => true,
             'message' => 'เข้าสู่ระบบสำเร็จ',
-            'redirect' => $user['role'] === 'admin' ? 'admin/index.php' : 'index.php'
+            'redirect' => $user['role'] === 'admin' ? 'admin/index.php' : ($user['role'] === 'staff' ? 'admin/my_tasks.php' : 'index.php')
         ]);
         exit;
 
