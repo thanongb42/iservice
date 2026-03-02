@@ -39,6 +39,59 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
+// ── LINE Login: initiate OAuth ────────────────────────────────────────────────
+
+define('LINE_STATE_SECRET', 'RCM_iService_LINE_OAuth_2026_@rangsitcity');
+
+function detectProtocol(): string {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') return 'https';
+    if (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') return 'https';
+    if (($_SERVER['SERVER_PORT'] ?? '') == '443') return 'https';
+    return 'http';
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'line_login') {
+    $channel_id = $system_settings['line_login_channel_id'] ?? '';
+    if (empty($channel_id)) {
+        header('Location: login.php?error=' . urlencode('LINE Login ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ'));
+        exit;
+    }
+
+    // Generate stateless HMAC state: login.{timestamp}.{hmac24}
+    $ts      = time();
+    $payload = 'login.' . $ts;
+    $hmac    = substr(hash_hmac('sha256', $payload, LINE_STATE_SECRET), 0, 24);
+    $state   = 'login.' . $ts . '.' . $hmac;
+
+    // Derive login callback URL from the account-linking callback URL
+    $saved_url    = $system_settings['line_callback_url'] ?? '';
+    $callback_url = '';
+    if (!empty($saved_url)) {
+        $derived = str_replace('/admin/line_callback.php', '/line_login_callback.php', $saved_url);
+        if ($derived !== $saved_url) $callback_url = $derived;
+    }
+    if (empty($callback_url)) {
+        $protocol     = detectProtocol();
+        $dir          = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+        $callback_url = $protocol . '://' . $_SERVER['HTTP_HOST'] . $dir . '/line_login_callback.php';
+    }
+
+    $auth_url = 'https://access.line.me/oauth2/v2.1/authorize'
+        . '?response_type=code'
+        . '&client_id='    . urlencode($channel_id)
+        . '&redirect_uri=' . urlencode($callback_url)
+        . '&state='        . urlencode($state)
+        . '&scope=profile%20openid';
+
+    header('Location: ' . $auth_url);
+    exit;
+}
+
+// Capture LINE login error/success from redirect
+$line_error = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : '';
+
 // Handle login submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     header('Content-Type: application/json');
@@ -282,6 +335,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 </div>
             </div>
 
+            <!-- LINE Login Button -->
+            <?php if (!empty($system_settings['line_login_channel_id'])): ?>
+            <a href="login.php?action=line_login"
+               class="w-full flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-lg transition shadow-md text-white"
+               style="background:#06c755;"
+               onmouseover="this.style.background='#05a847'"
+               onmouseout="this.style.background='#06c755'">
+                <i class="fab fa-line text-xl"></i>
+                เข้าสู่ระบบด้วย LINE
+            </a>
+            <?php endif; ?>
+
             <!-- Register Link -->
             <div class="text-center">
                 <p class="text-gray-600">
@@ -303,6 +368,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     </div>
 
     <script>
+        // Show LINE login error from redirect (if any)
+        <?php if (!empty($line_error)): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+                text: <?= json_encode($line_error) ?>,
+                confirmButtonColor: '#0f766e'
+            });
+        });
+        <?php endif; ?>
+
         // Toggle password visibility
         function togglePassword() {
             const passwordInput = document.getElementById('password');

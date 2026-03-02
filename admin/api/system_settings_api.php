@@ -28,6 +28,8 @@ try {
                 updateEmailSettings();
             } elseif ($tab === 'backup') {
                 updateBackupSettings();
+            } elseif ($tab === 'line') {
+                updateLineSettings();
             } else {
                 throw new Exception('ไม่พบ tab ที่ระบุ');
             }
@@ -161,6 +163,37 @@ function updateBackupSettings() {
     ];
 
     foreach ($settings as $key => $value) {
+        $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
+                                VALUES (?, ?, 'text')
+                                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->bind_param('ss', $key, $value);
+        if (!$stmt->execute()) {
+            throw new Exception('ไม่สามารถบันทึก ' . $key . ': ' . $stmt->error);
+        }
+        $stmt->close();
+    }
+}
+
+function updateLineSettings() {
+    global $conn;
+
+    // Plain text fields (always save)
+    $text_settings = [
+        'line_login_channel_id' => $_POST['line_login_channel_id'] ?? '',
+        'line_bot_basic_id'     => $_POST['line_bot_basic_id']     ?? '',
+        'line_callback_url'     => rtrim($_POST['line_callback_url'] ?? '', '/'), // strip trailing slash
+    ];
+
+    // Password fields (only save if non-empty)
+    $password_settings = [
+        'line_login_channel_secret' => !empty($_POST['line_login_channel_secret']) ? $_POST['line_login_channel_secret'] : null,
+        'line_channel_token'        => !empty($_POST['line_channel_token'])        ? $_POST['line_channel_token']        : null,
+    ];
+
+    $all_settings = array_merge($text_settings, $password_settings);
+
+    foreach ($all_settings as $key => $value) {
+        if ($value === null) continue; // keep existing password if left blank
         $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type)
                                 VALUES (?, ?, 'text')
                                 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");

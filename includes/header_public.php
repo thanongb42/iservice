@@ -193,7 +193,7 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
                             <span>Logout</span>
                         </a>
                     <?php else: ?>
-                    <a href="admin-login.php" class="ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
+                    <a href="login.php" class="ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105 shadow-md flex items-center space-x-2">
                         <i class="fas fa-user-shield"></i>
                         <span>Admin</span>
                     </a>
@@ -228,7 +228,7 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
                             <span>Logout</span>
                         </a>
                     <?php else: ?>
-                    <a href="admin-login.php" class="flex items-center space-x-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 px-4 py-3 rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md mt-2">
+                    <a href="login.php" class="flex items-center space-x-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 px-4 py-3 rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md mt-2">
                         <i class="fas fa-user-shield text-xl"></i>
                         <span>Admin Login</span>
                     </a>

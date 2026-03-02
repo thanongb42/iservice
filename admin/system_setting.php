@@ -267,6 +267,9 @@ include 'admin-layout/topbar.php';
             <button class="tab-btn" onclick="showTab(event, 'db_manage'); loadBackupList(); loadTableCounts();">
                 <i class="fas fa-trash-alt text-red-500"></i> จัดการข้อมูล
             </button>
+            <button class="tab-btn" onclick="showTab(event, 'line')">
+                <i class="fab fa-line" style="color:#06c755;"></i> LINE
+            </button>
         </div>
 
         <!-- ORGANIZATION SETTINGS TAB -->
@@ -564,6 +567,134 @@ include 'admin-layout/topbar.php';
 
                 </div>
             </div>
+        </div>
+
+        <!-- LINE SETTINGS TAB -->
+        <div id="line" class="tab-content">
+            <form action="api/system_settings_api.php" method="POST">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="tab" value="line">
+
+                <div class="settings-group">
+                    <h3>
+                        <i class="fab fa-line" style="color:#06c755;font-size:1.25rem;"></i>
+                        LINE Login (OAuth สำหรับผูก LINE account)
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        สร้าง Channel ประเภท <strong>LINE Login</strong> ใน
+                        <a href="https://developers.line.biz/" target="_blank" class="text-green-600 underline">LINE Developers Console</a>
+                        แล้วกรอก credentials ด้านล่าง
+                    </p>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>LINE Login Channel ID</label>
+                            <input type="text" name="line_login_channel_id"
+                                   value="<?= htmlspecialchars(getSetting('line_login_channel_id')) ?>"
+                                   placeholder="1234567890">
+                            <small>Channel ID จากหน้า Basic settings ของ LINE Login Channel</small>
+                        </div>
+                        <div class="form-group">
+                            <label>LINE Login Channel Secret</label>
+                            <input type="password" name="line_login_channel_secret"
+                                   value=""
+                                   placeholder="<?= getSetting('line_login_channel_secret') ? '••••••••' : 'ยังไม่ได้ตั้งค่า' ?>"
+                                   autocomplete="new-password">
+                            <small>Channel Secret (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Callback URL (สำหรับผูก LINE account) <span style="color:#ef4444;">*</span></label>
+                        <?php
+                        // Auto-detect as default if not yet saved
+                        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') $p = 'https';
+                        elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') $p = 'https';
+                        else $p = 'http';
+                        $auto_callback = $p . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/line_callback.php';
+                        $saved_callback = getSetting('line_callback_url');
+                        $display_callback = !empty($saved_callback) ? $saved_callback : $auto_callback;
+                        // Derive login callback URL
+                        if (!empty($saved_callback)) {
+                            $login_cb = str_replace('/admin/line_callback.php', '/line_login_callback.php', $saved_callback);
+                            if ($login_cb === $saved_callback) $login_cb = ''; // pattern didn't match
+                        }
+                        if (empty($login_cb ?? '')) {
+                            $login_cb = $p . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/') . '/line_login_callback.php';
+                        }
+                        ?>
+                        <input type="text" name="line_callback_url"
+                               value="<?= htmlspecialchars($display_callback) ?>"
+                               placeholder="https://yourdomain.com/admin/line_callback.php"
+                               style="font-family:monospace;font-size:0.875rem;">
+                        <small>
+                            ต้องตรงกัน <strong>100%</strong> กับที่ลงทะเบียนใน LINE Login Channel → Callback URL
+                        </small>
+                        <div style="margin-top:0.75rem;padding:0.75rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+                            <p style="font-size:0.8rem;font-weight:600;color:#166534;margin-bottom:0.4rem;">
+                                <i class="fab fa-line mr-1"></i>ต้องลงทะเบียน Callback URL <strong>ทั้ง 2 รายการ</strong> ใน LINE Login Channel:
+                            </p>
+                            <p style="font-size:0.78rem;margin-bottom:0.25rem;">
+                                <span style="color:#6b7280;">① ผูก LINE account (Profile):</span><br>
+                                <code style="background:#fff;padding:2px 6px;border-radius:4px;font-size:0.78rem;border:1px solid #d1fae5;"><?= htmlspecialchars($display_callback) ?></code>
+                            </p>
+                            <p style="font-size:0.78rem;">
+                                <span style="color:#6b7280;">② เข้าสู่ระบบด้วย LINE (Login page):</span><br>
+                                <code style="background:#fff;padding:2px 6px;border-radius:4px;font-size:0.78rem;border:1px solid #d1fae5;"><?= htmlspecialchars($login_cb) ?></code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>
+                        <i class="fas fa-comment-dots" style="color:#06c755;"></i>
+                        LINE Messaging API (สำหรับส่ง push notification)
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        ใช้ Channel ประเภท <strong>Messaging API</strong> — เจ้าหน้าที่ต้อง Add Bot เป็นเพื่อนก่อนรับแจ้งเตือนได้
+                    </p>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>LINE Channel Access Token (Messaging API)</label>
+                            <input type="password" name="line_channel_token"
+                                   value=""
+                                   placeholder="<?= getSetting('line_channel_token') ? '••••••••' : 'ยังไม่ได้ตั้งค่า' ?>"
+                                   autocomplete="new-password">
+                            <small>Long-lived token จาก Messaging API Channel → Messaging API tab</small>
+                        </div>
+                        <div class="form-group">
+                            <label>LINE Bot Basic ID</label>
+                            <input type="text" name="line_bot_basic_id"
+                                   value="<?= htmlspecialchars(getSetting('line_bot_basic_id')) ?>"
+                                   placeholder="@xxxxxxxxx">
+                            <small>Basic ID ของ Bot เช่น @abc1234d — แสดงลิงก์เพิ่มเพื่อนในหน้าโปรไฟล์</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                    <h3 style="color:#166534;"><i class="fas fa-info-circle text-green-600"></i> ขั้นตอนการตั้งค่า</h3>
+                    <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                        <li>ไป <a href="https://developers.line.biz/" target="_blank" class="text-green-600 underline">developers.line.biz</a> → สร้าง Provider (ถ้ายังไม่มี)</li>
+                        <li>สร้าง Channel ประเภท <strong>LINE Login</strong> → บันทึก Channel ID + Channel Secret</li>
+                        <li>ใน LINE Login Channel → <strong>Callback URL: ลงทะเบียนทั้ง 2 URL</strong> ที่แสดงด้านบน (ผูก account + Login page)</li>
+                        <li>สร้าง Channel ประเภท <strong>Messaging API</strong> → ออก Channel Access Token (long-lived)</li>
+                        <li>กรอก credentials ทั้งหมดแล้วคลิก "บันทึก"</li>
+                        <li>เจ้าหน้าที่แต่ละคน: ไปที่ <strong>โปรไฟล์ → เชื่อมต่อบัญชี LINE</strong> แล้ว Add Bot เป็นเพื่อน</li>
+                        <li>หลังผูก LINE แล้ว: สามารถเข้าสู่ระบบด้วยปุ่ม <strong>"เข้าสู่ระบบด้วย LINE"</strong> ในหน้า Login ได้เลย</li>
+                    </ol>
+                    <p class="text-xs text-gray-500 mt-3">
+                        <i class="fas fa-tag mr-1"></i>LINE Login: <strong>ฟรี</strong> &nbsp;|&nbsp;
+                        Messaging API Push: <strong>ฟรี 200 ข้อความ/เดือน</strong> (เพียงพอสำหรับ staff ในองค์กร)
+                    </p>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
+                </button>
+            </form>
         </div>
 
         <!-- BACKUP SETTINGS TAB -->

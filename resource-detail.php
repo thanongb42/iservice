@@ -699,7 +699,7 @@ include __DIR__ . '/includes/header_public.php';
                         <li><a href="#" class="hover:text-white transition-colors">ศูนย์ข้อมูลข่าวสาร</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">คำถามที่พบบ่อย</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">ดาวน์โหลด</a></li>
-                        <li><a href="admin-login.php" class="hover:text-yellow-400 transition-colors flex items-center">
+                        <li><a href="login.php" class="hover:text-yellow-400 transition-colors flex items-center">
                             <i class="fas fa-user-shield mr-2"></i>Admin Panel
                         </a></li>
                     </ul>

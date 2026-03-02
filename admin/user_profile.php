@@ -1,4 +1,5 @@
 <?php
+ini_set('session.cookie_samesite', 'Lax'); // needed so session cookie survives LINE OAuth redirect
 session_start();
 require_once '../config/database.php';
 
@@ -11,6 +12,59 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $message = '';
 $error = '';
+
+// Handle success/error from LINE OAuth redirect
+if (isset($_GET['success']) && $_GET['success'] === 'line_linked') {
+    $message = 'เชื่อมต่อบัญชี LINE สำเร็จ';
+}
+if (isset($_GET['error'])) {
+    $error = 'เชื่อมต่อ LINE ไม่สำเร็จ: ' . htmlspecialchars($_GET['error']);
+}
+
+// Helper: detect actual protocol (works behind reverse proxies / load balancers)
+function detectProtocol(): string {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') return 'https';
+    if (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') return 'https';
+    if (($_SERVER['SERVER_PORT'] ?? '') == '443') return 'https';
+    return 'http';
+}
+
+// ── Stateless LINE OAuth state (no session dependency) ──────────────────────
+// Format: "{user_id}_{timestamp}_{hmac24hex}"
+define('LINE_STATE_SECRET', 'RCM_iService_LINE_OAuth_2026_@rangsitcity');
+
+function lineStateGenerate(int $user_id): string {
+    $ts      = time();
+    $payload = $user_id . '.' . $ts;
+    $hmac    = substr(hash_hmac('sha256', $payload, LINE_STATE_SECRET), 0, 24);
+    return $payload . '.' . $hmac;
+}
+
+function lineStateVerify(string $state): int {
+    $parts = explode('.', $state);
+    if (count($parts) !== 3) return 0;
+    [$uid_s, $ts_s, $recv_hmac] = $parts;
+    $user_id   = intval($uid_s);
+    $timestamp = intval($ts_s);
+    if ($user_id <= 0 || $timestamp <= 0) return 0;
+    if (abs(time() - $timestamp) > 900) return 0;
+    $payload  = $user_id . '.' . $timestamp;
+    $expected = substr(hash_hmac('sha256', $payload, LINE_STATE_SECRET), 0, 24);
+    return hash_equals($expected, $recv_hmac) ? $user_id : 0;
+}
+
+// Helper: fetch a single setting value
+function getProfileSetting(string $key): string {
+    global $conn;
+    $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1");
+    if (!$stmt) return '';
+    $stmt->bind_param('s', $key);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    return $row['setting_value'] ?? '';
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -129,6 +183,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $error = 'กรุณาเลือกไฟล์รูปภาพ';
+        }
+    }
+
+    if ($action === 'link_line') {
+        $channel_id = getProfileSetting('line_login_channel_id');
+        if (empty($channel_id)) {
+            $error = 'ยังไม่ได้ตั้งค่า LINE Login Channel ID กรุณาติดต่อผู้ดูแลระบบ';
+        } else {
+            // Stateless state — no session required, verified by HMAC in callback
+            $state = lineStateGenerate($user_id);
+            // Use the exact callback URL saved in settings (must match LINE Console exactly)
+            $saved_cb = getProfileSetting('line_callback_url');
+            if (empty($saved_cb)) {
+                $protocol  = detectProtocol();
+                $saved_cb  = $protocol . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/line_callback.php';
+            }
+            $callback_url = urlencode($saved_cb);
+            $scope        = urlencode('profile openid');
+            $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code"
+                           . "&client_id={$channel_id}"
+                           . "&redirect_uri={$callback_url}"
+                           . "&state={$state}"
+                           . "&scope={$scope}";
+            header("Location: $line_auth_url");
+            exit;
+        }
+    }
+
+    if ($action === 'unlink_line') {
+        $stmt = $conn->prepare("UPDATE users SET line_user_id = NULL, line_display_name = NULL, line_picture_url = NULL, line_linked_at = NULL, updated_at = NOW() WHERE user_id = ?");
+        $stmt->bind_param('i', $user_id);
+        if ($stmt->execute()) {
+            $message = 'ยกเลิกการเชื่อมต่อ LINE สำเร็จ';
+        } else {
+            $error = 'เกิดข้อผิดพลาด: ' . $conn->error;
         }
     }
 
@@ -514,6 +603,57 @@ include 'admin-layout/topbar.php';
                             <div class="info-value"><?php echo date('d/m/Y', strtotime($profile['created_at'])); ?></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- LINE Account Connection -->
+                <div class="p-4 border-t border-gray-100">
+                    <div class="info-label mb-2" style="font-size:0.75rem;color:#9ca3af;">LINE Account</div>
+                    <?php if (!empty($profile['line_user_id'])): ?>
+                        <div class="flex items-center gap-3 mb-3">
+                            <?php if (!empty($profile['line_picture_url'])): ?>
+                                <img src="<?= htmlspecialchars($profile['line_picture_url']) ?>"
+                                     class="w-10 h-10 rounded-full border border-gray-200"
+                                     onerror="this.style.display='none'">
+                            <?php else: ?>
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                    <i class="fab fa-line text-green-600 text-lg"></i>
+                                </div>
+                            <?php endif; ?>
+                            <div>
+                                <p class="text-sm font-semibold text-green-700">
+                                    <i class="fab fa-line mr-1"></i>เชื่อมต่อแล้ว
+                                </p>
+                                <p class="text-xs text-gray-500"><?= htmlspecialchars($profile['line_display_name'] ?? '') ?></p>
+                            </div>
+                        </div>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="unlink_line">
+                            <button type="submit"
+                                    class="text-xs text-red-500 hover:text-red-700 hover:underline"
+                                    onclick="return confirm('ยืนยันยกเลิกเชื่อมต่อ LINE?')">
+                                <i class="fas fa-unlink mr-1"></i>ยกเลิกเชื่อมต่อ LINE
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <p class="text-xs text-gray-400 mb-3">ยังไม่ได้เชื่อมต่อบัญชี LINE</p>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="link_line">
+                            <button type="submit"
+                                    class="w-full flex items-center justify-center gap-2 text-white text-sm font-bold py-2 px-4 rounded-lg transition"
+                                    style="background-color:#06c755;">
+                                <i class="fab fa-line text-lg"></i> เชื่อมต่อบัญชี LINE
+                            </button>
+                        </form>
+                        <?php
+                        $bot_basic_id = getProfileSetting('line_bot_basic_id');
+                        if ($bot_basic_id): ?>
+                        <p class="text-xs text-gray-400 mt-2 text-center">
+                            * ต้อง <a href="https://line.me/R/ti/p/<?= htmlspecialchars($bot_basic_id) ?>"
+                                      target="_blank"
+                                      class="text-green-600 underline">เพิ่ม Bot เป็นเพื่อน</a> ก่อนรับแจ้งเตือน
+                        </p>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

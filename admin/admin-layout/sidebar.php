@@ -16,9 +16,9 @@ if (isset($conn)) {
     }
 }
 
-// Check if user is admin/manager (has 'manager' or 'all' role)
-$is_manager = false;
-if (isset($_SESSION['user_id']) && isset($conn)) {
+// Check if user is admin/manager (session role = admin OR has 'manager'/'all' role code)
+$is_manager = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+if (!$is_manager && isset($_SESSION['user_id']) && isset($conn)) {
     $check_role = $conn->prepare("
         SELECT COUNT(*) as cnt FROM user_roles ur
         JOIN roles r ON ur.role_id = r.role_id

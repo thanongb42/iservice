@@ -88,6 +88,14 @@ function column_exists($conn, $table, $column) {
     return $result && $result->num_rows > 0;
 }
 
+function detectProtocol(): string {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') return 'https';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') return 'https';
+    if (($_SERVER['SERVER_PORT'] ?? '') == '443') return 'https';
+    return 'http';
+}
+
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // Actions ที่ staff สามารถทำได้ (ไม่ต้องเป็น manager)
@@ -387,10 +395,48 @@ if ($action === 'assign_task') {
     $insert_stmt->bind_param($types, ...$params);
     
     if ($insert_stmt->execute()) {
+        $assignment_id = $insert_stmt->insert_id;
+
+        // ── LINE push notification to assigned staff ──────────────────────
+        try {
+            require_once '../../includes/line_helper.php';
+            $notif_stmt = $conn->prepare("
+                SELECT u.line_user_id,
+                       sr.request_code, sr.service_name, sr.department_name
+                FROM users u
+                JOIN service_requests sr ON sr.request_id = ?
+                WHERE u.user_id = ?
+            ");
+            if ($notif_stmt) {
+                $notif_stmt->bind_param('ii', $request_id, $assigned_to);
+                $notif_stmt->execute();
+                $notif = $notif_stmt->get_result()->fetch_assoc();
+
+                if ($notif && !empty($notif['line_user_id'])) {
+                    $protocol   = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+                    $admin_dir  = dirname(dirname($_SERVER['SCRIPT_NAME'])); // api/ -> admin/
+                    $task_url   = $protocol . '://' . $_SERVER['HTTP_HOST'] . $admin_dir . '/my_tasks.php';
+                    $dept_label = !empty($notif['department_name']) ? $notif['department_name'] : '-';
+                    $msg  = "📋 มอบหมายงานใหม่\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "รหัสคำขอ: {$notif['request_code']}\n";
+                    $msg .= "บริการ: {$notif['service_name']}\n";
+                    $msg .= "หน่วยงาน: {$dept_label}\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "ดูงานของคุณ: {$task_url}";
+                    send_line_push_to_user($notif['line_user_id'], $msg, $conn);
+                }
+            }
+        } catch (Exception $e) {
+            // LINE notification is best-effort — do not fail assignment on error
+            error_log('task_assignment LINE notify error: ' . $e->getMessage());
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         echo json_encode([
             'success' => true,
             'message' => 'มอบหมายงานสำเร็จ',
-            'assignment_id' => $insert_stmt->insert_id
+            'assignment_id' => $assignment_id
         ]);
     } else {
         echo json_encode([
@@ -504,12 +550,62 @@ if ($action === 'update_status') {
         }
         
         $status_labels = [
-            'accepted' => 'รับงานแล้ว',
+            'accepted'    => 'รับงานแล้ว',
             'in_progress' => 'เริ่มดำเนินการแล้ว',
-            'completed' => 'ดำเนินการเสร็จสิ้นแล้ว',
-            'cancelled' => 'ยกเลิกงานแล้ว'
+            'completed'   => 'ดำเนินการเสร็จสิ้นแล้ว',
+            'cancelled'   => 'ยกเลิกงานแล้ว'
         ];
-        
+
+        // ── LINE notification to assigner (admin/manager) ─────────────────
+        try {
+            require_once '../../includes/line_helper.php';
+            $nl_stmt = $conn->prepare("
+                SELECT
+                    assigner.line_user_id        AS assigner_line_id,
+                    CONCAT(staff.first_name, ' ', staff.last_name) AS staff_name,
+                    sr.request_code,
+                    sr.service_name,
+                    ta.assigned_by,
+                    ta.assigned_to
+                FROM task_assignments ta
+                JOIN users assigner ON ta.assigned_by = assigner.user_id
+                JOIN users staff    ON ta.assigned_to = staff.user_id
+                JOIN service_requests sr ON ta.request_id = sr.request_id
+                WHERE ta.assignment_id = ?
+            ");
+            if ($nl_stmt) {
+                $nl_stmt->bind_param('i', $assignment_id);
+                $nl_stmt->execute();
+                $nl = $nl_stmt->get_result()->fetch_assoc();
+
+                // Notify assigner — but skip if staff IS the assigner (self-assigned)
+                if ($nl && !empty($nl['assigner_line_id']) && $nl['assigned_by'] != $nl['assigned_to']) {
+                    $status_icons = [
+                        'accepted'    => '✅',
+                        'in_progress' => '🔧',
+                        'completed'   => '🎉',
+                        'cancelled'   => '❌',
+                    ];
+                    $icon = $status_icons[$new_status] ?? '📋';
+                    $protocol  = detectProtocol();
+                    $admin_dir = dirname(dirname($_SERVER['SCRIPT_NAME']));
+                    $req_url   = $protocol . '://' . $_SERVER['HTTP_HOST'] . $admin_dir . '/service_requests.php';
+                    $msg  = "{$icon} อัปเดตสถานะงาน\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "เจ้าหน้าที่: {$nl['staff_name']}\n";
+                    $msg .= "รหัสคำขอ: {$nl['request_code']}\n";
+                    $msg .= "บริการ: {$nl['service_name']}\n";
+                    $msg .= "สถานะ: {$status_labels[$new_status]}\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "ดูรายละเอียด: {$req_url}";
+                    send_line_push_to_user($nl['assigner_line_id'], $msg, $conn);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('update_status LINE notify error: ' . $e->getMessage());
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         echo json_encode([
             'success' => true,
             'message' => $status_labels[$new_status]
