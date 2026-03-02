@@ -126,71 +126,62 @@ if ($is_manager) {
 ?>
 
 <style>
-/* Clean Minimal Sidebar Theme */
-:root {
-    --sidebar-bg: #ffffff;
-    --sidebar-border: #e5e7eb;
-    --sidebar-text: #1f2937;
-    --sidebar-text-muted: #6b7280;
-    --sidebar-hover: #f3f4f6;
-    --sidebar-active-bg: #ecfdf5;
-    --sidebar-active-text: #009933;
-    --sidebar-active-border: #009933;
-    --sidebar-section-text: #9ca3af;
-}
-
+/* ── Green Teal Sidebar Theme ── */
 #sidebar {
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--sidebar-border);
+    background: linear-gradient(180deg, #064e3b 0%, #065f46 45%, #0f766e 100%);
+    border-right: none;
+    box-shadow: 2px 0 12px rgba(6,78,59,.35);
     transition: width 0.3s ease-in-out;
 }
 
-/* Menu item styles */
+/* Menu item */
 .sidebar-menu-item {
     display: flex;
     align-items: center;
     padding: 0.625rem 1rem;
     margin: 0.125rem 0.5rem;
     border-radius: 0.5rem;
-    color: var(--sidebar-text);
+    color: rgba(255,255,255,.78);
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.15s ease;
     border-left: 3px solid transparent;
+    text-decoration: none;
 }
 
 .sidebar-menu-item:hover {
-    background: var(--sidebar-hover);
-    color: var(--sidebar-text);
+    background: rgba(255,255,255,.12);
+    color: #ffffff;
 }
 
 .sidebar-menu-item.active {
-    background: var(--sidebar-active-bg);
-    color: var(--sidebar-active-text);
-    border-left-color: var(--sidebar-active-border);
+    background: rgba(255,255,255,.18);
+    color: #ffffff;
+    border-left-color: #2dd4bf;
+    font-weight: 600;
 }
 
 .sidebar-menu-item i {
     width: 1.25rem;
     text-align: center;
     font-size: 1rem;
-    color: var(--sidebar-text-muted);
+    color: rgba(255,255,255,.55);
     transition: color 0.15s ease;
 }
 
 .sidebar-menu-item:hover i,
 .sidebar-menu-item.active i {
-    color: var(--sidebar-active-text);
+    color: #5eead4;
 }
 
 /* Section label */
 .sidebar-section-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--sidebar-section-text);
-    padding: 1rem 1rem 0.5rem 1.25rem;
+    letter-spacing: 0.07em;
+    color: rgba(255,255,255,.38);
+    padding: 1rem 1rem 0.4rem 1.25rem;
 }
 
 /* Badge */
@@ -207,7 +198,31 @@ if ($is_manager) {
 /* Logo area */
 .sidebar-logo-area {
     padding: 1.25rem 1rem;
-    border-bottom: 1px solid var(--sidebar-border);
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.sidebar-logo-area h1 { color: #ffffff !important; }
+.sidebar-logo-area p  { color: rgba(255,255,255,.55) !important; }
+
+/* Divider */
+#sidebar .border-t { border-color: rgba(255,255,255,.12) !important; }
+
+/* Footer collapse button */
+#sidebar .p-3 {
+    border-top: 1px solid rgba(255,255,255,.1) !important;
+}
+#sidebar #collapseBtn {
+    color: rgba(255,255,255,.5) !important;
+}
+#sidebar #collapseBtn:hover {
+    background: rgba(255,255,255,.1) !important;
+    color: #fff !important;
+}
+#sidebar #collapseText { color: rgba(255,255,255,.5) !important; }
+
+/* Logout hover */
+.sidebar-menu-item.hover\:hover\:bg-red-50:hover {
+    background: rgba(239,68,68,.2) !important;
+    color: #fca5a5 !important;
 }
 
 /* Collapsed state */
@@ -216,30 +231,14 @@ if ($is_manager) {
     padding: 0.75rem;
     margin: 0.25rem;
 }
-
-#sidebar.sidebar-collapsed .sidebar-menu-item span:not(.sidebar-badge):not(.sidebar-tooltip) {
-    display: none;
-}
-
-#sidebar.sidebar-collapsed .sidebar-section-label {
-    display: none;
-}
-
-#sidebar.sidebar-collapsed .sidebar-logo-text {
-    display: none;
-}
-
+#sidebar.sidebar-collapsed .sidebar-menu-item span:not(.sidebar-badge):not(.sidebar-tooltip) { display: none; }
+#sidebar.sidebar-collapsed .sidebar-section-label { display: none; }
+#sidebar.sidebar-collapsed .sidebar-logo-text     { display: none; }
 #sidebar.sidebar-collapsed .sidebar-badge {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    padding: 0.1rem 0.35rem;
-    font-size: 0.6rem;
+    position: absolute; top: 0.25rem; right: 0.25rem;
+    padding: 0.1rem 0.35rem; font-size: 0.6rem;
 }
-
-#sidebar.sidebar-collapsed .sidebar-menu-item {
-    position: relative;
-}
+#sidebar.sidebar-collapsed .sidebar-menu-item { position: relative; }
 </style>
 
 <!-- Sidebar -->

@@ -60,47 +60,40 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
 <!-- Main Content Wrapper Start -->
 <div id="mainContent" class="main-content-transition ml-0 lg:ml-[280px] min-h-screen flex flex-col">
     <!-- Top Navbar -->
-    <nav class="bg-white shadow-md sticky top-0 z-30">
+    <nav class="sticky top-0 z-30 shadow-md" style="background:linear-gradient(135deg,#065f46 0%,#0f766e 60%,#0d9488 100%);">
         <div class="flex items-center justify-between px-4 py-3">
             <!-- Mobile Menu Button -->
-            <button onclick="toggleMobileSidebar()" class="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+            <button onclick="toggleMobileSidebar()" class="lg:hidden text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
                 <i class="fas fa-bars text-xl"></i>
             </button>
 
             <!-- Desktop Collapse Button -->
-            <button onclick="toggleSidebar()" class="hidden lg:flex items-center space-x-2 text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+            <button onclick="toggleSidebar()" class="hidden lg:flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
                 <i class="fas fa-bars"></i>
             </button>
 
             <!-- Breadcrumb -->
-            <div class="flex-1 hidden md:block">
-                <nav class="text-gray-600 text-sm">
+            <div class="flex-1 hidden md:block ml-2">
+                <nav class="text-white/70 text-sm flex items-center flex-wrap gap-1">
                     <?php foreach ($breadcrumb as $index => $item): ?>
                         <?php if ($index > 0): ?>
-                            <span class="mx-2">/</span>
+                            <span class="text-white/40 mx-1">/</span>
                         <?php endif; ?>
-
                         <?php if ($index === count($breadcrumb) - 1): ?>
-                            <span class="font-medium text-gray-800">
-                                <?php if (isset($item['icon'])): ?>
-                                    <i class="fas <?php echo $item['icon']; ?> mr-1"></i>
-                                <?php endif; ?>
-                                <?php echo htmlspecialchars($item['label']); ?>
+                            <span class="font-semibold text-white">
+                                <?php if (isset($item['icon'])): ?><i class="fas <?= $item['icon'] ?> mr-1 text-teal-200"></i><?php endif; ?>
+                                <?= htmlspecialchars($item['label']) ?>
                             </span>
                         <?php else: ?>
                             <?php if (isset($item['url'])): ?>
-                                <a href="<?php echo $item['url']; ?>" class="text-green-600 hover:text-teal-700">
-                                    <?php if (isset($item['icon'])): ?>
-                                        <i class="fas <?php echo $item['icon']; ?> mr-1"></i>
-                                    <?php endif; ?>
-                                    <?php echo htmlspecialchars($item['label']); ?>
+                                <a href="<?= $item['url'] ?>" class="text-teal-200 hover:text-white transition">
+                                    <?php if (isset($item['icon'])): ?><i class="fas <?= $item['icon'] ?> mr-1"></i><?php endif; ?>
+                                    <?= htmlspecialchars($item['label']) ?>
                                 </a>
                             <?php else: ?>
-                                <span class="text-green-600">
-                                    <?php if (isset($item['icon'])): ?>
-                                        <i class="fas <?php echo $item['icon']; ?> mr-1"></i>
-                                    <?php endif; ?>
-                                    <?php echo htmlspecialchars($item['label']); ?>
+                                <span class="text-teal-200">
+                                    <?php if (isset($item['icon'])): ?><i class="fas <?= $item['icon'] ?> mr-1"></i><?php endif; ?>
+                                    <?= htmlspecialchars($item['label']) ?>
                                 </span>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -109,10 +102,10 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
             </div>
 
             <!-- Right Menu -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
                 <!-- Notifications -->
                 <div class="relative">
-                    <button onclick="toggleNotifDropdown()" class="relative text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100" title="การแจ้งเตือน">
+                    <button onclick="toggleNotifDropdown()" class="relative text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10" title="การแจ้งเตือน">
                         <i class="fas fa-bell text-xl"></i>
                         <?php if ($pending_requests > 0): ?>
                         <span class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse"><?php echo $pending_requests; ?></span>
@@ -121,8 +114,8 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
 
                     <!-- Notification Dropdown -->
                     <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
-                        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                            <h4 class="font-semibold text-gray-800 text-sm"><i class="fas fa-bell mr-1"></i> การแจ้งเตือน</h4>
+                        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between" style="background:linear-gradient(135deg,#065f46,#0f766e);">
+                            <h4 class="font-semibold text-white text-sm"><i class="fas fa-bell mr-1"></i> การแจ้งเตือน</h4>
                             <?php if ($pending_requests > 0): ?>
                             <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full"><?php echo $pending_requests; ?> รอดำเนินการ</span>
                             <?php endif; ?>
@@ -173,7 +166,7 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
-                        <a href="service_requests.php" class="block px-4 py-3 text-center text-sm font-semibold text-green-600 hover:bg-green-50 border-t border-gray-200 transition-colors" style="text-decoration:none;">
+                        <a href="service_requests.php" class="block px-4 py-3 text-center text-sm font-semibold hover:bg-teal-50 border-t border-gray-200 transition-colors" style="text-decoration:none;color:#0f766e;">
                             ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
                         </a>
                     </div>
@@ -181,18 +174,19 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
 
                 <!-- User Dropdown -->
                 <div class="relative">
-                    <button onclick="toggleUserDropdown()" class="flex items-center space-x-2 text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                    <button onclick="toggleUserDropdown()" class="flex items-center space-x-2 text-white/85 hover:text-white p-2 rounded-lg hover:bg-white/10">
                         <?php if (!empty($current_user_profile_image) && file_exists('../' . $current_user_profile_image)): ?>
                             <img src="../<?php echo htmlspecialchars($current_user_profile_image); ?>"
                                  alt="<?php echo htmlspecialchars($user['username'] ?? 'Admin'); ?>"
-                                 class="w-8 h-8 rounded-full object-cover">
+                                 class="w-8 h-8 rounded-full object-cover border-2 border-white/30">
                         <?php else: ?>
-                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-medium text-sm">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white/30"
+                                 style="background:rgba(255,255,255,.2);color:#fff;">
                                 <?php echo strtoupper(substr($user['username'] ?? 'A', 0, 1)); ?>
                             </div>
                         <?php endif; ?>
-                        <span class="hidden md:block font-medium"><?php echo htmlspecialchars($user['username'] ?? 'Admin'); ?></span>
-                        <i class="fas fa-chevron-down text-xs"></i>
+                        <span class="hidden md:block font-medium text-sm"><?php echo htmlspecialchars($user['username'] ?? 'Admin'); ?></span>
+                        <i class="fas fa-chevron-down text-xs opacity-70"></i>
                     </button>
                     <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                         <a href="user_profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
