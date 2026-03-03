@@ -105,6 +105,7 @@ include 'admin-layout/topbar.php';
 ?>
 
 <style>
+/* ── Status badges ─────────────────────────── */
     .status-badge {
         display: inline-flex;
         align-items: center;
@@ -660,134 +661,187 @@ include 'admin-layout/topbar.php';
     }
 </style>
 
-<!-- Page Header -->
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-tasks text-blue-600"></i> งานของฉัน
+<!-- ── Page Header (mobile-compact) ──────────────────────────── -->
+<div class="flex items-center justify-between mb-4 px-1">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800 leading-tight">
+            <i class="fas fa-tasks text-teal-600 mr-1"></i> งานของฉัน
         </h1>
-        <p class="text-gray-600">
-            บทบาท: 
+        <div class="flex flex-wrap gap-1 mt-1">
             <?php foreach ($user_roles as $role): ?>
-                <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm ml-1">
-                    <i class="fas <?= $role['role_icon'] ?>" style="color: <?= $role['role_color'] ?>"></i>
-                    <?= htmlspecialchars($role['role_name']) ?>
-                </span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-600">
+                <i class="fas <?= $role['role_icon'] ?> text-xs" style="color:<?= $role['role_color'] ?>"></i>
+                <?= htmlspecialchars($role['role_name']) ?>
+            </span>
             <?php endforeach; ?>
-        </p>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div class="stat-card">
-            <div class="count"><?= $stats['total'] ?? 0 ?></div>
-            <div class="label">งานทั้งหมด</div>
-        </div>
-        <div class="stat-card">
-            <div class="count"><?= $stats['pending'] ?? 0 ?></div>
-            <div class="label">รอรับงาน</div>
-        </div>
-        <div class="stat-card">
-            <div class="count"><?= $stats['accepted'] ?? 0 ?></div>
-            <div class="label">รับงานแล้ว</div>
-        </div>
-        <div class="stat-card">
-            <div class="count"><?= $stats['in_progress'] ?? 0 ?></div>
-            <div class="label">กำลังดำเนินการ</div>
-        </div>
-        <div class="stat-card">
-            <div class="count"><?= $stats['completed'] ?? 0 ?></div>
-            <div class="label">เสร็จสิ้น</div>
         </div>
     </div>
+</div>
 
-    <!-- Tab Container -->
-    <div class="tab-container">
-        <div class="tab-buttons">
-            <button class="tab-button active" onclick="switchTab('list-view', this)">
-                <i class="fas fa-list mr-2"></i> รายการ
-            </button>
-            <button class="tab-button" onclick="switchTab('calendar-view', this)">
-                <i class="fas fa-calendar mr-2"></i> ปฏิทิน
-            </button>
+<!-- ── Stats strip (horizontal scroll on mobile) ──────────────── -->
+<div class="flex gap-3 overflow-x-auto pb-1 mb-5 snap-x" style="scrollbar-width:none;">
+    <?php
+    $stat_items = [
+        ['count'=>$stats['total']??0,       'label'=>'ทั้งหมด',          'bg'=>'bg-gray-50',    'text'=>'text-gray-700',   'icon'=>'fa-layer-group',   'ring'=>'ring-gray-200'],
+        ['count'=>$stats['pending']??0,     'label'=>'รอรับงาน',         'bg'=>'bg-amber-50',   'text'=>'text-amber-700',  'icon'=>'fa-clock',         'ring'=>'ring-amber-200'],
+        ['count'=>$stats['accepted']??0,    'label'=>'รับงานแล้ว',       'bg'=>'bg-blue-50',    'text'=>'text-blue-700',   'icon'=>'fa-check-circle',  'ring'=>'ring-blue-200'],
+        ['count'=>$stats['in_progress']??0, 'label'=>'กำลังดำเนินการ',   'bg'=>'bg-purple-50',  'text'=>'text-purple-700', 'icon'=>'fa-spinner',       'ring'=>'ring-purple-200'],
+        ['count'=>$stats['completed']??0,   'label'=>'เสร็จสิ้น',        'bg'=>'bg-green-50',   'text'=>'text-green-700',  'icon'=>'fa-check-double',  'ring'=>'ring-green-200'],
+    ];
+    foreach ($stat_items as $s):
+    ?>
+    <div class="flex-shrink-0 snap-start flex items-center gap-3 px-4 py-3 rounded-2xl ring-1 <?= $s['bg'].' '.$s['ring'] ?>" style="min-width:130px;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center <?= $s['text'] ?>" style="background:rgba(0,0,0,.05);">
+            <i class="fas <?= $s['icon'] ?> text-lg"></i>
+        </div>
+        <div>
+            <p class="text-2xl font-bold <?= $s['text'] ?> leading-none"><?= $s['count'] ?></p>
+            <p class="text-xs <?= $s['text'] ?> opacity-70 mt-0.5"><?= $s['label'] ?></p>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<!-- ── Tab Container ─────────────────────────────────────────── -->
+<div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 overflow-hidden">
+    <!-- Tab buttons -->
+    <div class="flex border-b border-gray-100">
+        <button class="tab-button active flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('list-view', this)">
+            <i class="fas fa-list-ul"></i> รายการ
+        </button>
+        <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('calendar-view', this)">
+            <i class="fas fa-calendar-alt"></i> ปฏิทิน
+        </button>
+    </div>
+
+    <!-- ── LIST VIEW ──────────────────────────────────────────── -->
+    <div id="list-view" class="tab-content active">
+        <?php if (!empty($all_tasks)): ?>
+
+        <!-- Search -->
+        <div class="p-3 border-b border-gray-50">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="cardSearch"
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:bg-white transition"
+                       placeholder="ค้นหารหัส, บริการ, ผู้ขอ...">
+            </div>
         </div>
 
-        <!-- List View Tab -->
-        <div id="list-view" class="tab-content active">
-            <?php if (!empty($all_tasks)): ?>
-            <div class="tasks-table-container">
-                <!-- Search Bar -->
-                <div class="table-controls" style="padding: 1.5rem 1rem 1rem 1rem;">
-                    <input type="text" id="tableSearch" class="table-search-box" placeholder="ค้นหารหัสคำขอ, บริการ, ผู้ขอ...">
-                </div>
+        <!-- Task Cards -->
+        <div class="p-3 space-y-2.5" id="taskCardList">
+        <?php
+        $svc_icons = [
+            'PHOTOGRAPHY'=>'fa-camera','MC'=>'fa-microphone','IT_SUPPORT'=>'fa-desktop',
+            'EMAIL'=>'fa-envelope','NAS'=>'fa-database','WEB_DESIGN'=>'fa-globe',
+            'PRINTER'=>'fa-print','QR_CODE'=>'fa-qrcode','INTERNET'=>'fa-wifi','LED'=>'fa-tv',
+        ];
+        $status_cfg = [
+            'pending'    =>['color'=>'#f59e0b','bg'=>'#fffbeb','badge'=>'bg-amber-100 text-amber-800',  'label'=>'รอรับงาน',       'icon'=>'fa-clock'],
+            'accepted'   =>['color'=>'#3b82f6','bg'=>'#eff6ff','badge'=>'bg-blue-100 text-blue-800',    'label'=>'รับงานแล้ว',     'icon'=>'fa-check-circle'],
+            'in_progress'=>['color'=>'#8b5cf6','bg'=>'#f5f3ff','badge'=>'bg-purple-100 text-purple-800','label'=>'กำลังดำเนินการ','icon'=>'fa-spinner'],
+            'completed'  =>['color'=>'#10b981','bg'=>'#f0fdf4','badge'=>'bg-green-100 text-green-800',  'label'=>'เสร็จสิ้น',      'icon'=>'fa-check-double'],
+            'cancelled'  =>['color'=>'#6b7280','bg'=>'#f9fafb','badge'=>'bg-gray-100 text-gray-600',   'label'=>'ยกเลิก',         'icon'=>'fa-ban'],
+        ];
+        foreach ($all_tasks as $task):
+            $sc  = $status_cfg[$task['status']] ?? $status_cfg['cancelled'];
+            $sic = $svc_icons[$task['service_code'] ?? ''] ?? 'fa-concierge-bell';
+            $search_str = strtolower($task['request_code'].' '.$task['service_name'].' '.$task['requester_name']);
+        ?>
+        <div class="task-card-item rounded-2xl overflow-hidden shadow-sm ring-1 ring-gray-100 bg-white"
+             data-search="<?= htmlspecialchars($search_str) ?>">
+            <div class="flex">
+                <!-- Left color strip -->
+                <div class="w-1.5 flex-shrink-0" style="background:<?= $sc['color'] ?>;"></div>
 
-                <!-- Table -->
-                <table id="tasksTable">
-                    <thead>
-                        <tr>
-                            <th>รหัสคำขอ</th>
-                            <th>บริการ</th>
-                            <th>ผู้ขอ</th>
-                            <th>สถานะ</th>
-                            <th>กำหนดส่ง</th>
-                            <th>การดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    <?php foreach ($all_tasks as $task): ?>
-                        <tr>
-                            <td>
-                                <span style="font-family: 'Courier New', monospace; font-weight: 600;">
-                                    <?= htmlspecialchars($task['request_code']) ?>
-                                </span>
-                            </td>
-                            <td><?= htmlspecialchars($task['service_name']) ?></td>
-                            <td><?= htmlspecialchars($task['requester_name']) ?></td>
-                            <td>
-                                <span class="status-badge status-<?= $task['status'] ?>">
-                                    <?php
-                                    $status_labels = [
-                                        'pending' => 'รอรับงาน',
-                                        'accepted' => 'รับงานแล้ว',
-                                        'in_progress' => 'กำลังดำเนินการ',
-                                        'completed' => 'เสร็จสิ้น',
-                                        'cancelled' => 'ยกเลิก'
-                                    ];
-                                    echo $status_labels[$task['status']] ?? $task['status'];
-                                    ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if ($task['due_date']): ?>
-                                    <?= thdate('d/m/Y', strtotime($task['due_date'])) ?>
-                                <?php else: ?>
-                                    -
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>" 
-                                   class="btn-action-small" title="ดูรายละเอียด">
-                                    <i class="fas fa-eye"></i> ดูรายละเอียด
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <!-- Card body -->
+                <div class="flex-1 p-4 min-w-0">
 
-                <!-- Pagination -->
-                <div style="padding: 1rem;">
-                    <div class="table-pagination" id="tablePagination"></div>
-                    <div class="table-info" id="tableInfo"></div>
+                    <!-- Row 1: service icon + name + status badge -->
+                    <div class="flex items-start gap-2.5 mb-2">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                             style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>;">
+                            <i class="fas <?= $sic ?> text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-gray-900 text-[15px] leading-snug truncate">
+                                <?= htmlspecialchars($task['service_name']) ?>
+                            </p>
+                            <p class="text-xs font-mono text-gray-400 mt-0.5"><?= htmlspecialchars($task['request_code']) ?></p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 <?= $sc['badge'] ?>">
+                            <i class="fas <?= $sc['icon'] ?> text-[10px]"></i>
+                            <?= $sc['label'] ?>
+                        </span>
+                    </div>
+
+                    <!-- Row 2: requester + due date -->
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                        <span class="flex items-center gap-1 truncate">
+                            <i class="fas fa-user-circle text-gray-300"></i>
+                            <?= htmlspecialchars($task['requester_name']) ?>
+                        </span>
+                        <?php if ($task['due_date']): ?>
+                        <span class="flex items-center gap-1 flex-shrink-0 ml-2 font-medium" style="color:<?= $sc['color'] ?>;">
+                            <i class="fas fa-calendar-alt text-[10px]"></i>
+                            <?= thdate('d/m/Y', strtotime($task['due_date'])) ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Row 3: action buttons -->
+                    <div class="flex gap-2">
+                        <!-- VIEW DETAIL — big prominent button -->
+                        <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>"
+                           class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                           style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>; border:1.5px solid <?= $sc['color'] ?>40;">
+                            <i class="fas fa-eye text-base"></i>
+                            <span>ดูรายละเอียด</span>
+                        </a>
+
+                        <!-- STATUS ACTION button -->
+                        <?php if ($task['status'] === 'pending'): ?>
+                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'accepted')"
+                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                                style="background:#3b82f6;">
+                            <i class="fas fa-hand-paper"></i>
+                            <span class="hidden sm:inline">รับงาน</span>
+                        </button>
+                        <?php elseif ($task['status'] === 'accepted'): ?>
+                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'in_progress')"
+                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                                style="background:#8b5cf6;">
+                            <i class="fas fa-play"></i>
+                            <span class="hidden sm:inline">เริ่มงาน</span>
+                        </button>
+                        <?php elseif ($task['status'] === 'in_progress'): ?>
+                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'completed')"
+                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                                style="background:#10b981;">
+                            <i class="fas fa-check"></i>
+                            <span class="hidden sm:inline">เสร็จสิ้น</span>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
             </div>
-            <?php else: ?>
-                <div class="no-tasks">
-                    <i class="fas fa-inbox"></i>
-                    <p class="text-lg">ยังไม่มีงานที่ได้รับมอบหมาย</p>
-                    <p class="text-sm">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
-                </div>
-            <?php endif; ?>
         </div>
+        <?php endforeach; ?>
+        </div>
+
+        <div class="text-center text-xs text-gray-400 py-3" id="cardInfo"></div>
+
+        <?php else: ?>
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-inbox text-4xl text-gray-300"></i>
+            </div>
+            <p class="font-semibold text-gray-500">ยังไม่มีงานที่ได้รับมอบหมาย</p>
+            <p class="text-sm text-gray-400 mt-1">รอให้ผู้จัดการมอบหมายงานให้คุณ</p>
+        </div>
+        <?php endif; ?>
+    </div>
 
         <!-- Calendar View Tab -->
         <div id="calendar-view" class="tab-content">
@@ -822,126 +876,38 @@ include 'admin-layout/topbar.php';
     </div>
 
 <script>
-    // Get all tasks data from PHP
     const tasksData = <?= json_encode($all_tasks) ?>;
-    console.log('Tasks data loaded:', tasksData.length, 'tasks');
-    
     let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
-    console.log('Initial month/year:', currentMonth, '/', currentYear);
+    let currentYear  = new Date().getFullYear();
 
-    // Tab switching - pass button element as parameter
+    // ── Tab switching ──────────────────────────────────────────────
     function switchTab(tabName, buttonElement) {
-        console.log('switchTab called with:', tabName);
-        
-        // Hide all tabs
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-
-        // Show selected tab
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
-        if (buttonElement) {
-            buttonElement.classList.add('active');
-        }
-
-        if (tabName === 'calendar-view') {
-            console.log('Rendering calendar...');
-            renderCalendar();
-        } else if (tabName === 'list-view' && !window.tasksTableInitialized) {
-            console.log('Initializing table...');
-            initializeTable();
-            window.tasksTableInitialized = true;
-        }
+        if (buttonElement) buttonElement.classList.add('active');
+        if (tabName === 'calendar-view') renderCalendar();
     }
 
-    // Table Pagination
-    const ITEMS_PER_PAGE = 10;
-    let allRows = [];
-    let currentPage = 1;
-
-    function initializeTable() {
-        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-        setupSearchFilter();
-        renderTablePage(1);
-    }
-
-    function setupSearchFilter() {
-        const searchBox = document.getElementById('tableSearch');
-        if (!searchBox) return;
-
-        searchBox.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredRows = allRows.filter(row => {
-                const text = row.textContent.toLowerCase();
-                return text.includes(searchTerm);
+    // ── Card search ────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('cardSearch');
+        const cards       = document.querySelectorAll('.task-card-item');
+        const info        = document.getElementById('cardInfo');
+        if (!searchInput) return;
+        searchInput.addEventListener('input', function () {
+            const term = this.value.toLowerCase();
+            let visible = 0;
+            cards.forEach(card => {
+                const match = !term || (card.dataset.search || '').includes(term);
+                card.style.display = match ? '' : 'none';
+                if (match) visible++;
             });
-            currentPage = 1;
-            renderPaginationAndRows(filteredRows);
+            if (info) info.textContent = term ? `พบ ${visible} รายการ` : '';
         });
-    }
+    });
 
-    function renderPaginationAndRows(rows) {
-        const totalPages = Math.ceil(rows.length / ITEMS_PER_PAGE);
-        
-        // Show/hide rows
-        rows.forEach((row, index) => {
-            const pageNumber = Math.floor(index / ITEMS_PER_PAGE) + 1;
-            row.style.display = pageNumber === currentPage ? '' : 'none';
-        });
-
-        // Render pagination buttons
-        let paginationHTML = '';
-        if (totalPages > 1) {
-            // Previous button
-            paginationHTML += `<button class="pagination-btn" onclick="goToPage(${Math.max(1, currentPage - 1)})" ${currentPage === 1 ? 'disabled' : ''}>ก่อนหน้า</button>`;
-            
-            // Page numbers
-            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
-                paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-            }
-            if (totalPages > 5) {
-                paginationHTML += '<span style="padding: 0 0.5rem;">...</span>';
-                paginationHTML += `<button class="pagination-btn ${totalPages === currentPage ? 'active' : ''}" onclick="goToPage(${totalPages})">${totalPages}</button>`;
-            }
-            
-            // Next button
-            paginationHTML += `<button class="pagination-btn" onclick="goToPage(${Math.min(totalPages, currentPage + 1)})" ${currentPage === totalPages ? 'disabled' : ''}>ถัดไป</button>`;
-        }
-        document.getElementById('tablePagination').innerHTML = paginationHTML;
-
-        // Render info text
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-        const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, rows.length);
-        document.getElementById('tableInfo').textContent = `แสดง ${startIndex} ถึง ${endIndex} จากทั้งหมด ${rows.length} รายการ`;
-    }
-
-    function goToPage(pageNum) {
-        currentPage = pageNum;
-        const searchBox = document.getElementById('tableSearch');
-        const searchTerm = searchBox ? searchBox.value.toLowerCase() : '';
-        
-        if (searchTerm) {
-            const filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
-            renderPaginationAndRows(filteredRows);
-        } else {
-            renderPaginationAndRows(allRows);
-        }
-    }
-
-    function renderTablePage(pageNum) {
-        currentPage = pageNum;
-        const searchBox = document.getElementById('tableSearch');
-        const searchTerm = searchBox ? searchBox.value.toLowerCase() : '';
-        
-        if (searchTerm) {
-            const filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
-            renderPaginationAndRows(filteredRows);
-        } else {
-            renderPaginationAndRows(allRows);
-        }
-    }
-
-    // Calendar functions
+    // ── Calendar functions ─────────────────────────────────────────
     function renderCalendar() {
         console.log('renderCalendar called, currentMonth:', currentMonth, 'currentYear:', currentYear);
         
