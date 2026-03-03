@@ -353,12 +353,12 @@ include 'admin-layout/topbar.php';
     <div class="mb-6">
         <div class="flex items-center justify-between mb-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                    <i class="fas fa-tasks text-blue-600"></i>
-                    <?= htmlspecialchars($task['request_code']) ?>
-                </h1>
-                <p class="text-gray-600">
+                <h1 class="text-3xl font-bold text-gray-800 mb-1">
                     <?= htmlspecialchars($task['service_name']) ?>
+                </h1>
+                <p class="text-gray-500 text-sm font-medium">
+                    <i class="fas fa-ticket-alt mr-1 text-blue-500"></i>
+                    <?= htmlspecialchars($task['request_code']) ?>
                 </p>
             </div>
             <span class="status-badge status-<?= $task['status'] ?>">
