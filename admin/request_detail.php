@@ -471,59 +471,225 @@ include __DIR__ . '/admin-layout/topbar.php';
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4 pb-3 border-b">รายละเอียดบริการ</h2>
                     
+                    <?php
+                    // ── ชื่อ field ภาษาไทย ────────────────────────────────────────
+                    $field_labels = [
+                        // ทั่วไป
+                        'event_name'             => 'ชื่องาน/โครงการ',
+                        'event_type'             => 'ประเภทงาน',
+                        'event_date'             => 'วันที่จัดงาน',
+                        'event_time_start'       => 'เวลาเริ่ม',
+                        'event_time_end'         => 'เวลาสิ้นสุด',
+                        'event_location'         => 'สถานที่จัดงาน',
+                        'location'               => 'สถานที่',
+                        'purpose'                => 'วัตถุประสงค์',
+                        // ช่างภาพ
+                        'number_of_photographers'=> 'จำนวนช่างภาพ',
+                        'video_required'         => 'ต้องการวิดีโอ',
+                        'drone_required'         => 'ต้องการโดรน',
+                        'delivery_format'        => 'รูปแบบการส่งมอบ',
+                        'special_requirements'   => 'ข้อมูลเพิ่มเติม',
+                        'photo_type'             => 'ประเภทการถ่าย',
+                        // พิธีกร
+                        'mc_count'               => 'จำนวนพิธีกร',
+                        'language'               => 'ภาษา',
+                        'script_status'          => 'สถานะบทพูด',
+                        'dress_code'             => 'การแต่งกาย',
+                        // อีเมล
+                        'requested_username'     => 'ชื่อผู้ใช้ที่ต้องการ',
+                        'email_format'           => 'รูปแบบอีเมล',
+                        'quota_mb'               => 'พื้นที่ (MB)',
+                        'is_new_account'         => 'ประเภทคำขอ',
+                        'existing_email'         => 'อีเมลเดิม',
+                        'firstname_en'           => 'ชื่อ (อังกฤษ)',
+                        'lastname_en'            => 'นามสกุล (อังกฤษ)',
+                        // NAS
+                        'folder_name'            => 'ชื่อโฟลเดอร์',
+                        'storage_size_gb'        => 'ขนาดที่ขอ',
+                        'permission_type'        => 'สิทธิ์การเข้าถึง',
+                        'shared_with'            => 'ผู้ใช้งานร่วม',
+                        'backup_required'        => 'ต้องการ Backup',
+                        // IT Support / Printer
+                        'issue_type'             => 'ประเภทปัญหา',
+                        'urgency_level'          => 'ระดับความเร่งด่วน',
+                        'device_type'            => 'ประเภทอุปกรณ์',
+                        'device_brand'           => 'ยี่ห้ออุปกรณ์',
+                        'symptoms'               => 'อาการ/ปัญหา',
+                        'error_message'          => 'ข้อความแสดงข้อผิดพลาด',
+                        'when_occurred'          => 'เกิดเหตุเมื่อ',
+                        'printer_type'           => 'ประเภทเครื่องพิมพ์',
+                        'printer_brand'          => 'ยี่ห้อ',
+                        'printer_model'          => 'รุ่น',
+                        'serial_number'          => 'Serial Number',
+                        'problem_description'    => 'รายละเอียดปัญหา',
+                        'error_code'             => 'รหัส Error',
+                        'toner_color'            => 'สีหมึก',
+                        'supplies_needed'        => 'วัสดุที่ต้องการ',
+                        // QR Code
+                        'qr_type'                => 'ประเภท QR',
+                        'qr_size'                => 'ขนาด QR',
+                        'qr_content'             => 'เนื้อหา',
+                        'output_format'          => 'รูปแบบไฟล์',
+                        'color_primary'          => 'สี QR',
+                        'color_background'       => 'สีพื้นหลัง',
+                        'logo_url'               => 'URL โลโก้',
+                        // LED
+                        'media_title'            => 'ชื่อสื่อ/หัวข้อ',
+                        'media_type'             => 'ประเภทสื่อ',
+                        'display_date_start'     => 'วันที่เริ่มแสดง',
+                        'display_date_end'       => 'วันที่สิ้นสุด',
+                        'media_url'              => 'URL สื่อ',
+                        // เว็บไซต์
+                        'website_type'           => 'ประเภทเว็บไซต์',
+                        'project_name'           => 'ชื่อโปรเจค',
+                        'target_audience'        => 'กลุ่มเป้าหมาย',
+                        'number_of_pages'        => 'จำนวนหน้า',
+                        'features_required'      => 'ฟีเจอร์ที่ต้องการ',
+                        'has_existing_site'      => 'มีเว็บไซต์เดิม',
+                        'existing_url'           => 'URL เดิม',
+                        'domain_name'            => 'ชื่อโดเมน',
+                        'hosting_required'       => 'ต้องการ Hosting',
+                        'color_preferences'      => 'โทนสีที่ต้องการ',
+                        'reference_sites'        => 'เว็บอ้างอิง',
+                        'budget'                 => 'งบประมาณ',
+                        // อินเทอร์เน็ต
+                        'request_type'           => 'ประเภทคำขอ',
+                        'current_issue'          => 'ปัญหาที่พบ',
+                        'citizen_id'             => 'เลขบัตรประชาชน',
+                    ];
+
+                    // ── แปลค่าเป็นภาษาไทย ────────────────────────────────────────
+                    $value_maps = [
+                        // บัญชีอีเมล
+                        'is_new_account'  => ['1'=>'สร้างบัญชีใหม่', '0'=>'ขอเพิ่ม Quota / Reset Password'],
+                        // IT Support
+                        'issue_type'      => [
+                            'hardware'         => 'ฮาร์ดแวร์ (Hardware)',
+                            'software'         => 'ซอฟต์แวร์ (Software)',
+                            'network'          => 'เครือข่าย (Network)',
+                            'other'            => 'อื่นๆ',
+                            // Printer issue_type
+                            'repair'           => 'ซ่อมแซม/แจ้งปัญหา',
+                            'toner_replacement'=> 'เติมหมึก/เปลี่ยนตลับหมึก',
+                            'paper_jam'        => 'กระดาษติด',
+                            'driver_install'   => 'ติดตั้ง Driver/เชื่อมต่อเครื่อง',
+                            'new_installation' => 'ติดตั้งเครื่องใหม่',
+                        ],
+                        'urgency_level'   => [
+                            'low'      => 'ต่ำ — ยังใช้งานได้',
+                            'medium'   => 'ปานกลาง — ส่งผลกระทบบางส่วน',
+                            'high'     => 'สูง — ส่งผลกระทบมาก',
+                            'critical' => 'วิกฤต — ไม่สามารถทำงานได้',
+                        ],
+                        // เครื่องพิมพ์
+                        'printer_type'    => [
+                            'inkjet'       => 'Inkjet (พิมพ์หมึกฉีด)',
+                            'laser'        => 'Laser (เลเซอร์)',
+                            'multifunction'=> 'Multifunction (All-in-One)',
+                            'scanner'      => 'Scanner (สแกนเนอร์)',
+                            'plotter'      => 'Plotter (พิมพ์ขนาดใหญ่)',
+                            '3d_printer'   => '3D Printer',
+                        ],
+                        // NAS
+                        'permission_type' => [
+                            'read_only'   => 'อ่านอย่างเดียว (Read Only)',
+                            'read_write'  => 'อ่าน-เขียน (Read & Write)',
+                            'full_control'=> 'ควบคุมเต็ม (Full Control)',
+                        ],
+                        'backup_required' => ['1'=>'ต้องการ Backup', '0'=>'ไม่ต้องการ'],
+                        // พิธีกร
+                        'event_type'      => [
+                            'formal'        => 'พิธีการ/ทางการ',
+                            'entertainment' => 'สันทนาการ/รื่นเริง',
+                            'seminar'       => 'อบรม/สัมมนา',
+                            'press'         => 'แถลงข่าว',
+                            'other'         => 'อื่นๆ',
+                        ],
+                        'language'        => ['TH'=>'ไทย', 'EN'=>'อังกฤษ', 'BOTH'=>'ไทย + อังกฤษ'],
+                        'script_status'   => [
+                            'not_ready' => 'ยังไม่มี (ขอให้พิธีกรเตรียม)',
+                            'draft'     => 'มีร่างให้',
+                            'ready'     => 'มีบทสมบูรณ์ให้',
+                        ],
+                        // QR Code
+                        'qr_type'         => [
+                            'url'     => 'URL/เว็บไซต์',
+                            'text'    => 'ข้อความ',
+                            'vcard'   => 'นามบัตร (vCard)',
+                            'wifi'    => 'WiFi',
+                            'payment' => 'QR Payment',
+                        ],
+                        'qr_size'         => [
+                            '200'  => 'เล็ก (200×200 px)',
+                            '400'  => 'กลาง (400×400 px)',
+                            '800'  => 'ใหญ่ (800×800 px)',
+                            '1200' => 'ใหญ่มาก (1200×1200 px)',
+                        ],
+                        'output_format'   => ['png'=>'PNG', 'svg'=>'SVG'],
+                        // LED
+                        'media_type'      => [
+                            'image'     => 'ภาพนิ่ง (Image)',
+                            'video'     => 'วิดีโอ (Video)',
+                            'animation' => 'แอนิเมชัน (Animation/GIF)',
+                        ],
+                        // เว็บไซต์
+                        'website_type'    => [
+                            'landing_page' => 'Landing Page (หน้าเดียว)',
+                            'corporate'    => 'Corporate (หน่วยงาน)',
+                            'blog'         => 'Blog/ข่าวสาร',
+                            'ecommerce'    => 'E-Commerce (ขายสินค้า)',
+                            'portal'       => 'Portal (ระบบ Web App)',
+                            'other'        => 'อื่นๆ',
+                        ],
+                        'number_of_pages' => [
+                            '1' =>'1–5 หน้า', '10'=>'6–10 หน้า',
+                            '20'=>'11–20 หน้า', '50'=>'มากกว่า 20 หน้า',
+                        ],
+                        'has_existing_site' => ['1'=>'มีเว็บไซต์เดิม', '0'=>'ไม่มี'],
+                        'hosting_required'  => ['1'=>'ต้องการ Hosting', '0'=>'ไม่ต้องการ'],
+                        // Boolean ทั่วไป
+                        'video_required' => ['1'=>'ต้องการ', '0'=>'ไม่ต้องการ'],
+                        'drone_required' => ['1'=>'ต้องการ', '0'=>'ไม่ต้องการ'],
+                    ];
+
+                    // ── ฟิลด์ที่ซ่อน (ไม่แสดง) ──────────────────────────────────
+                    $hidden_fields = ['id', 'request_id', 'created_at', 'updated_at'];
+                    ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <?php 
-                        // Thai field labels mapping
-                        $field_labels = [
-                            'event_name' => 'ชื่องาน/โครงการ',
-                            'event_type' => 'ประเภทงาน',
-                            'event_date' => 'วันที่จัดงาน',
-                            'event_time_start' => 'เวลาเริ่ม',
-                            'event_time_end' => 'เวลาสิ้นสุด (โดยประมาณ)',
-                            'event_location' => 'สถานที่จัดงาน',
-                            'location' => 'สถานที่',
-                            'number_of_photographers' => 'จำนวนช่างภาพ',
-                            'video_required' => 'ต้องการวิดีโอ',
-                            'drone_required' => 'ต้องการโดรน',
-                            'delivery_format' => 'รูปแบบการส่งมอบ',
-                            'special_requirements' => 'ข้อมูลเพิ่มเติม',
-                            'mc_count' => 'จำนวนพิธีกร',
-                            'language' => 'ภาษา',
-                            'script_status' => 'สถานะบทพูด',
-                            'dress_code' => 'การแต่งกาย',
-                            'requested_username' => 'ชื่อผู้ใช้',
-                            'email_format' => 'รูปแบบอีเมล',
-                            'quota_mb' => 'พื้นที่ (MB)',
-                            'purpose' => 'วัตถุประสงค์',
-                            'is_new_account' => 'บัญชีใหม่',
-                            'existing_email' => 'อีเมลเดิม',
-                            'folder_name' => 'ชื่อโฟลเดอร์',
-                            'storage_size_gb' => 'ขนาดที่ขอ (GB)',
-                            'permission_type' => 'สิทธิ์',
-                            'shared_with' => 'ผู้ใช้งานร่วม',
-                            'backup_required' => 'ต้องการ Backup',
-                        ];
-                        ?>
                         <?php foreach ($service_details as $key => $value): ?>
-                            <?php if (!in_array($key, ['id', 'request_id'])): ?>
+                            <?php if (in_array($key, $hidden_fields) || $value === null || $value === '') continue; ?>
                             <div>
-                                <?php 
-                                $label = isset($field_labels[$key]) ? $field_labels[$key] : ucfirst(str_replace('_', ' ', $key));
-                                $display_value = $value;
-                                
-                                // Format dates and times
-                                if (strpos($key, '_date') !== false && $value) {
+                                <?php
+                                $label = $field_labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
+                                $display_value = (string)$value;
+
+                                // 1. แปลค่า coded → ภาษาไทย
+                                if (isset($value_maps[$key][$display_value])) {
+                                    $display_value = $value_maps[$key][$display_value];
+                                }
+                                // 2. วันที่
+                                elseif (preg_match('/_date$/', $key) && $value) {
                                     $display_value = thdate('d/m/Y', strtotime($value));
-                                } else if (strpos($key, '_time') !== false && $value) {
-                                    $display_value = date('H:i', strtotime($value));
-                                } else if (in_array($key, ['is_new_account', 'video_required', 'drone_required', 'backup_required'])) {
-                                    $display_value = $value ? 'ใช่' : 'ไม่ใช่';
+                                }
+                                // 3. เวลา (HH:MM:SS หรือ HH:MM)
+                                elseif (preg_match('/_time(_start|_end)?$/', $key) && $value) {
+                                    $ts = strtotime($value);
+                                    $display_value = $ts ? date('H:i', $ts) : $value;
+                                }
+                                // 4. storage_size_gb — เพิ่มหน่วย
+                                elseif ($key === 'storage_size_gb') {
+                                    $display_value = intval($value) >= 1000
+                                        ? number_format(intval($value)/1000, 0).' TB'
+                                        : intval($value).' GB';
+                                }
+                                // 5. number_of_photographers / mc_count — เพิ่ม "คน"
+                                elseif (in_array($key, ['number_of_photographers','mc_count'])) {
+                                    $display_value = intval($value).' คน';
                                 }
                                 ?>
-                                <p class="text-sm text-gray-600 font-medium"><?= $label ?></p>
-                                <p class="text-gray-900 font-bold"><?= htmlspecialchars($display_value ?? '-') ?></p>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5"><?= htmlspecialchars($label) ?></p>
+                                <p class="text-gray-900 font-semibold"><?= htmlspecialchars($display_value) ?></p>
                             </div>
-                            <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
