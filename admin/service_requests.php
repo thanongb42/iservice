@@ -113,7 +113,8 @@ if ($_SESSION['role'] === 'admin') {
     $check_assign = $conn->prepare("
         SELECT COUNT(*) as cnt FROM user_roles ur
         JOIN roles r ON ur.role_id = r.role_id
-        WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 AND r.can_assign = 1
+        WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1
+        AND (r.can_assign = 1 OR r.role_code IN ('manager', 'all'))
     ");
     $check_assign->bind_param('i', $_SESSION['user_id']);
     $check_assign->execute();
