@@ -97,6 +97,41 @@ while ($row = $ta_result->fetch_assoc()) {
     $task_assignments[] = $row;
 }
 
+// Build tracking timeline data from task assignments
+$track_task = null;
+if (!empty($task_assignments)) {
+    // Prefer task with most progress (in_progress > accepted > pending)
+    foreach (array_reverse($task_assignments) as $ta) {
+        if (in_array($ta['status'], ['in_progress', 'completed'])) { $track_task = $ta; break; }
+    }
+    if (!$track_task) {
+        foreach (array_reverse($task_assignments) as $ta) {
+            if ($ta['status'] === 'accepted') { $track_task = $ta; break; }
+        }
+    }
+    if (!$track_task) $track_task = $task_assignments[0];
+}
+$tr_assigned  = !empty($track_task);
+$tr_accepted  = $tr_assigned && in_array($track_task['status'], ['accepted', 'in_progress', 'completed']);
+$tr_working   = $tr_assigned && in_array($track_task['status'], ['in_progress', 'completed']);
+$tr_completed = $request['status'] === 'completed' || ($track_task && $track_task['status'] === 'completed');
+$tr_rejected  = $request['status'] === 'rejected';
+$tr_cancelled = $request['status'] === 'cancelled';
+$tr_assignee  = $tr_assigned ? ($track_task['to_first'] . ' ' . $track_task['to_last']) : '';
+
+$tr_steps = [
+    ['icon'=>'fa-file-alt',     'label'=>'รับเรื่อง',          'sub'=>'',                                        'time'=>$request['created_at'],                                             'done'=>true,          'special'=>null],
+    ['icon'=>'fa-user-tag',     'label'=>'มอบหมายงาน',          'sub'=>$tr_assignee,                              'time'=>$tr_assigned ? $track_task['created_at']  : null,                    'done'=>$tr_assigned,  'special'=>null],
+    ['icon'=>'fa-hand-paper',   'label'=>'รับงาน',              'sub'=>'',                                        'time'=>$tr_accepted ? ($track_task['accepted_at'] ?? null) : null,         'done'=>$tr_accepted,  'special'=>null],
+    ['icon'=>'fa-cog',          'label'=>'กำลังดำเนินการ',       'sub'=>'',                                        'time'=>$tr_working  ? ($track_task['started_at']  ?? null) : null,         'done'=>$tr_working,   'special'=>null],
+    ['icon'=>$tr_rejected ? 'fa-times-circle' : ($tr_cancelled ? 'fa-ban' : 'fa-check-circle'),
+                                'label'=>$tr_rejected ? 'ถูกปฏิเสธ' : ($tr_cancelled ? 'ยกเลิก' : 'เสร็จสิ้น'),
+                                'sub'=>'',
+                                'time'=>($tr_completed ? ($request['completed_at'] ?? ($track_task['completed_at'] ?? null)) : ($tr_rejected ? ($request['updated_at'] ?? null) : null)),
+                                'done'=>$tr_completed || $tr_rejected || $tr_cancelled,
+                                'special'=>$tr_rejected ? 'rejected' : ($tr_cancelled ? 'cancelled' : null)],
+];
+
 // Handle form submissions
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 
@@ -298,6 +333,54 @@ include __DIR__ . '/admin-layout/topbar.php';
                 </div>
             </div>
         </div>
+
+        <!-- ── Tracking Process ──────────────────────────────────────── -->
+        <div class="bg-white rounded-lg shadow-lg px-6 pt-5 pb-6 mb-4">
+            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-5 flex items-center gap-2">
+                <i class="fas fa-route text-teal-500"></i> ความคืบหน้าคำขอ
+            </h2>
+            <div class="relative flex justify-between items-start">
+                <!-- background line -->
+                <div class="absolute h-0.5 bg-gray-200 z-0" style="top:18px;left:18px;right:18px;"></div>
+                <!-- progress fill line -->
+                <?php
+                $done_count = count(array_filter($tr_steps, fn($s) => $s['done']));
+                $total = count($tr_steps);
+                $pct = $total > 1 ? round(($done_count - 1) / ($total - 1) * 100) : 0;
+                ?>
+                <div class="absolute h-0.5 z-0 transition-all duration-500
+                    <?= $tr_rejected ? 'bg-red-400' : ($tr_cancelled ? 'bg-gray-400' : 'bg-teal-500') ?>"
+                     style="top:18px;left:18px;width:calc((100% - 36px) * <?= $pct ?> / 100);"></div>
+
+                <?php foreach ($tr_steps as $i => $step):
+                    if ($step['done']) {
+                        $ring = $step['special'] === 'rejected' ? 'bg-red-500 border-red-400 text-white'
+                              : ($step['special'] === 'cancelled' ? 'bg-gray-400 border-gray-300 text-white'
+                              : 'bg-teal-600 border-teal-400 text-white');
+                        $lbl  = $step['special'] === 'rejected' ? 'text-red-700'
+                              : ($step['special'] === 'cancelled' ? 'text-gray-500' : 'text-teal-700');
+                    } else {
+                        $active = ($i === $done_count);
+                        $ring = $active ? 'bg-white border-teal-500 text-teal-600' : 'bg-white border-gray-300 text-gray-300';
+                        $lbl  = $active ? 'text-gray-700' : 'text-gray-400';
+                    }
+                ?>
+                <div class="flex flex-col items-center z-10" style="flex:1;min-width:0;">
+                    <div class="w-9 h-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 <?= $ring ?> shadow-sm">
+                        <i class="fas <?= $step['icon'] ?> text-sm"></i>
+                    </div>
+                    <p class="text-xs font-semibold mt-1.5 text-center leading-tight <?= $lbl ?>"><?= $step['label'] ?></p>
+                    <?php if (!empty($step['sub'])): ?>
+                    <p class="text-xs text-teal-600 text-center leading-tight truncate w-full px-1"><?= htmlspecialchars($step['sub']) ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($step['time'])): ?>
+                    <p class="text-xs text-gray-400 text-center leading-tight"><?= date('d/m H:i', strtotime($step['time'])) ?></p>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <!-- ─────────────────────────────────────────────────────────── -->
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
