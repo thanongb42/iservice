@@ -7,8 +7,8 @@
 require_once '../config/database.php';
 session_start();
 
-// Check if user is logged in and is admin
-require_admin_role();
+// Check if user is logged in and is admin or manager
+require_manager_or_admin();
 
 $page_title = 'จัดการคำขอบริการ';
 $current_page = 'service_requests';

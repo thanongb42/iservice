@@ -5,20 +5,20 @@
  */
 
 // Database credentials on local environment
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'iservice_db');
-define('DB_CHARSET', 'utf8mb4');
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'root');
+// define('DB_PASS', '');
+// define('DB_NAME', 'iservice_db');
+// define('DB_CHARSET', 'utf8mb4');
 
 
 // Database credentials on Hosting Production environment
 
-// define('DB_HOST', 'localhost');
-// define('DB_USER', 'rangsitadmin_iservice');
-// define('DB_PASS', 'IService@2026');
-// define('DB_NAME', 'rangsitadmin_iservice_db');
-// define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST', 'localhost');
+define('DB_USER', 'rangsitadmin_iservice');
+define('DB_PASS', 'IService@2026');
+define('DB_NAME', 'rangsitadmin_iservice_db');
+define('DB_CHARSET', 'utf8mb4');
 
 
 // Create connection
@@ -90,6 +90,25 @@ function fix_asset_path($path, $from_admin = false) {
         $path = '../' . $path;
     }
     return $path;
+}
+
+/**
+ * Access guard for manager-or-admin pages (service_requests, dashboard)
+ * admin OR role_code IN ('manager','all') → ผ่าน
+ */
+function require_manager_or_admin(string $redirect_if_denied = 'my_tasks.php'): void {
+    if (!isset($_SESSION['user_id'])) { header('Location: ../login.php'); exit; }
+    if (($_SESSION['role'] ?? '') === 'admin') return;
+    global $conn;
+    $uid = intval($_SESSION['user_id']);
+    $chk = $conn->prepare("SELECT COUNT(*) as cnt FROM user_roles ur JOIN roles r ON ur.role_id=r.role_id WHERE ur.user_id=? AND r.role_code IN ('manager','all') AND ur.is_active=1 AND r.is_active=1");
+    $chk->bind_param('i', $uid);
+    $chk->execute();
+    if ($chk->get_result()->fetch_assoc()['cnt'] > 0) return;
+    $role_label = match($_SESSION['role'] ?? '') { 'staff'=>'เจ้าหน้าที่ (Staff)', 'user'=>'ผู้ใช้งานทั่วไป', default=>ucfirst($_SESSION['role'] ?? '-') };
+    $_SESSION['flash_error_title'] = 'ไม่มีสิทธิ์เข้าถึง';
+    $_SESSION['flash_error']       = "หน้านี้สำหรับผู้จัดการ (Manager) หรือผู้ดูแลระบบเท่านั้น\nสิทธิ์ปัจจุบัน: {$role_label}";
+    header('Location: ' . $redirect_if_denied); exit;
 }
 
 /**

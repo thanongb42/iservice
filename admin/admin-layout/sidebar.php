@@ -16,8 +16,9 @@ if (isset($conn)) {
     }
 }
 
-// Check if user is admin/manager (session role = admin OR has 'manager'/'all' role code)
-$is_manager = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+// Tier detection
+$is_admin   = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+$is_manager = $is_admin; // admin also counts as manager
 if (!$is_manager && isset($_SESSION['user_id']) && isset($conn)) {
     $check_role = $conn->prepare("
         SELECT COUNT(*) as cnt FROM user_roles ur
@@ -46,13 +47,14 @@ $sidebar_app_name = !empty($system_settings['app_name']) ? $system_settings['app
 $sidebar_org_name = !empty($system_settings['organization_name']) ? $system_settings['organization_name'] : 'ระบบบริการดิจิทัล';
 $sidebar_logo = !empty($system_settings['logo_image']) && file_exists('../' . $system_settings['logo_image']) ? $system_settings['logo_image'] : null;
 
-// Menu items configuration - grouped
-// Show admin menu only for managers/all roles
-// Show my_tasks for all staff
+// Menu items configuration - 3-tier role-based
+// Tier 1 (admin): full menu
+// Tier 2 (manager role_code): dashboard + my_tasks + service_requests
+// Tier 3 (staff): my_tasks only
 $menu_groups = [];
 
-// For managers - show all menus
-if ($is_manager) {
+if ($is_admin) {
+    // ── Admin: full menu ────────────────────────────────────────────
     $menu_groups = [
         'main' => [
             'label' => '',
@@ -106,9 +108,25 @@ if ($is_manager) {
             ]
         ]
     ];
+} elseif ($is_manager) {
+    // ── Manager: dashboard + my_tasks + service_requests ───────────
+    $menu_groups = [
+        'main' => [
+            'label' => '',
+            'items' => [
+                ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
+            ]
+        ],
+        'operation' => [
+            'label' => 'ปฏิบัติงาน',
+            'items' => [
+                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+                ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+            ]
+        ],
+    ];
 } else {
-    // For non-managers (staff) - show my_tasks only
-    // admin_dashboard.php requires admin role; hide it to avoid access-denied redirects
+    // ── Staff: my_tasks only ────────────────────────────────────────
     $menu_groups = [
         'operation' => [
             'label' => 'ปฏิบัติงาน',

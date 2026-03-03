@@ -2,8 +2,8 @@
 session_start();
 require_once '../config/database.php';
 
-// Check if user is logged in and is admin
-require_admin_role();
+// Check if user is logged in and is admin or manager
+require_manager_or_admin();
 
 // Get user info
 $user = [
