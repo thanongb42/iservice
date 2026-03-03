@@ -107,14 +107,9 @@ if ($is_manager) {
         ]
     ];
 } else {
-    // For non-managers - show dashboard + my_tasks
+    // For non-managers (staff) - show my_tasks only
+    // admin_dashboard.php requires admin role; hide it to avoid access-denied redirects
     $menu_groups = [
-        'main' => [
-            'label' => '',
-            'items' => [
-                ['id' => 'dashboard', 'icon' => 'fa-home', 'label' => 'แดชบอร์ด', 'url' => 'admin_dashboard.php'],
-            ]
-        ],
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [

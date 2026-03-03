@@ -46,6 +46,11 @@ $breadcrumb = $breadcrumb ?? [
     ['label' => $page_title ?? 'แดชบอร์ด']
 ];
 
+// Flash error from access guard (require_admin_role)
+$_flash_error_title = $_SESSION['flash_error_title'] ?? '';
+$_flash_error       = $_SESSION['flash_error']       ?? '';
+unset($_SESSION['flash_error_title'], $_SESSION['flash_error']);
+
 // Get current user's profile image from session or database
 $current_user_profile_image = $_SESSION['profile_image'] ?? null;
 if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id'])) {
@@ -222,6 +227,21 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
             notifDropdown.classList.add('hidden');
         }
     });
+
+    // Flash error alert (access denied from require_admin_role)
+    <?php if (!empty($_flash_error)): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: <?= json_encode($_flash_error_title ?: 'ไม่มีสิทธิ์เข้าถึง') ?>,
+                text:  <?= json_encode($_flash_error) ?>,
+                confirmButtonColor: '#0f766e',
+                confirmButtonText: 'รับทราบ'
+            });
+        }
+    });
+    <?php endif; ?>
     </script>
 
     <!-- Main Content Area Start -->

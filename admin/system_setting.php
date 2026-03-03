@@ -8,10 +8,7 @@ require_once '../config/database.php';
 session_start();
 
 // Check admin access
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../login.php');
-    exit;
-}
+require_admin_role();
 
 $page_title = 'ตั้งค่าระบบ';
 $current_page = 'system_setting';

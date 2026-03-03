@@ -93,6 +93,31 @@ function fix_asset_path($path, $from_admin = false) {
 }
 
 /**
+ * Access guard for admin-only pages
+ * - ถ้ายังไม่ได้ login → redirect ไป login.php
+ * - ถ้า login แล้วแต่ไม่ใช่ admin → set flash error + redirect ไป my_tasks.php
+ *
+ * @param string $redirect_if_denied  relative path จากโฟลเดอร์ admin/
+ */
+function require_admin_role(string $redirect_if_denied = 'my_tasks.php'): void {
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ../login.php');
+        exit;
+    }
+    if (($_SESSION['role'] ?? '') !== 'admin') {
+        $role_label = match($_SESSION['role'] ?? '') {
+            'staff' => 'เจ้าหน้าที่ (Staff)',
+            'user'  => 'ผู้ใช้งานทั่วไป (User)',
+            default => ucfirst($_SESSION['role'] ?? 'ไม่ทราบ'),
+        };
+        $_SESSION['flash_error_title'] = 'ไม่มีสิทธิ์เข้าถึง';
+        $_SESSION['flash_error']       = "หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น\nสิทธิ์ปัจจุบันของคุณ: {$role_label}";
+        header('Location: ' . $redirect_if_denied);
+        exit;
+    }
+}
+
+/**
  * Utility function: Check if table exists
  */
 function table_exists($table_name) {
