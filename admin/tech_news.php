@@ -136,7 +136,7 @@ include 'admin-layout/topbar.php';
 
                                 <div class="flex items-center gap-4 text-xs text-gray-500">
                                     <span><i class="far fa-eye mr-1"></i><?= number_format($news['view_count']) ?></span>
-                                    <span><i class="far fa-calendar mr-1"></i><?= date('d/m/Y', strtotime($news['published_date'])) ?></span>
+                                    <span><i class="far fa-calendar mr-1"></i><?= thdate('d/m/Y', strtotime($news['published_date'])) ?></span>
                                     <?php if ($news['author']): ?>
                                         <span><i class="far fa-user mr-1"></i><?= htmlspecialchars($news['author']) ?></span>
                                     <?php endif; ?>

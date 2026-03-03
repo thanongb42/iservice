@@ -600,7 +600,7 @@ include 'admin-layout/topbar.php';
                         <div class="info-icon"><i class="fas fa-calendar text-sm"></i></div>
                         <div>
                             <div class="info-label">สมาชิกเมื่อ</div>
-                            <div class="info-value"><?php echo date('d/m/Y', strtotime($profile['created_at'])); ?></div>
+                            <div class="info-value"><?php echo thdate('d/m/Y', strtotime($profile['created_at'])); ?></div>
                         </div>
                     </div>
                 </div>

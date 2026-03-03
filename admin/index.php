@@ -312,7 +312,7 @@ include 'admin-layout/topbar.php';
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
-                                <?php echo date('d/m/Y H:i', strtotime($user['created_at'])); ?>
+                                <?php echo thdate('d/m/Y H:i', strtotime($user['created_at'])); ?>
                             </td>
                         </tr>
                         <?php endwhile; ?>

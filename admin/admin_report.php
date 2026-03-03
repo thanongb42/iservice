@@ -714,7 +714,7 @@ include 'admin-layout/topbar.php';
                                 <td><?= htmlspecialchars($req['service_name'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($req['username'] ?? '-') ?></td>
                                 <td><span class="status-badge <?= $badge_class ?>"><?= htmlspecialchars($req['status']) ?></span></td>
-                                <td><?= date('d/m/Y H:i', strtotime($req['created_at'])) ?></td>
+                                <td><?= thdate('d/m/Y H:i', strtotime($req['created_at'])) ?></td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>

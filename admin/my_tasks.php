@@ -758,7 +758,7 @@ include 'admin-layout/topbar.php';
                             </td>
                             <td>
                                 <?php if ($task['due_date']): ?>
-                                    <?= date('d/m/Y', strtotime($task['due_date'])) ?>
+                                    <?= thdate('d/m/Y', strtotime($task['due_date'])) ?>
                                 <?php else: ?>
                                     -
                                 <?php endif; ?>

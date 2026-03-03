@@ -263,7 +263,7 @@ include 'admin-layout/topbar.php';
                         <p class="text-xs text-gray-500"><?php echo htmlspecialchars($request['requester_name'] ?? 'ไม่ระบุ'); ?></p>
                     </div>
                     <span class="text-xs text-gray-400">
-                        <?php echo date('d/m H:i', strtotime($request['created_at'])); ?>
+                        <?php echo thdate('d/m H:i', strtotime($request['created_at'])); ?>
                     </span>
                 </div>
                 <?php endwhile; ?>
@@ -339,7 +339,7 @@ include 'admin-layout/topbar.php';
                             <?php endif; ?>
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <?php echo date('d/m/Y H:i', strtotime($u['created_at'])); ?>
+                            <?php echo thdate('d/m/Y H:i', strtotime($u['created_at'])); ?>
                         </td>
                     </tr>
                     <?php endwhile; ?>

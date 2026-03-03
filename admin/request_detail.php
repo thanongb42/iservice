@@ -226,6 +226,7 @@ include __DIR__ . '/admin-layout/sidebar.php';
 include __DIR__ . '/admin-layout/topbar.php';
 ?>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     .swal-status-popup { border-radius: 16px !important; }
     .swal-status-confirm-btn { border-radius: 10px !important; padding: 10px 28px !important; font-weight: 600 !important; font-size: 0.95rem !important; }
@@ -374,7 +375,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                     <p class="text-xs text-teal-600 text-center leading-tight truncate w-full px-1"><?= htmlspecialchars($step['sub']) ?></p>
                     <?php endif; ?>
                     <?php if (!empty($step['time'])): ?>
-                    <p class="text-xs text-gray-400 text-center leading-tight"><?= date('d/m H:i', strtotime($step['time'])) ?></p>
+                    <p class="text-xs text-gray-400 text-center leading-tight"><?= thdate('d/m H:i', strtotime($step['time'])) ?></p>
                     <?php endif; ?>
                 </div>
                 <?php endforeach; ?>
@@ -512,7 +513,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 
                                 // Format dates and times
                                 if (strpos($key, '_date') !== false && $value) {
-                                    $display_value = date('d/m/Y', strtotime($value));
+                                    $display_value = thdate('d/m/Y', strtotime($value));
                                 } else if (strpos($key, '_time') !== false && $value) {
                                     $display_value = date('H:i', strtotime($value));
                                 } else if (in_array($key, ['is_new_account', 'video_required', 'drone_required', 'backup_required'])) {
@@ -537,7 +538,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                             <i class="fas fa-calendar text-teal-600 mt-1 mr-3"></i>
                             <div>
                                 <p class="text-sm text-gray-600">เรียกร้องเมื่อ</p>
-                                <p class="text-gray-900 font-bold"><?= date('d/m/Y H:i', strtotime($request['created_at'])) ?></p>
+                                <p class="text-gray-900 font-bold"><?= thdate('d/m/Y H:i', strtotime($request['created_at'])) ?></p>
                             </div>
                         </div>
                         
@@ -546,7 +547,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                             <i class="fas fa-hourglass-end text-orange-600 mt-1 mr-3"></i>
                             <div>
                                 <p class="text-sm text-gray-600">วันเวลาที่ต้องทำงาน</p>
-                                <p class="text-gray-900 font-bold"><?= date('d/m/Y', strtotime($request['expected_completion_date'])) ?></p>
+                                <p class="text-gray-900 font-bold"><?= thdate('d/m/Y', strtotime($request['expected_completion_date'])) ?></p>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -556,7 +557,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                             <i class="fas fa-play text-blue-600 mt-1 mr-3"></i>
                             <div>
                                 <p class="text-sm text-gray-600">เริ่มดำเนินการเมื่อ</p>
-                                <p class="text-gray-900 font-bold"><?= date('d/m/Y H:i', strtotime($request['started_at'])) ?></p>
+                                <p class="text-gray-900 font-bold"><?= thdate('d/m/Y H:i', strtotime($request['started_at'])) ?></p>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -566,7 +567,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                             <i class="fas fa-check text-green-600 mt-1 mr-3"></i>
                             <div>
                                 <p class="text-sm text-gray-600">เสร็จสิ้นเมื่อ</p>
-                                <p class="text-gray-900 font-bold"><?= date('d/m/Y H:i', strtotime($request['completed_at'])) ?></p>
+                                <p class="text-gray-900 font-bold"><?= thdate('d/m/Y H:i', strtotime($request['completed_at'])) ?></p>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -639,7 +640,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 <?php endif; ?>
                                 <p class="text-xs text-gray-400 mt-1">
                                     มอบหมายโดย <?= htmlspecialchars($ta['by_first'] . ' ' . $ta['by_last']) ?>
-                                    &middot; <?= date('d/m/Y H:i', strtotime($ta['created_at'])) ?>
+                                    &middot; <?= thdate('d/m/Y H:i', strtotime($ta['created_at'])) ?>
                                 </p>
                                 <?php if (!in_array($ta['status'], ['completed', 'cancelled'])): ?>
                                 <div class="flex gap-2 mt-3 pt-2 border-t <?= $sc['border'] ?>">
@@ -683,7 +684,7 @@ include __DIR__ . '/admin-layout/topbar.php';
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดส่ง</label>
-                                <input type="datetime-local" id="newAssignDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                <input type="text" id="newAssignDueDate" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white" placeholder="เลือกวันที่และเวลา">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">หมายเหตุ</label>
@@ -1006,6 +1007,35 @@ async function cancelAssignment(assignmentId) {
         Swal.fire('ผิดพลาด', 'ไม่สามารถยกเลิกได้', 'error');
     }
 }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+<script>
+(function() {
+    const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    flatpickr('#newAssignDueDate', {
+        locale: 'th',
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: 'Y-m-d H:i',
+        altInput: true,
+        altFormat: 'j M Y H:i น.',
+        allowInput: false,
+        monthSelectorType: 'static',
+        formatDate: function(date, format) {
+            if (format === 'j M Y H:i น.') {
+                const d = date.getDate();
+                const m = thaiMonths[date.getMonth()];
+                const y = date.getFullYear() + 543;
+                const hh = String(date.getHours()).padStart(2,'0');
+                const mm = String(date.getMinutes()).padStart(2,'0');
+                return `${d} ${m} ${y} ${hh}:${mm} น.`;
+            }
+            return flatpickr.formatDate(date, format);
+        }
+    });
+})();
 </script>
 
 <?php include __DIR__ . '/admin-layout/footer.php'; ?>

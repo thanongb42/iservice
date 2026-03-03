@@ -149,7 +149,7 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
                                     elseif ($diff < 3600) $time_ago = floor($diff / 60) . ' นาทีที่แล้ว';
                                     elseif ($diff < 86400) $time_ago = floor($diff / 3600) . ' ชั่วโมงที่แล้ว';
                                     elseif ($diff < 604800) $time_ago = floor($diff / 86400) . ' วันที่แล้ว';
-                                    else $time_ago = date('d/m/Y', strtotime($req['created_at']));
+                                    else $time_ago = thdate('d/m/Y', strtotime($req['created_at']));
                                 ?>
                                 <a href="request_detail.php?id=<?php echo $req['request_id']; ?>" class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 transition-colors" style="text-decoration:none;">
                                     <div class="flex items-start gap-3">

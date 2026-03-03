@@ -137,6 +137,31 @@ function require_admin_role(string $redirect_if_denied = 'my_tasks.php'): void {
 }
 
 /**
+ * Format date/datetime in Thai Buddhist Era (พ.ศ.)
+ * แปลงวันที่เป็นรูปแบบไทย ปี พ.ศ.
+ *
+ * @param string $format  PHP date format (Y will be converted to BE year)
+ * @param int|string $timestamp  Unix timestamp or date string
+ * @return string  Formatted Thai date, or '-' if invalid
+ */
+function thdate(string $format, $timestamp): string {
+    if (is_string($timestamp)) $timestamp = strtotime($timestamp);
+    if (!$timestamp || $timestamp === false) return '-';
+    $year_be = (int)date('Y', $timestamp) + 543;
+    // Process format char-by-char to replace Y/y with Buddhist year
+    $out = '';
+    $escaped = false;
+    foreach (str_split($format) as $c) {
+        if ($escaped)          { $out .= $c; $escaped = false; continue; }
+        if ($c === '\\')       { $escaped = true; $out .= $c;  continue; }
+        if ($c === 'Y')        { $out .= $year_be;                        continue; }
+        if ($c === 'y')        { $out .= substr((string)$year_be, -2);    continue; }
+        $out .= date($c, $timestamp);
+    }
+    return $out;
+}
+
+/**
  * Utility function: Check if table exists
  */
 function table_exists($table_name) {

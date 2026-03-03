@@ -186,7 +186,7 @@ function render_tech_news_cards($news_list) {
                 </p>
 
                 <div class="flex items-center justify-between text-xs text-gray-500 mt-3">
-                    <span><i class="far fa-calendar mr-1"></i>' . date('d/m/Y', strtotime($news['published_date'])) . '</span>
+                    <span><i class="far fa-calendar mr-1"></i>' . thdate('d/m/Y', strtotime($news['published_date'])) . '</span>
                     <span><i class="far fa-eye mr-1"></i>' . number_format($news['view_count']) . ' views</span>
                 </div>
             </div>
@@ -247,7 +247,7 @@ function render_tech_updates($news_list, $limit = 3) {
                 <p class="text-xs md:text-sm font-medium group-hover:text-teal-600 transition-colors">
                     ' . htmlspecialchars($news['title']) . '
                 </p>
-                <p class="text-xs text-gray-500">' . date('d/m/Y', strtotime($news['published_date'])) . '</p>
+                <p class="text-xs text-gray-500">' . thdate('d/m/Y', strtotime($news['published_date'])) . '</p>
             </div>
         </div>';
 

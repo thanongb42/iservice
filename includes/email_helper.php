@@ -47,7 +47,7 @@ function notify_admins_new_request($request_id, $conn) {
                 <tr><td class='label'>บริการ</td><td class='value'>" . htmlspecialchars($request['service_name']) . "</td></tr>
                 <tr><td class='label'>ผู้ยื่นคำร้อง</td><td class='value'>" . htmlspecialchars($request['requester_name']) . "</td></tr>
                 <tr><td class='label'>หน่วยงาน</td><td class='value'>" . htmlspecialchars($request['department_name'] ?? '-') . "</td></tr>
-                <tr><td class='label'>วันที่ส่ง</td><td class='value'>" . date('d/m/Y H:i', strtotime($request['created_at'])) . "</td></tr>
+                <tr><td class='label'>วันที่ส่ง</td><td class='value'>" . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "</td></tr>
             </table>
         </div>
         <div style='text-align:center;margin-top:20px'>
@@ -109,7 +109,7 @@ function send_line_notification($request_id, $conn) {
     $text .= "บริการ: " . $request['service_name'] . "\n";
     $text .= "ผู้ยื่น: " . $request['requester_name'] . "\n";
     $text .= "หน่วยงาน: " . ($request['department_name'] ?? '-') . "\n";
-    $text .= "วันที่: " . date('d/m/Y H:i', strtotime($request['created_at'])) . "\n";
+    $text .= "วันที่: " . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "\n";
     $text .= "────────────────\n";
     $text .= "ติดตาม: " . $tracking_url;
 
@@ -193,7 +193,7 @@ function send_request_notification($request_id, $conn) {
             <p><strong>รายละเอียดคำขอ:</strong></p>
             <ul>
                 <li><strong>รหัสคำขอ:</strong> " . $request['request_code'] . "</li>
-                <li><strong>วันที่ส่ง:</strong> " . date('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
+                <li><strong>วันที่ส่ง:</strong> " . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
                 <li><strong>หัวข้อ:</strong> " . htmlspecialchars($request['subject']) . "</li>
             </ul>
             <p>ท่านสามารถติดตามสถานะคำร้องได้ที่ลิงก์ด้านล่างนี้:</p>
@@ -294,7 +294,7 @@ function send_status_update_notification($request_id, $conn, $new_status, $notes
             <p><strong>รายละเอียดคำขอ:</strong></p>
             <ul>
                 <li><strong>รหัสคำขอ:</strong> " . $request['request_code'] . "</li>
-                <li><strong>วันที่ส่ง:</strong> " . date('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
+                <li><strong>วันที่ส่ง:</strong> " . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
                 <li><strong>หัวข้อ:</strong> " . htmlspecialchars($request['subject']) . "</li>
             </ul>
             <p>ท่านสามารถตรวจสอบรายละเอียดเพิ่มเติมได้ที่:</p>

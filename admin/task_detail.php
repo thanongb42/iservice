@@ -482,7 +482,7 @@ include 'admin-layout/topbar.php';
                         <span class="detail-label">กำหนดส่ง</span>
                         <span class="detail-value">
                             <?php if ($task['due_date']): ?>
-                                <?= date('d/m/Y H:i', strtotime($task['due_date'])) ?>
+                                <?= thdate('d/m/Y H:i', strtotime($task['due_date'])) ?>
                             <?php else: ?>
                                 ไม่มีกำหนด
                             <?php endif; ?>
@@ -495,7 +495,7 @@ include 'admin-layout/topbar.php';
                         <span class="detail-label">เวลาเริ่มต้น</span>
                         <span class="detail-value">
                             <?php if ($task['start_time']): ?>
-                                <?= date('d/m/Y H:i', strtotime($task['start_time'])) ?>
+                                <?= thdate('d/m/Y H:i', strtotime($task['start_time'])) ?>
                             <?php else: ?>
                                 -
                             <?php endif; ?>
@@ -505,7 +505,7 @@ include 'admin-layout/topbar.php';
                         <span class="detail-label">เวลาสิ้นสุด</span>
                         <span class="detail-value">
                             <?php if ($task['end_time']): ?>
-                                <?= date('d/m/Y H:i', strtotime($task['end_time'])) ?>
+                                <?= thdate('d/m/Y H:i', strtotime($task['end_time'])) ?>
                             <?php else: ?>
                                 -
                             <?php endif; ?>
@@ -554,7 +554,7 @@ include 'admin-layout/topbar.php';
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">สร้างงาน</div>
-                            <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['created_at'])) ?></div>
+                            <div class="timeline-time"><?= thdate('d/m/Y H:i', strtotime($task['created_at'])) ?></div>
                         </div>
                     </div>
 
@@ -565,7 +565,7 @@ include 'admin-layout/topbar.php';
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">รับงาน</div>
-                            <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['accepted_at'])) ?></div>
+                            <div class="timeline-time"><?= thdate('d/m/Y H:i', strtotime($task['accepted_at'])) ?></div>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -577,7 +577,7 @@ include 'admin-layout/topbar.php';
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">เริ่มดำเนินการ</div>
-                            <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['started_at'])) ?></div>
+                            <div class="timeline-time"><?= thdate('d/m/Y H:i', strtotime($task['started_at'])) ?></div>
                         </div>
                     </div>
                     
@@ -611,7 +611,7 @@ include 'admin-layout/topbar.php';
                         </div>
                         <div class="timeline-content">
                             <div class="timeline-label">เสร็จสิ้น</div>
-                            <div class="timeline-time"><?= date('d/m/Y H:i', strtotime($task['completed_at'])) ?></div>
+                            <div class="timeline-time"><?= thdate('d/m/Y H:i', strtotime($task['completed_at'])) ?></div>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -686,13 +686,13 @@ include 'admin-layout/topbar.php';
                             <div>
                                 <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาเริ่มต้น</label>
                                 <div class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100 font-medium text-gray-700">
-                                    <?php echo $task['start_time'] ? date('d/m/Y H:i', strtotime($task['start_time'])) : '—'; ?>
+                                    <?php echo $task['start_time'] ? thdate('d/m/Y H:i', strtotime($task['start_time'])) : '—'; ?>
                                 </div>
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-gray-600 mb-1 block">เวลาสิ้นสุด</label>
                                 <div class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100 font-medium text-gray-700">
-                                    <?php echo $task['end_time'] ? date('d/m/Y H:i', strtotime($task['end_time'])) : '—'; ?>
+                                    <?php echo $task['end_time'] ? thdate('d/m/Y H:i', strtotime($task['end_time'])) : '—'; ?>
                                 </div>
                             </div>
                         </div>
