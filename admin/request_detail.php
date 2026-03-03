@@ -7,11 +7,8 @@
 require_once '../config/database.php';
 session_start();
 
-// Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../login.php');
-    exit;
-}
+// Check if user is logged in and is admin or manager
+require_manager_or_admin();
 
 $request_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
