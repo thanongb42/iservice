@@ -19,11 +19,11 @@ $user = [
 $depts_q = $conn->query("SELECT department_id, department_name FROM departments WHERE status='active' ORDER BY department_name");
 $depts   = $depts_q ? $depts_q->fetch_all(MYSQLI_ASSOC) : [];
 
-// Fetch staff
+// Fetch staff (line_user_id excluded — may not exist on production yet; fetched per-user via API)
 $staff_q = $conn->query("
     SELECT u.user_id,
            CONCAT(IFNULL(p.prefix_name,''), u.first_name, ' ', u.last_name) AS full_name,
-           u.position, d.department_name, u.profile_image, u.line_user_id
+           u.position, d.department_name, u.profile_image
     FROM users u
     LEFT JOIN prefixes    p ON u.prefix_id     = p.prefix_id
     LEFT JOIN departments d ON u.department_id  = d.department_id
@@ -418,7 +418,7 @@ include 'admin-layout/topbar.php';
             <select id="fAssignTo" name="assigned_to">
                 <option value="">— ยังไม่มอบหมาย —</option>
                 <?php foreach ($staff as $s): ?>
-                <option value="<?= $s['user_id'] ?>" data-line="<?= $s['line_user_id'] ? '1' : '0' ?>">
+                <option value="<?= $s['user_id'] ?>">
                     <?= htmlspecialchars($s['full_name']) ?><?= $s['department_name'] ? ' — '.htmlspecialchars($s['department_name']) : '' ?>
                 </option>
                 <?php endforeach; ?>
