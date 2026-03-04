@@ -123,6 +123,7 @@ try {
             $title        = trim($_POST['title']          ?? '');
             $description  = trim($_POST['description']    ?? '');
             $job_type     = trim($_POST['job_type']        ?? 'routine');
+            $service_type = trim($_POST['service_type']   ?? '') ?: null;
             $priority     = trim($_POST['priority']        ?? 'normal');
             $sched_date   = trim($_POST['scheduled_date'] ?? '') ?: null;
             $start_time   = trim($_POST['start_time']     ?? '') ?: null;
@@ -144,14 +145,14 @@ try {
 
             $stmt = $conn->prepare("
                 INSERT INTO internal_jobs
-                    (job_code, title, description, job_type, priority,
+                    (job_code, title, description, job_type, service_type, priority,
                      assigned_to, assigned_by, department_id,
                      scheduled_date, start_time, end_time, due_date,
                      location, notes)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ");
-            $stmt->bind_param('sssssiiissssss',
-                $job_code, $title, $description, $job_type, $priority,
+            $stmt->bind_param('sssssiiiissssss',
+                $job_code, $title, $description, $job_type, $service_type, $priority,
                 $assigned_to, $assigned_by, $dept_id,
                 $sched_date, $start_time, $end_time, $due_date,
                 $location, $notes
@@ -169,18 +170,19 @@ try {
 
         // ── POST: Update job ────────────────────────────────────────────────
         case 'update':
-            $job_id      = intval($_POST['job_id']         ?? 0);
-            $title       = trim($_POST['title']            ?? '');
-            $description = trim($_POST['description']      ?? '');
-            $job_type    = trim($_POST['job_type']          ?? 'routine');
-            $priority    = trim($_POST['priority']          ?? 'normal');
-            $sched_date  = trim($_POST['scheduled_date']   ?? '') ?: null;
-            $start_time  = trim($_POST['start_time']       ?? '') ?: null;
-            $end_time    = trim($_POST['end_time']         ?? '') ?: null;
-            $due_date    = trim($_POST['due_date']         ?? '') ?: null;
-            $location    = trim($_POST['location']         ?? '');
-            $dept_id     = intval($_POST['department_id']  ?? 0) ?: null;
-            $notes       = trim($_POST['notes']             ?? '');
+            $job_id       = intval($_POST['job_id']         ?? 0);
+            $title        = trim($_POST['title']            ?? '');
+            $description  = trim($_POST['description']      ?? '');
+            $job_type     = trim($_POST['job_type']          ?? 'routine');
+            $service_type = trim($_POST['service_type']     ?? '') ?: null;
+            $priority     = trim($_POST['priority']          ?? 'normal');
+            $sched_date   = trim($_POST['scheduled_date']   ?? '') ?: null;
+            $start_time   = trim($_POST['start_time']       ?? '') ?: null;
+            $end_time     = trim($_POST['end_time']         ?? '') ?: null;
+            $due_date     = trim($_POST['due_date']         ?? '') ?: null;
+            $location     = trim($_POST['location']         ?? '');
+            $dept_id      = intval($_POST['department_id']  ?? 0) ?: null;
+            $notes        = trim($_POST['notes']             ?? '');
 
             if (empty($title)) throw new Exception('กรุณาระบุชื่องาน');
 
@@ -189,13 +191,13 @@ try {
 
             $stmt = $conn->prepare("
                 UPDATE internal_jobs
-                SET title=?, description=?, job_type=?, priority=?,
+                SET title=?, description=?, job_type=?, service_type=?, priority=?,
                     scheduled_date=?, start_time=?, end_time=?, due_date=?,
                     location=?, notes=?, department_id=?
                 WHERE job_id=?
             ");
-            $stmt->bind_param('ssssssssssii',
-                $title, $description, $job_type, $priority,
+            $stmt->bind_param('sssssssssssii',
+                $title, $description, $job_type, $service_type, $priority,
                 $sched_date, $start_time, $end_time, $due_date,
                 $location, $notes, $dept_id, $job_id
             );

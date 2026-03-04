@@ -340,14 +340,14 @@ include 'admin-layout/topbar.php';
         <input type="hidden" id="fJobId" name="job_id">
         <input type="hidden" id="fAction" name="action" value="create">
 
-        <!-- Title + Type -->
+        <!-- Title + Type + Service Type -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="form-group sm:col-span-2">
                 <label>ชื่องาน <span class="text-red-500">*</span></label>
                 <input type="text" id="fTitle" name="title" required placeholder="ชื่องาน/กิจกรรม">
             </div>
             <div class="form-group">
-                <label>ประเภท</label>
+                <label>ประเภทงาน</label>
                 <select id="fJobType" name="job_type">
                     <option value="routine">🔄 รูทีน</option>
                     <option value="event">🎪 อีเวนต์</option>
@@ -357,6 +357,24 @@ include 'admin-layout/topbar.php';
                     <option value="other">📌 อื่นๆ</option>
                 </select>
             </div>
+        </div>
+
+        <!-- Service Type -->
+        <div class="form-group">
+            <label>บริการที่เกี่ยวข้อง</label>
+            <select id="fServiceType" name="service_type">
+                <option value="">— ไม่ระบุ —</option>
+                <option value="photography">📷 ช่างภาพ</option>
+                <option value="mc">🎤 MC / พิธีกร</option>
+                <option value="led">📺 จอ LED</option>
+                <option value="it_support">💻 IT Support</option>
+                <option value="qr_code">🔷 QR Code</option>
+                <option value="printer">🖨️ เครื่องพิมพ์</option>
+                <option value="web_design">🌐 เว็บไซต์</option>
+                <option value="internet">📡 อินเทอร์เน็ต</option>
+                <option value="email">📧 อีเมล</option>
+                <option value="nas">💾 NAS / Storage</option>
+            </select>
         </div>
 
         <!-- Date + Times -->
@@ -493,10 +511,11 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
-const TH_MONTHS = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const P_LABELS  = {low:'ต่ำ',normal:'ปกติ',high:'สูง',urgent:'เร่งด่วน'};
-const S_LABELS  = {scheduled:'กำหนดการ',in_progress:'กำลังทำ',completed:'เสร็จสิ้น',cancelled:'ยกเลิก'};
-const TYPE_ICON = {routine:'🔄',event:'🎪',project:'📁',maintenance:'🔧',meeting:'👥',other:'📌'};
+const TH_MONTHS   = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const P_LABELS    = {low:'ต่ำ',normal:'ปกติ',high:'สูง',urgent:'เร่งด่วน'};
+const S_LABELS    = {scheduled:'กำหนดการ',in_progress:'กำลังทำ',completed:'เสร็จสิ้น',cancelled:'ยกเลิก'};
+const TYPE_ICON   = {routine:'🔄',event:'🎪',project:'📁',maintenance:'🔧',meeting:'👥',other:'📌'};
+const SVC_LABELS  = {photography:'📷 ช่างภาพ',mc:'🎤 MC / พิธีกร',led:'📺 จอ LED',it_support:'💻 IT Support',qr_code:'🔷 QR Code',printer:'🖨️ เครื่องพิมพ์',web_design:'🌐 เว็บไซต์',internet:'📡 อินเทอร์เน็ต',email:'📧 อีเมล',nas:'💾 NAS / Storage'};
 
 const calState = {
     year: <?= date('Y') ?>, month: <?= (int)date('n') ?>,
@@ -629,6 +648,7 @@ function openCreateModal(prefill='') {
 function openEditModal(job) {
     document.getElementById('fAction').value='update'; document.getElementById('fJobId').value=job.job_id;
     document.getElementById('fTitle').value=job.title; document.getElementById('fJobType').value=job.job_type;
+    document.getElementById('fServiceType').value=job.service_type??'';
     document.getElementById('fPriority').value=job.priority; document.getElementById('fSchedDate').value=job.scheduled_date??'';
     document.getElementById('fStartTime').value=(job.start_time??'').slice(0,5); document.getElementById('fEndTime').value=(job.end_time??'').slice(0,5);
     document.getElementById('fDueDate').value=job.due_date?job.due_date.replace(' ','T').slice(0,16):'';
@@ -678,6 +698,7 @@ async function showDetail(id){
         <div class="flex flex-wrap gap-2 mb-1">
             <span class="text-xs px-2 py-1 rounded s-${j.status}">${S_LABELS[j.status]||j.status}</span>
             <span class="text-xs px-2 py-1 rounded p-${j.priority}">${P_LABELS[j.priority]}</span>
+            ${j.service_type?`<span class="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-700">${SVC_LABELS[j.service_type]||j.service_type}</span>`:''}
         </div>
         <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
             <div><span class="text-gray-500">วันที่:</span> ${dateStr}</div>
