@@ -32,19 +32,19 @@ $staff_q = $conn->query("
 ");
 $staff = $staff_q ? $staff_q->fetch_all(MYSQLI_ASSOC) : [];
 
-// Stats — check table exists first (prevents fatal error if not yet created)
+// Stats — use $job_stats (not $st — topbar.php reuses $st for request status string)
 $today = date('Y-m-d');
-$st = ['total' => 0, 'today' => 0, 'week' => 0, 'done' => 0];
+$job_stats = ['total' => 0, 'today' => 0, 'week' => 0, 'done' => 0];
 $tbl_check = $conn->query("SHOW TABLES LIKE 'internal_jobs'");
 if ($tbl_check && $tbl_check->num_rows > 0) {
     $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs");
-    $st['total'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $job_stats['total'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
     $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE scheduled_date = '$today'");
-    $st['today'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $job_stats['today'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
     $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE scheduled_date BETWEEN '$today' AND DATE_ADD('$today',INTERVAL 7 DAY)");
-    $st['week'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $job_stats['week'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
     $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE status='completed'");
-    $st['done'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $job_stats['done'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
 }
 
 $page_title   = 'ปฏิทินงาน';
@@ -223,10 +223,10 @@ include 'admin-layout/topbar.php';
     <!-- Stat Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <?php foreach ([
-            ['งานทั้งหมด', $st['total'], 'fa-calendar-alt',  'text-blue-500',   'bg-blue-50'],
-            ['วันนี้',      $st['today'], 'fa-calendar-day',  'text-teal-600',   'bg-teal-50'],
-            ['สัปดาห์นี้', $st['week'],  'fa-calendar-week', 'text-amber-600',  'bg-amber-50'],
-            ['เสร็จสิ้น',  $st['done'],  'fa-check-circle',  'text-green-600',  'bg-green-50'],
+            ['งานทั้งหมด', $job_stats['total'], 'fa-calendar-alt',  'text-blue-500',   'bg-blue-50'],
+            ['วันนี้',      $job_stats['today'], 'fa-calendar-day',  'text-teal-600',   'bg-teal-50'],
+            ['สัปดาห์นี้', $job_stats['week'],  'fa-calendar-week', 'text-amber-600',  'bg-amber-50'],
+            ['เสร็จสิ้น',  $job_stats['done'],  'fa-check-circle',  'text-green-600',  'bg-green-50'],
         ] as [$lbl,$val,$ico,$tc,$bg]): ?>
         <div class="stat-card">
             <div class="flex items-center justify-between">
