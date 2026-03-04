@@ -1,682 +1,739 @@
 <?php
 /**
- * Admin Create Job
- * Admin creates a service ticket on behalf of a user
+ * Create Job — ปฏิทินงาน / สร้างงานภายใน (สำหรับ manager)
  */
-
-require_once '../config/database.php';
 session_start();
+require_once '../config/database.php';
 
-// Admin check
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../login.php');
-    exit;
-}
+require_manager_or_admin();
 
-$page_title    = 'สร้างงาน';
-$current_page  = 'create_job';
-$breadcrumb    = [
-    ['label' => 'หน้าหลัก', 'icon' => 'fa-home', 'url' => 'admin_dashboard.php'],
-    ['label' => 'สร้างงาน'],
+// Build $user array for topbar (same pattern as other admin pages)
+$user = [
+    'username'   => $_SESSION['username']   ?? 'User',
+    'email'      => $_SESSION['email']      ?? '',
+    'full_name'  => $_SESSION['full_name']  ?? $_SESSION['username'] ?? 'User',
+    'first_name' => $_SESSION['first_name'] ?? 'User',
 ];
 
-// Fetch active services
-$services_result = $conn->query("SELECT service_code, service_name, icon, color_code FROM my_service WHERE is_active = 1 ORDER BY display_order ASC");
-$services = [];
-while ($row = $services_result->fetch_assoc()) {
-    $services[] = $row;
-}
+// Fetch departments
+$depts_q = $conn->query("SELECT department_id, department_name FROM departments WHERE status='active' ORDER BY department_name");
+$depts   = $depts_q ? $depts_q->fetch_all(MYSQLI_ASSOC) : [];
 
-// Fetch prefixes for name field
-$prefixes = [];
-$pfx_result = $conn->query("SELECT prefix_id, prefix_name FROM prefixes WHERE is_active = 1 ORDER BY display_order ASC");
-if ($pfx_result) {
-    while ($row = $pfx_result->fetch_assoc()) {
-        $prefixes[] = $row;
-    }
-}
-
-// Fetch Level-1 departments only (children are loaded via AJAX)
-$depts_result = $conn->query("SELECT department_id, department_name, level_type FROM departments WHERE status = 'active' AND level = 1 ORDER BY department_name ASC");
-$departments = [];
-while ($row = $depts_result->fetch_assoc()) {
-    $departments[] = $row;
-}
-
-// Fetch assignable users (roles with can_be_assigned = 1)
-$assignable_result = $conn->query("
-    SELECT DISTINCT u.user_id, u.username, u.first_name, u.last_name,
-           p.prefix_name, d.department_name,
-           GROUP_CONCAT(DISTINCT r.role_name ORDER BY r.display_order SEPARATOR ', ') as roles
+// Fetch staff
+$staff_q = $conn->query("
+    SELECT u.user_id,
+           CONCAT(IFNULL(p.prefix_name,''), u.first_name, ' ', u.last_name) AS full_name,
+           u.position, d.department_name, u.profile_image, u.line_user_id
     FROM users u
-    LEFT JOIN prefixes p ON u.prefix_id = p.prefix_id
-    LEFT JOIN departments d ON u.department_id = d.department_id
-    JOIN user_roles ur ON u.user_id = ur.user_id AND ur.is_active = 1
-    JOIN roles r ON ur.role_id = r.role_id AND r.is_active = 1 AND r.can_be_assigned = 1
-    WHERE u.status = 'active'
-    GROUP BY u.user_id
-    ORDER BY u.first_name ASC
+    LEFT JOIN prefixes    p ON u.prefix_id     = p.prefix_id
+    LEFT JOIN departments d ON u.department_id  = d.department_id
+    WHERE u.role IN ('admin','staff') AND u.status = 'active'
+    ORDER BY u.first_name
 ");
-$assignable_users = [];
-while ($row = $assignable_result->fetch_assoc()) {
-    $assignable_users[] = $row;
+$staff = $staff_q ? $staff_q->fetch_all(MYSQLI_ASSOC) : [];
+
+// Stats — check table exists first (prevents fatal error if not yet created)
+$today = date('Y-m-d');
+$st = ['total' => 0, 'today' => 0, 'week' => 0, 'done' => 0];
+$tbl_check = $conn->query("SHOW TABLES LIKE 'internal_jobs'");
+if ($tbl_check && $tbl_check->num_rows > 0) {
+    $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs");
+    $st['total'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE scheduled_date = '$today'");
+    $st['today'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE scheduled_date BETWEEN '$today' AND DATE_ADD('$today',INTERVAL 7 DAY)");
+    $st['week'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+    $r = $conn->query("SELECT COUNT(*) c FROM internal_jobs WHERE status='completed'");
+    $st['done'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
 }
+
+$page_title   = 'ปฏิทินงาน';
+$current_page = 'create_job';
+$breadcrumb   = [
+    ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
+    ['label' => 'ปฏิทินงาน']
+];
 
 include 'admin-layout/header.php';
 include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<main class="p-4 md:p-6 lg:p-8">
-<div class="max-w-7xl mx-auto">
+<style>
+    /* ── Stat Cards (same as user-manager) ── */
+    .stat-card {
+        background: white;
+        border-radius: .75rem;
+        border: 1px solid #e5e7eb;
+        padding: 1.25rem;
+        transition: box-shadow .15s ease;
+    }
+    .stat-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); }
+    .stat-icon {
+        width: 2.5rem; height: 2.5rem;
+        border-radius: .5rem;
+        display: flex; align-items: center; justify-content: center;
+    }
 
+    /* ── Buttons (same as user-manager) ── */
+    .btn {
+        padding: .625rem 1.25rem;
+        border: none; border-radius: .5rem;
+        font-size: .875rem; font-weight: 500;
+        cursor: pointer; transition: all .15s ease;
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn-primary  { background-color: #009933; color: white; }
+    .btn-primary:hover  { background-color: #007a29; }
+    .btn-secondary { background-color: #f3f4f6; color: #374151; }
+    .btn-secondary:hover { background-color: #e5e7eb; }
+    .btn-sm { padding: .375rem .75rem; font-size: .8rem; }
+    .btn-teal { background-color: #0f766e; color: white; }
+    .btn-teal:hover { background-color: #115e59; }
+
+    /* ── Modal (same pattern as user-manager) ── */
+    .modal {
+        display: none; position: fixed; z-index: 1000;
+        inset: 0; background-color: rgba(0,0,0,0);
+        transition: background-color .2s ease;
+        padding: 1rem;
+    }
+    .modal.active {
+        display: flex; align-items: center; justify-content: center;
+        background-color: rgba(0,0,0,.45);
+    }
+    .modal-content {
+        background: white; border-radius: .75rem;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,.25);
+        width: 100%; max-width: 640px;
+        max-height: 90vh; overflow-y: auto;
+        padding: 1.5rem;
+        animation: modalSlide .2s ease;
+    }
+    .modal-content.modal-sm { max-width: 480px; }
+    @keyframes modalSlide {
+        from { opacity:0; transform:translateY(-16px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Form Groups (same as user-manager) ── */
+    .form-group { margin-bottom: 0; }
+    .form-group label {
+        display: block; margin-bottom: .375rem;
+        font-weight: 500; color: #374151; font-size: .875rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%; padding: .625rem .875rem;
+        border: 1px solid #e5e7eb; border-radius: .5rem;
+        font-size: .875rem; transition: all .15s ease; background: white;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none; border-color: #009933;
+        box-shadow: 0 0 0 3px rgba(0,153,51,.1);
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: #d1d5db; }
+
+    /* ── Calendar ── */
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); }
+    .cal-day-hdr {
+        padding: .4rem 0; text-align: center;
+        font-size: .7rem; font-weight: 700; color: #6b7280;
+        text-transform: uppercase; letter-spacing: .05em;
+    }
+    .cal-cell {
+        min-height: 80px; border: 1px solid #f3f4f6;
+        padding: 4px; cursor: pointer;
+        transition: background .15s; position: relative; overflow: hidden;
+    }
+    .cal-cell:hover { background: #f0fdf4; }
+    .cal-cell.today  { background: #f0fdf9; border-color: #0d9488; }
+    .cal-cell.selected { background: #ccfbf1; border-color: #0f766e; }
+    .cal-cell.other-month { background: #fafafa; }
+    .cal-cell.other-month .cal-date { color: #d1d5db; }
+    .cal-date {
+        font-size: .78rem; font-weight: 600; color: #374151;
+        width: 22px; height: 22px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; margin-bottom: 2px;
+    }
+    .cal-cell.today    .cal-date { background: #0f766e; color: white; }
+    .cal-cell.selected .cal-date { background: #0d9488; color: white; }
+    .cal-dot {
+        font-size: .6rem; padding: 1px 4px;
+        border-radius: 3px; margin-bottom: 1px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        cursor: pointer; display: block;
+    }
+
+    /* Priority colours */
+    .p-low     { background:#dbeafe; color:#1d4ed8; }
+    .p-normal  { background:#d1fae5; color:#065f46; }
+    .p-high    { background:#fef9c3; color:#854d0e; }
+    .p-urgent  { background:#fee2e2; color:#991b1b; }
+
+    /* Status colours */
+    .s-scheduled   { background:#dbeafe; color:#1e40af; }
+    .s-in_progress { background:#fef9c3; color:#92400e; }
+    .s-completed   { background:#dcfce7; color:#14532d; }
+    .s-cancelled   { background:#f3f4f6; color:#6b7280; }
+
+    /* Job card (day list) */
+    .job-card {
+        border-left: 4px solid; padding: .625rem .875rem;
+        border-radius: 0 .5rem .5rem 0; background: white;
+        border-top: 1px solid #f3f4f6; border-right: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6;
+        transition: box-shadow .15s; cursor: pointer; margin-bottom: .375rem;
+    }
+    .job-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .job-card.p-low    { border-left-color: #3b82f6; }
+    .job-card.p-normal { border-left-color: #10b981; }
+    .job-card.p-high   { border-left-color: #f59e0b; }
+    .job-card.p-urgent { border-left-color: #ef4444; }
+
+    /* Responsive calendar */
+    @media(max-width:639px) {
+        .cal-cell { min-height: 46px; padding: 2px; }
+        .cal-date { font-size: .65rem; width: 17px; height: 17px; margin-bottom: 1px; }
+        .cal-dot-text { display: none; }
+        .cal-dot { padding: 1px 2px; font-size: .55rem; }
+        .cal-day-hdr { font-size: .6rem; padding: .25rem 0; }
+    }
+    @media(min-width:640px) and (max-width:1023px) {
+        .cal-cell { min-height: 70px; }
+        .cal-dot-text { display: none; }
+    }
+    @media(max-width:639px) {
+        .modal-content { border-radius: .75rem; max-height: 92vh; padding: 1rem; }
+    }
+</style>
+
+<div>
     <!-- Page Header -->
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <i class="fas fa-plus-circle text-green-600"></i>
-            สร้างงาน
-        </h1>
-        <p class="text-gray-500 text-sm mt-1">สร้างคำขอบริการแทนผู้ใช้งาน (Walk-in / โทรศัพท์ / ภายใน)</p>
+        <h1 class="text-2xl font-semibold text-gray-800">ปฏิทินงาน</h1>
+        <p class="text-gray-500 text-sm mt-1">สร้างและจัดการงานประจำ/งานรูทีนของทีม</p>
     </div>
 
-    <form id="createJobForm" enctype="multipart/form-data">
-
-    <!-- Section 1: Service Card Selector -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
-        <h2 class="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-            <i class="fas fa-concierge-bell text-green-500"></i>
-            เลือกประเภทบริการ <span class="text-red-500">*</span>
-        </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" id="serviceCardGrid">
-            <?php foreach ($services as $svc): ?>
-            <?php
-                $color = $svc['color_code'] ?? 'gray';
-                $colorMap = [
-                    'green'  => ['bg' => 'bg-green-50',  'border' => 'border-green-200',  'text' => 'text-green-700',  'icon' => 'text-green-500',  'active' => 'ring-green-500'],
-                    'blue'   => ['bg' => 'bg-blue-50',   'border' => 'border-blue-200',   'text' => 'text-blue-700',   'icon' => 'text-blue-500',   'active' => 'ring-blue-500'],
-                    'red'    => ['bg' => 'bg-red-50',    'border' => 'border-red-200',    'text' => 'text-red-700',    'icon' => 'text-red-500',    'active' => 'ring-red-500'],
-                    'orange' => ['bg' => 'bg-orange-50', 'border' => 'border-orange-200', 'text' => 'text-orange-700', 'icon' => 'text-orange-500', 'active' => 'ring-orange-500'],
-                    'purple' => ['bg' => 'bg-purple-50', 'border' => 'border-purple-200', 'text' => 'text-purple-700', 'icon' => 'text-purple-500', 'active' => 'ring-purple-500'],
-                    'pink'   => ['bg' => 'bg-pink-50',   'border' => 'border-pink-200',   'text' => 'text-pink-700',   'icon' => 'text-pink-500',   'active' => 'ring-pink-500'],
-                    'indigo' => ['bg' => 'bg-indigo-50', 'border' => 'border-indigo-200', 'text' => 'text-indigo-700', 'icon' => 'text-indigo-500', 'active' => 'ring-indigo-500'],
-                    'teal'   => ['bg' => 'bg-teal-50',   'border' => 'border-teal-200',   'text' => 'text-teal-700',   'icon' => 'text-teal-500',   'active' => 'ring-teal-500'],
-                    'gray'   => ['bg' => 'bg-gray-50',   'border' => 'border-gray-200',   'text' => 'text-gray-700',   'icon' => 'text-gray-500',   'active' => 'ring-gray-500'],
-                ];
-                $c = $colorMap[$color] ?? $colorMap['gray'];
-            ?>
-            <button type="button"
-                class="service-card flex flex-col items-center justify-center p-4 rounded-xl border-2 <?php echo $c['border']; ?> <?php echo $c['bg']; ?> hover:shadow-md transition-all duration-150 cursor-pointer group"
-                data-code="<?php echo htmlspecialchars($svc['service_code']); ?>"
-                data-name="<?php echo htmlspecialchars($svc['service_name']); ?>"
-                data-icon="<?php echo htmlspecialchars($svc['icon']); ?>"
-                data-color="<?php echo htmlspecialchars($color); ?>">
-                <i class="<?php echo htmlspecialchars($svc['icon']); ?> text-2xl mb-2 <?php echo $c['icon']; ?> group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-medium text-center <?php echo $c['text']; ?> leading-tight"><?php echo htmlspecialchars($svc['service_name']); ?></span>
-            </button>
-            <?php endforeach; ?>
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <?php foreach ([
+            ['งานทั้งหมด', $st['total'], 'fa-calendar-alt',  'text-blue-500',   'bg-blue-50'],
+            ['วันนี้',      $st['today'], 'fa-calendar-day',  'text-teal-600',   'bg-teal-50'],
+            ['สัปดาห์นี้', $st['week'],  'fa-calendar-week', 'text-amber-600',  'bg-amber-50'],
+            ['เสร็จสิ้น',  $st['done'],  'fa-check-circle',  'text-green-600',  'bg-green-50'],
+        ] as [$lbl,$val,$ico,$tc,$bg]): ?>
+        <div class="stat-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide"><?= $lbl ?></p>
+                    <p class="text-2xl font-semibold text-gray-800 mt-1"><?= $val ?></p>
+                </div>
+                <div class="stat-icon <?= $bg ?>">
+                    <i class="fas <?= $ico ?> <?= $tc ?>"></i>
+                </div>
+            </div>
         </div>
+        <?php endforeach; ?>
     </div>
 
-    <!-- Section 2: Main Form (hidden until service selected) -->
-    <div id="formSection" class="hidden">
+    <!-- Main Grid: Calendar + Side Panel -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-5">
 
-        <!-- Selected Service Banner -->
-        <div id="selectedBanner" class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-5 py-3 mb-5">
-            <i id="bannerIcon" class="text-xl text-green-600"></i>
-            <div>
-                <p class="text-xs text-green-600 font-medium uppercase tracking-wide">บริการที่เลือก</p>
-                <p id="bannerName" class="font-semibold text-green-800 text-sm"></p>
+        <!-- ── Calendar Card (3/5) ── -->
+        <div class="md:col-span-3 bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+            <!-- Toolbar -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Month nav -->
+                    <div class="flex items-center gap-1">
+                        <button onclick="changeMonth(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-600">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <h2 id="calTitle" class="text-base font-bold text-gray-800 min-w-[140px] text-center"></h2>
+                        <button onclick="changeMonth(1)" class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-600">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                    <button onclick="goToday()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-dot-circle text-xs"></i> วันนี้
+                    </button>
+                    <div class="ml-auto">
+                        <button onclick="openCreateModal()" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i>
+                            <span class="hidden sm:inline">สร้างงานใหม่</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button type="button" onclick="clearService()" class="ml-auto text-green-400 hover:text-green-600 p-1 rounded-lg hover:bg-green-100">
-                <i class="fas fa-times"></i>
-            </button>
+
+            <!-- Day headers -->
+            <div class="cal-grid px-1 pt-2">
+                <?php foreach(['อา','จ','อ','พ','พฤ','ศ','ส'] as $d): ?>
+                <div class="cal-day-hdr"><?= $d ?></div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Calendar body -->
+            <div id="calBody" class="cal-grid px-1 pb-2"></div>
+
+            <!-- Legend -->
+            <div class="px-4 pb-3 pt-2 border-t border-gray-50 flex flex-wrap gap-2 items-center">
+                <span class="text-xs text-gray-400">ลำดับ:</span>
+                <span class="text-xs px-2 py-0.5 rounded p-low">ต่ำ</span>
+                <span class="text-xs px-2 py-0.5 rounded p-normal">ปกติ</span>
+                <span class="text-xs px-2 py-0.5 rounded p-high">สูง</span>
+                <span class="text-xs px-2 py-0.5 rounded p-urgent">เร่งด่วน</span>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- ── Right Panel (2/5) ── -->
+        <div class="md:col-span-2 flex flex-col gap-4">
 
-            <!-- LEFT: Request Form -->
-            <div class="lg:col-span-2 space-y-5">
-
-                <!-- Requester Info Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-user text-blue-500"></i>
-                        ข้อมูลผู้ขอรับบริการ
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                            <div class="flex gap-2">
-                                <select name="requester_prefix_id" required
-                                    class="w-36 flex-shrink-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white">
-                                    <option value="">คำนำหน้า *</option>
-                                    <?php foreach ($prefixes as $pfx): ?>
-                                    <option value="<?php echo $pfx['prefix_id']; ?>"><?php echo htmlspecialchars($pfx['prefix_name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <input type="text" name="requester_firstname" required
-                                    class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                    placeholder="ชื่อ *">
-                                <input type="text" name="requester_lastname" required
-                                    class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                    placeholder="นามสกุล *">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
-                            <input type="tel" name="requester_phone"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                placeholder="0812345678">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">อีเมล</label>
-                            <input type="email" name="requester_email"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                placeholder="email@rangsit.go.th">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">ตำแหน่ง</label>
-                            <input type="text" name="requester_position"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
-                                placeholder="เจ้าหน้าที่...">
-                        </div>
-                        <!-- Cascading Department Selector (spans 2 cols) -->
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-medium text-gray-600 mb-2">
-                                หน่วยงาน <span class="text-red-500">*</span>
-                                <span class="text-gray-400 font-normal ml-1">— เลือกให้ลึกที่สุดเท่าที่ทราบ</span>
-                            </label>
-                            <!-- Hidden field that holds the final selected department_id -->
-                            <input type="hidden" name="department_id" id="department_id_hidden" required>
-                            <div id="deptCascade" class="space-y-2">
-                                <!-- Level 1 (required) -->
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex-shrink-0">1</span>
-                                    <select id="dept_L1"
-                                        class="dept-level-select flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
-                                        onchange="onDeptChange(1, this.value)"
-                                        required>
-                                        <option value="">-- เลือกสำนัก / กอง --</option>
-                                        <?php foreach ($departments as $dept): ?>
-                                        <option value="<?php echo $dept['department_id']; ?>"><?php echo htmlspecialchars($dept['department_name']); ?><?php if (!empty($dept['level_type'])): ?> <span class="text-gray-400">(<?php echo htmlspecialchars($dept['level_type']); ?>)</span><?php endif; ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <!-- Levels 2, 3, 4 — injected by JS -->
-                                <div id="dept_L2_wrap" class="hidden flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 text-xs font-bold flex-shrink-0">2</span>
-                                    <select id="dept_L2"
-                                        class="dept-level-select flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
-                                        onchange="onDeptChange(2, this.value)">
-                                    </select>
-                                </div>
-                                <div id="dept_L3_wrap" class="hidden flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-100 text-yellow-600 text-xs font-bold flex-shrink-0">3</span>
-                                    <select id="dept_L3"
-                                        class="dept-level-select flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
-                                        onchange="onDeptChange(3, this.value)">
-                                    </select>
-                                </div>
-                                <div id="dept_L4_wrap" class="hidden flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-600 text-xs font-bold flex-shrink-0">4</span>
-                                    <select id="dept_L4"
-                                        class="dept-level-select flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white"
-                                        onchange="onDeptChange(4, this.value)">
-                                    </select>
-                                </div>
-                            </div>
-                            <!-- Breadcrumb of selected path -->
-                            <div id="deptBreadcrumb" class="hidden mt-2 flex flex-wrap items-center gap-1 text-xs text-gray-500"></div>
-                        </div>
-                    </div>
+            <!-- Day Jobs -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 id="listTitle" class="text-sm font-bold text-gray-800">งานวันนี้</h3>
+                    <button onclick="openCreateModal(calState.selectedDate)" class="btn btn-teal btn-sm">
+                        <i class="fas fa-plus text-xs"></i> เพิ่มงาน
+                    </button>
                 </div>
-
-                <!-- Service-Specific Fields Card -->
-                <div id="serviceSpecificCard" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hidden">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-sliders-h text-purple-500"></i>
-                        รายละเอียดเฉพาะบริการ
-                    </h3>
-                    <div id="serviceFormContainer">
-                        <div class="flex justify-center py-4">
-                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Request Details Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-clipboard text-orange-500"></i>
-                        รายละเอียดคำขอ
-                    </h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">คำอธิบาย / รายละเอียดเพิ่มเติม</label>
-                            <textarea name="description" rows="3"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none resize-none"
-                                placeholder="อธิบายรายละเอียดเพิ่มเติม..."></textarea>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">ระดับความสำคัญ</label>
-                                <select name="priority"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white">
-                                    <option value="low">ต่ำ (Low)</option>
-                                    <option value="medium" selected>ปานกลาง (Medium)</option>
-                                    <option value="high">สูง (High)</option>
-                                    <option value="urgent">เร่งด่วน (Urgent)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">วันที่ต้องการให้แล้วเสร็จ</label>
-                                <div class="relative">
-                                    <input type="text" id="expected_completion_date" name="expected_completion_date" readonly
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white cursor-pointer"
-                                        placeholder="เลือกวันที่">
-                                    <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">เอกสารแนบ</label>
-                            <input type="file" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                                class="w-full text-sm text-gray-500 border border-gray-300 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
-                            <p class="text-xs text-gray-400 mt-1">รองรับ: JPG, PNG, PDF, DOC, DOCX (สูงสุด 5MB/ไฟล์)</p>
-                        </div>
-                    </div>
+                <div id="dayJobList" class="p-3 min-h-[160px]">
+                    <p class="text-center text-gray-400 text-sm pt-8">กำลังโหลด...</p>
                 </div>
             </div>
 
-            <!-- RIGHT: Assignment Card -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sticky top-6">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-user-check text-green-500"></i>
-                        มอบหมายงาน
+            <!-- Upcoming -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-800">
+                        กำลังจะมาถึง
+                        <span class="text-gray-400 font-normal text-xs ml-1">(14 วัน)</span>
                     </h3>
-
-                    <!-- Toggle: assign immediately -->
-                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
-                        <input type="checkbox" id="assignImmediately" name="assign_immediately" value="1"
-                            class="w-4 h-4 rounded text-green-600 cursor-pointer"
-                            onchange="toggleAssignForm(this.checked)">
-                        <label for="assignImmediately" class="text-sm text-gray-700 cursor-pointer font-medium">มอบหมายงานทันที</label>
-                    </div>
-
-                    <div id="assignFormFields" class="space-y-4 opacity-40 pointer-events-none">
-                        <!-- Staff selector -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">เจ้าหน้าที่ที่รับผิดชอบ</label>
-                            <select name="assign_to" id="assign_to"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white">
-                                <option value="">-- เลือกเจ้าหน้าที่ --</option>
-                                <?php foreach ($assignable_users as $u): ?>
-                                <option value="<?php echo $u['user_id']; ?>">
-                                    <?php
-                                    $full = trim(($u['prefix_name'] ?? '') . ' ' . ($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
-                                    if (empty(trim($full))) $full = $u['username'];
-                                    echo htmlspecialchars($full);
-                                    if (!empty($u['roles'])) echo ' — ' . htmlspecialchars($u['roles']);
-                                    ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <!-- Assignment priority -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">ลำดับความสำคัญงาน</label>
-                            <select name="assign_priority"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white">
-                                <option value="low">ต่ำ</option>
-                                <option value="normal" selected>ปกติ</option>
-                                <option value="high">สูง</option>
-                                <option value="urgent">เร่งด่วน</option>
-                            </select>
-                        </div>
-
-                        <!-- Due date for assignment -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">กำหนดส่งงาน</label>
-                            <div class="relative">
-                                <input type="text" id="assign_due_date" name="assign_due_date" readonly
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none bg-white cursor-pointer"
-                                    placeholder="เลือกวันที่และเวลา">
-                                <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                        </div>
-
-                        <!-- Notes -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">หมายเหตุการมอบหมาย</label>
-                            <textarea name="assign_notes" rows="3"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none resize-none"
-                                placeholder="รายละเอียดเพิ่มเติมสำหรับเจ้าหน้าที่..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 text-xs text-gray-400">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        หากไม่ติ๊กมอบหมาย คำขอจะถูกสร้างในสถานะ "รอดำเนินการ"
-                    </div>
+                </div>
+                <div id="upcomingList" class="p-3 max-h-72 overflow-y-auto">
+                    <p class="text-center text-gray-400 text-sm py-4">กำลังโหลด...</p>
                 </div>
             </div>
 
-        </div><!-- end grid -->
+        </div>
+    </div>
+</div>
 
-        <!-- Footer Buttons -->
-        <div class="flex items-center justify-end gap-3 mt-6 pb-6">
-            <a href="service_requests.php" class="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <i class="fas fa-times mr-1"></i> ยกเลิก
-            </a>
-            <button type="submit" id="submitBtn"
-                class="px-6 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition flex items-center gap-2 shadow-sm">
-                <i class="fas fa-plus-circle"></i>
-                <span id="submitBtnText">สร้างงาน</span>
-            </button>
+<!-- ════ CREATE / EDIT MODAL ════ -->
+<div id="jobModal" class="modal">
+  <div class="modal-content">
+    <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100">
+        <h2 id="modalTitle" class="text-lg font-semibold text-gray-800">สร้างงานใหม่</h2>
+        <button onclick="closeJobModal()" class="text-gray-400 hover:text-gray-600 transition p-1">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <form id="jobForm" class="space-y-4">
+        <input type="hidden" id="fJobId" name="job_id">
+        <input type="hidden" id="fAction" name="action" value="create">
+
+        <!-- Title + Type -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="form-group sm:col-span-2">
+                <label>ชื่องาน <span class="text-red-500">*</span></label>
+                <input type="text" id="fTitle" name="title" required placeholder="ชื่องาน/กิจกรรม">
+            </div>
+            <div class="form-group">
+                <label>ประเภท</label>
+                <select id="fJobType" name="job_type">
+                    <option value="routine">🔄 รูทีน</option>
+                    <option value="event">🎪 อีเวนต์</option>
+                    <option value="project">📁 โปรเจกต์</option>
+                    <option value="maintenance">🔧 ซ่อมบำรุง</option>
+                    <option value="meeting">👥 ประชุม</option>
+                    <option value="other">📌 อื่นๆ</option>
+                </select>
+            </div>
         </div>
 
-    </div><!-- end #formSection -->
+        <!-- Date + Times -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="form-group col-span-2">
+                <label>วันที่กำหนด</label>
+                <input type="date" id="fSchedDate" name="scheduled_date">
+            </div>
+            <div class="form-group">
+                <label>เริ่ม</label>
+                <input type="time" id="fStartTime" name="start_time">
+            </div>
+            <div class="form-group">
+                <label>สิ้นสุด</label>
+                <input type="time" id="fEndTime" name="end_time">
+            </div>
+        </div>
 
+        <!-- Priority + Deadline -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="form-group">
+                <label>ลำดับความสำคัญ</label>
+                <select id="fPriority" name="priority">
+                    <option value="low">🔵 ต่ำ</option>
+                    <option value="normal" selected>🟢 ปกติ</option>
+                    <option value="high">🟡 สูง</option>
+                    <option value="urgent">🔴 เร่งด่วน</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Deadline</label>
+                <input type="datetime-local" id="fDueDate" name="due_date">
+            </div>
+        </div>
+
+        <!-- Location + Dept -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="form-group">
+                <label>สถานที่</label>
+                <input type="text" id="fLocation" name="location" placeholder="ห้อง/อาคาร">
+            </div>
+            <div class="form-group">
+                <label>หน่วยงาน</label>
+                <select id="fDept" name="department_id">
+                    <option value="">— ไม่ระบุ —</option>
+                    <?php foreach ($depts as $d): ?>
+                    <option value="<?= $d['department_id'] ?>"><?= htmlspecialchars($d['department_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+
+        <!-- Assign -->
+        <div class="form-group">
+            <label>
+                มอบหมายให้
+                <span class="text-gray-400 font-normal text-xs ml-1">(ไม่บังคับ — มอบหมายภายหลังได้)</span>
+            </label>
+            <select id="fAssignTo" name="assigned_to">
+                <option value="">— ยังไม่มอบหมาย —</option>
+                <?php foreach ($staff as $s): ?>
+                <option value="<?= $s['user_id'] ?>" data-line="<?= $s['line_user_id'] ? '1' : '0' ?>">
+                    <?= htmlspecialchars($s['full_name']) ?><?= $s['department_name'] ? ' — '.htmlspecialchars($s['department_name']) : '' ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+            <p id="lineHint" class="mt-1 text-xs text-green-600 hidden">
+                <i class="fab fa-line mr-1"></i>เจ้าหน้าที่มี LINE — จะรับแจ้งเตือนอัตโนมัติ
+            </p>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+            <label>รายละเอียด</label>
+            <textarea id="fDesc" name="description" rows="3" placeholder="รายละเอียด ขั้นตอน หมายเหตุ..."></textarea>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-gray-100">
+            <button type="button" onclick="closeJobModal()" class="btn btn-secondary">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> <span id="saveBtnTxt">บันทึก</span>
+            </button>
+        </div>
     </form>
+  </div>
+</div>
 
-</div><!-- end max-w -->
-</main>
+<!-- ════ DETAIL MODAL ════ -->
+<div id="detailModal" class="modal" style="z-index:1001;">
+  <div class="modal-content modal-sm">
+    <div class="flex justify-between items-start mb-4 pb-3 border-b border-gray-100">
+        <div>
+            <h2 id="dtTitle" class="text-base font-bold text-gray-800"></h2>
+            <p id="dtCode" class="text-xs text-gray-400 font-mono mt-0.5"></p>
+        </div>
+        <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div id="dtBody" class="space-y-3 text-sm text-gray-700 mb-4"></div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-2 items-center pt-3 border-t border-gray-100">
+        <button id="dtEditBtn" class="btn btn-sm" style="background:#f0fdf4;color:#15803d;">
+            <i class="fas fa-pen text-xs"></i> แก้ไข
+        </button>
+        <button id="dtAssignBtn" class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;">
+            <i class="fas fa-user-plus text-xs"></i> มอบหมาย
+        </button>
+        <div id="dtStatusBtns" class="flex gap-2 flex-wrap"></div>
+        <button id="dtDeleteBtn" class="btn btn-sm ml-auto" style="background:#fef2f2;color:#dc2626;">
+            <i class="fas fa-trash text-xs"></i> ลบ
+        </button>
+    </div>
+
+    <!-- Assign sub-form -->
+    <div id="assignSub" class="hidden mt-3">
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <p class="text-xs font-semibold text-gray-600 mb-2">เลือกเจ้าหน้าที่</p>
+            <div class="form-group mb-2">
+                <select id="dtAssignSel">
+                    <option value="">— ยกเลิกการมอบหมาย —</option>
+                    <?php foreach ($staff as $s): ?>
+                    <option value="<?= $s['user_id'] ?>"><?= htmlspecialchars($s['full_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <button onclick="submitAssign()" class="btn btn-teal w-full text-xs py-2">บันทึกการมอบหมาย</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TH_MONTHS = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const P_LABELS  = {low:'ต่ำ',normal:'ปกติ',high:'สูง',urgent:'เร่งด่วน'};
+const S_LABELS  = {scheduled:'กำหนดการ',in_progress:'กำลังทำ',completed:'เสร็จสิ้น',cancelled:'ยกเลิก'};
+const TYPE_ICON = {routine:'🔄',event:'🎪',project:'📁',maintenance:'🔧',meeting:'👥',other:'📌'};
+
+const calState = {
+    year: <?= date('Y') ?>, month: <?= (int)date('n') ?>,
+    selectedDate: '<?= $today ?>', jobs: []
+};
+
+async function loadMonth() {
+    try {
+        const m   = String(calState.month).padStart(2,'0');
+        const res = await fetch(`api/internal_jobs_api.php?action=list&month=${calState.year}-${m}`);
+        const d   = await res.json();
+        calState.jobs = d.jobs ?? [];
+    } catch(e) {
+        calState.jobs = [];
+    }
+    renderCalendar();
+    renderDayList(calState.selectedDate);
+}
+
+function renderCalendar() {
+    const {year:y, month:m} = calState;
+    document.getElementById('calTitle').textContent = `${TH_MONTHS[m]} ${y+543}`;
+    const firstDay    = new Date(y, m-1, 1).getDay();
+    const daysInMonth = new Date(y, m,   0).getDate();
+    const daysInPrev  = new Date(y, m-1, 0).getDate();
+    const today       = new Date().toISOString().slice(0,10);
+
+    const byDate = {};
+    calState.jobs.forEach(j => { if(!j.scheduled_date) return; (byDate[j.scheduled_date]??=[]).push(j); });
+
+    const cells   = Math.ceil((firstDay + daysInMonth)/7)*7;
+    const maxDots = window.innerWidth < 640 ? 2 : 3;
+    let html = '';
+
+    for (let i=0; i<cells; i++) {
+        let dn, ds, isOther=false;
+        if (i < firstDay) {
+            dn=daysInPrev-firstDay+i+1; isOther=true;
+            const pm=m===1?12:m-1, py=m===1?y-1:y;
+            ds=`${py}-${String(pm).padStart(2,'0')}-${String(dn).padStart(2,'0')}`;
+        } else if (i >= firstDay+daysInMonth) {
+            dn=i-firstDay-daysInMonth+1; isOther=true;
+            const nm=m===12?1:m+1, ny=m===12?y+1:y;
+            ds=`${ny}-${String(nm).padStart(2,'0')}-${String(dn).padStart(2,'0')}`;
+        } else {
+            dn=i-firstDay+1;
+            ds=`${y}-${String(m).padStart(2,'0')}-${String(dn).padStart(2,'0')}`;
+        }
+        const jobs=byDate[ds]??[];
+        const cls='cal-cell'+(isOther?' other-month':'')+(ds===today?' today':'')+(ds===calState.selectedDate?' selected':'');
+        let dots=jobs.slice(0,maxDots).map(j=>`<span class="cal-dot p-${j.priority}" onclick="event.stopPropagation();showDetail(${j.job_id})" title="${j.title}">${TYPE_ICON[j.job_type]||'📌'}<span class="cal-dot-text"> ${j.title}</span></span>`).join('');
+        if(jobs.length>maxDots) dots+=`<span class="cal-dot" style="background:#f3f4f6;color:#6b7280">+${jobs.length-maxDots}</span>`;
+        html+=`<div class="${cls}" onclick="selectDate('${ds}')"><div class="cal-date">${dn}</div>${dots}</div>`;
+    }
+    document.getElementById('calBody').innerHTML = html;
+}
+
+function selectDate(ds) { calState.selectedDate=ds; renderCalendar(); renderDayList(ds); }
+
+function renderDayList(ds) {
+    const [y,m,d]=ds.split('-');
+    document.getElementById('listTitle').textContent=`งานวันที่ ${+d} ${TH_MONTHS[+m]} ${+y+543}`;
+    const jobs=calState.jobs.filter(j=>j.scheduled_date===ds);
+    const el=document.getElementById('dayJobList');
+    if(!jobs.length){
+        el.innerHTML=`<div class="text-center py-8 text-gray-400">
+            <i class="fas fa-calendar-day text-3xl mb-2 block opacity-30"></i>
+            <p class="text-sm">ไม่มีงานในวันนี้</p>
+            <button onclick="openCreateModal('${ds}')" class="mt-3 text-xs text-green-600 hover:underline">+ เพิ่มงานในวันนี้</button>
+        </div>`;
+        return;
+    }
+    el.innerHTML=jobs.map(j=>`<div class="job-card p-${j.priority}" onclick="showDetail(${j.job_id})">
+        <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800 text-sm truncate">${TYPE_ICON[j.job_type]||''} ${j.title}</p>
+                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-xs s-${j.status} px-1.5 py-0.5 rounded">${S_LABELS[j.status]||j.status}</span>
+                    ${j.start_time?`<span class="text-xs text-gray-400"><i class="fas fa-clock mr-1"></i>${j.start_time.slice(0,5)}${j.end_time?' – '+j.end_time.slice(0,5):''}</span>`:''}
+                    ${j.location?`<span class="text-xs text-gray-400"><i class="fas fa-map-marker-alt mr-1"></i>${j.location}</span>`:''}
+                </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                ${j.assigned_to_name
+                    ?`<div class="text-xs text-gray-500">${j.assigned_to_name}</div>`
+                    :`<div class="text-xs text-amber-500 italic">ยังไม่มอบหมาย</div>`}
+            </div>
+        </div>
+    </div>`).join('');
+}
+
+async function loadUpcoming() {
+    let jobs = [];
+    try {
+        const res=await fetch('api/internal_jobs_api.php?action=upcoming&days=14&limit=20');
+        const d=await res.json();
+        jobs=d.jobs??[];
+    } catch(e) { jobs=[]; }
+    const el=document.getElementById('upcomingList');
+    if(!jobs.length){ el.innerHTML='<p class="text-center text-gray-400 text-sm py-4">ไม่มีงานใน 14 วันข้างหน้า</p>'; return; }
+    el.innerHTML=jobs.map(j=>{
+        const [yy,mm,dd]=j.scheduled_date.split('-');
+        return `<div class="flex items-start gap-3 py-2.5 border-b border-gray-50 cursor-pointer hover:bg-gray-50 px-1 rounded" onclick="showDetail(${j.job_id})">
+            <div class="text-center w-9 flex-shrink-0">
+                <p class="text-xs text-gray-400 leading-none">${TH_MONTHS[+mm].slice(0,3)}</p>
+                <p class="text-lg font-bold text-teal-700 leading-tight">${+dd}</p>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 truncate">${TYPE_ICON[j.job_type]||''} ${j.title}</p>
+                <p class="text-xs text-gray-400">${j.start_time?j.start_time.slice(0,5)+' น. ':''}${j.assigned_to_name||'<span class="text-amber-500">ยังไม่มอบหมาย</span>'}</p>
+            </div>
+            <span class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded p-${j.priority}">${P_LABELS[j.priority]}</span>
+        </div>`;
+    }).join('');
+}
+
+function changeMonth(d){ calState.month+=d; if(calState.month>12){calState.month=1;calState.year++;} if(calState.month<1){calState.month=12;calState.year--;} loadMonth(); }
+function goToday(){ const n=new Date(); calState.year=n.getFullYear(); calState.month=n.getMonth()+1; calState.selectedDate=n.toISOString().slice(0,10); loadMonth(); }
+
+// ── Create / Edit Modal ──────────────────────────────────
+function openCreateModal(prefill='') {
+    document.getElementById('jobForm').reset();
+    document.getElementById('fAction').value='create'; document.getElementById('fJobId').value='';
+    document.getElementById('modalTitle').textContent='สร้างงานใหม่'; document.getElementById('saveBtnTxt').textContent='บันทึก';
+    document.getElementById('lineHint').classList.add('hidden');
+    if(prefill) document.getElementById('fSchedDate').value=prefill;
+    document.getElementById('jobModal').classList.add('active');
+}
+
+function openEditModal(job) {
+    document.getElementById('fAction').value='update'; document.getElementById('fJobId').value=job.job_id;
+    document.getElementById('fTitle').value=job.title; document.getElementById('fJobType').value=job.job_type;
+    document.getElementById('fPriority').value=job.priority; document.getElementById('fSchedDate').value=job.scheduled_date??'';
+    document.getElementById('fStartTime').value=(job.start_time??'').slice(0,5); document.getElementById('fEndTime').value=(job.end_time??'').slice(0,5);
+    document.getElementById('fDueDate').value=job.due_date?job.due_date.replace(' ','T').slice(0,16):'';
+    document.getElementById('fLocation').value=job.location??''; document.getElementById('fDept').value=job.department_id??'';
+    document.getElementById('fAssignTo').value=job.assigned_to??''; document.getElementById('fDesc').value=job.description??'';
+    document.getElementById('modalTitle').textContent='แก้ไขงาน'; document.getElementById('saveBtnTxt').textContent='บันทึกการแก้ไข';
+    document.getElementById('jobModal').classList.add('active'); closeDetailModal();
+}
+
+function closeJobModal(){ document.getElementById('jobModal').classList.remove('active'); }
+
+document.getElementById('fAssignTo').addEventListener('change', function(){
+    const opt=this.options[this.selectedIndex];
+    document.getElementById('lineHint').classList.toggle('hidden', opt.dataset.line!=='1');
+});
+
+document.getElementById('jobForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn=this.querySelector('button[type=submit]'); btn.disabled=true;
+    try {
+        const res=await fetch('api/internal_jobs_api.php',{method:'POST',body:new FormData(this)});
+        const d=await res.json();
+        if(d.success){
+            closeJobModal();
+            Swal.fire({icon:'success',title:'สำเร็จ',text:d.message,timer:1500,showConfirmButton:false});
+            await loadMonth(); loadUpcoming();
+        } else {
+            Swal.fire({icon:'error',title:'ผิดพลาด',text:d.message});
+        }
+    } finally { btn.disabled=false; }
+});
+
+// ── Detail Modal ─────────────────────────────────────────
+let currentJobId=null;
+async function showDetail(id){
+    currentJobId=id;
+    const res=await fetch(`api/internal_jobs_api.php?action=get&job_id=${id}`);
+    const d=await res.json(); if(!d.success) return;
+    const j=d.job;
+    document.getElementById('dtTitle').textContent=`${TYPE_ICON[j.job_type]||''} ${j.title}`;
+    document.getElementById('dtCode').textContent=j.job_code;
+    const [yy,mm,dd]=(j.scheduled_date??'----').split('-');
+    const dateStr=j.scheduled_date
+        ?`${+dd} ${TH_MONTHS[+mm]} ${+yy+543}`+(j.start_time?' เวลา '+j.start_time.slice(0,5)+(j.end_time?' – '+j.end_time.slice(0,5):''):'')
+        :'ยังไม่กำหนด';
+    document.getElementById('dtBody').innerHTML=`
+        <div class="flex flex-wrap gap-2 mb-1">
+            <span class="text-xs px-2 py-1 rounded s-${j.status}">${S_LABELS[j.status]||j.status}</span>
+            <span class="text-xs px-2 py-1 rounded p-${j.priority}">${P_LABELS[j.priority]}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+            <div><span class="text-gray-500">วันที่:</span> ${dateStr}</div>
+            <div><span class="text-gray-500">สถานที่:</span> ${j.location||'—'}</div>
+            <div><span class="text-gray-500">หน่วยงาน:</span> ${j.department_name||'—'}</div>
+            <div><span class="text-gray-500">สร้างโดย:</span> ${j.assigned_by_name||'—'}</div>
+            <div class="col-span-2"><span class="text-gray-500">มอบหมายให้:</span> ${j.assigned_to_name?`<strong>${j.assigned_to_name}</strong>`:'<em class="text-amber-500">ยังไม่มอบหมาย</em>'}</div>
+        </div>
+        ${j.description?`<div class="bg-gray-50 rounded-lg p-3 text-sm mt-1">${j.description.replace(/\n/g,'<br>')}</div>`:''}
+    `;
+    const sbtnColors={scheduled:'background:#eff6ff;color:#1d4ed8',in_progress:'background:#fffbeb;color:#92400e',completed:'background:#f0fdf4;color:#15803d',cancelled:'background:#fef2f2;color:#dc2626'};
+    const sbtnLabels={scheduled:'📅 กำหนดการ',in_progress:'⚙️ กำลังทำ',completed:'✅ เสร็จสิ้น',cancelled:'❌ ยกเลิก'};
+    document.getElementById('dtStatusBtns').innerHTML=['scheduled','in_progress','completed','cancelled']
+        .filter(s=>s!==j.status)
+        .map(s=>`<button onclick="updateStatus(${j.job_id},'${s}')" class="btn btn-sm" style="${sbtnColors[s]}">${sbtnLabels[s]}</button>`)
+        .join('');
+    document.getElementById('dtEditBtn').onclick=()=>openEditModal(j);
+    document.getElementById('dtDeleteBtn').onclick=()=>deleteJob(j.job_id);
+    document.getElementById('assignSub').classList.add('hidden');
+    document.getElementById('dtAssignSel').value=j.assigned_to??'';
+    document.getElementById('detailModal').classList.add('active');
+}
+
+function closeDetailModal(){ document.getElementById('detailModal').classList.remove('active'); document.getElementById('assignSub').classList.add('hidden'); }
+document.getElementById('dtAssignBtn').addEventListener('click',()=>document.getElementById('assignSub').classList.toggle('hidden'));
+
+async function submitAssign(){
+    const fd=new FormData(); fd.append('action','assign'); fd.append('job_id',currentJobId); fd.append('assigned_to',document.getElementById('dtAssignSel').value);
+    const res=await fetch('api/internal_jobs_api.php',{method:'POST',body:fd}); const d=await res.json();
+    Swal.fire({icon:d.success?'success':'error',title:d.success?'สำเร็จ':'ผิดพลาด',text:d.message,timer:1500,showConfirmButton:false});
+    if(d.success){ closeDetailModal(); await loadMonth(); loadUpcoming(); }
+}
+
+async function updateStatus(id,status){
+    const fd=new FormData(); fd.append('action','update_status'); fd.append('job_id',id); fd.append('status',status);
+    const res=await fetch('api/internal_jobs_api.php',{method:'POST',body:fd}); const d=await res.json();
+    if(d.success){ Swal.fire({icon:'success',title:'สำเร็จ',text:d.message,timer:1200,showConfirmButton:false}); closeDetailModal(); await loadMonth(); loadUpcoming(); }
+    else Swal.fire({icon:'error',title:'ผิดพลาด',text:d.message});
+}
+
+async function deleteJob(id){
+    const c=await Swal.fire({title:'ยืนยันการลบ',text:'ต้องการลบงานนี้ใช่หรือไม่?',icon:'warning',showCancelButton:true,confirmButtonColor:'#ef4444',cancelButtonColor:'#6b7280',confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก'});
+    if(!c.isConfirmed) return;
+    const fd=new FormData(); fd.append('action','delete'); fd.append('job_id',id);
+    const res=await fetch('api/internal_jobs_api.php',{method:'POST',body:fd}); const d=await res.json();
+    if(d.success){ Swal.fire({icon:'success',title:'ลบแล้ว',timer:1200,showConfirmButton:false}); closeDetailModal(); await loadMonth(); loadUpcoming(); }
+    else Swal.fire({icon:'error',title:'ผิดพลาด',text:d.message});
+}
+
+const _jobModal    = document.getElementById('jobModal');
+const _detailModal = document.getElementById('detailModal');
+if (_jobModal)    _jobModal.addEventListener('click',   e=>{ if(e.target.id==='jobModal')    closeJobModal(); });
+if (_detailModal) _detailModal.addEventListener('click', e=>{ if(e.target.id==='detailModal') closeDetailModal(); });
+
+loadMonth();
+loadUpcoming();
+</script>
 
 <?php include 'admin-layout/footer.php'; ?>
-
-<script>
-let currentServiceCode = '';
-
-// ── Service Card Selection ──────────────────────────────────────
-document.querySelectorAll('.service-card').forEach(card => {
-    card.addEventListener('click', () => {
-        selectService(card.dataset.code, card.dataset.name, card.dataset.icon);
-    });
-});
-
-function selectService(code, name, icon) {
-    currentServiceCode = code;
-
-    // Highlight selected card
-    document.querySelectorAll('.service-card').forEach(c => {
-        c.classList.remove('ring-2', 'ring-offset-1', 'shadow-lg');
-    });
-    const selected = document.querySelector(`.service-card[data-code="${code}"]`);
-    if (selected) {
-        selected.classList.add('ring-2', 'ring-offset-1', 'shadow-lg');
-        const color = selected.dataset.color || 'green';
-        selected.classList.add('ring-' + color + '-500');
-    }
-
-    // Update banner
-    document.getElementById('bannerIcon').className = icon + ' text-xl text-green-600';
-    document.getElementById('bannerName').textContent = name;
-
-    // Show form section
-    document.getElementById('formSection').classList.remove('hidden');
-
-    // Load service-specific fields
-    loadServiceForm(code);
-
-    // Scroll to form
-    setTimeout(() => {
-        document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-}
-
-function clearService() {
-    currentServiceCode = '';
-    document.querySelectorAll('.service-card').forEach(c => {
-        c.classList.remove('ring-2', 'ring-offset-1', 'shadow-lg');
-        // Remove any ring-*-500 classes
-        c.className = c.className.replace(/ring-\S+-500/g, '');
-    });
-    document.getElementById('formSection').classList.add('hidden');
-    document.getElementById('serviceFormContainer').innerHTML = '';
-}
-
-function loadServiceForm(code) {
-    const container = document.getElementById('serviceFormContainer');
-    const card = document.getElementById('serviceSpecificCard');
-
-    container.innerHTML = '<div class="flex justify-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div></div>';
-    card.classList.remove('hidden');
-
-    fetch('api/get_service_form.php?code=' + encodeURIComponent(code))
-        .then(r => r.text())
-        .then(html => {
-            const trimmed = html.trim();
-            if (trimmed.length === 0 || trimmed.includes('ไม่มีฟอร์มเพิ่มเติม')) {
-                card.classList.add('hidden');
-                container.innerHTML = '';
-            } else {
-                container.innerHTML = trimmed;
-                card.classList.remove('hidden');
-                // Re-run any inline scripts in loaded HTML
-                container.querySelectorAll('script').forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = oldScript.textContent;
-                    document.body.appendChild(newScript);
-                    oldScript.remove();
-                });
-            }
-        })
-        .catch(() => {
-            card.classList.add('hidden');
-            container.innerHTML = '';
-        });
-}
-
-// ── Cascading Department Selector ──────────────────────────────
-const deptLevels = [1, 2, 3, 4];
-// Track name of selected dept at each level for breadcrumb
-const deptSelectedName = { 1: '', 2: '', 3: '', 4: '' };
-
-function onDeptChange(level, value) {
-    // Clear all levels below this one
-    for (let l = level + 1; l <= 4; l++) {
-        hideDeptLevel(l);
-        deptSelectedName[l] = '';
-    }
-
-    if (!value) {
-        // User cleared this level: bubble up to find the deepest non-empty level
-        let deepest = '';
-        for (let l = level - 1; l >= 1; l--) {
-            const sel = document.getElementById('dept_L' + l);
-            if (sel && sel.value) { deepest = sel.value; break; }
-        }
-        document.getElementById('department_id_hidden').value = deepest;
-        updateDeptBreadcrumb(level - 1);
-        return;
-    }
-
-    // Save name for breadcrumb
-    const sel = document.getElementById('dept_L' + level);
-    deptSelectedName[level] = sel.options[sel.selectedIndex]?.text?.trim() || '';
-
-    // Set the hidden field to current deepest
-    document.getElementById('department_id_hidden').value = value;
-    updateDeptBreadcrumb(level);
-
-    // Fetch children if there can be a next level
-    if (level < 4) {
-        fetch('api/get_dept_children.php?parent_id=' + encodeURIComponent(value))
-            .then(r => r.json())
-            .then(children => {
-                if (children && children.length > 0) {
-                    buildDeptLevel(level + 1, children);
-                }
-                // If no children, current level stays as final selection
-            })
-            .catch(() => {/* silent */});
-    }
-}
-
-function buildDeptLevel(level, children) {
-    const sel = document.getElementById('dept_L' + level);
-    const wrap = document.getElementById('dept_L' + level + '_wrap');
-    if (!sel || !wrap) return;
-
-    // Build options
-    const labelMap = { 2: 'ส่วน / ฝ่าย', 3: 'งาน / กลุ่ม', 4: 'หน่วย' };
-    let html = '<option value="">-- ทั้งหมด (ใช้ระดับก่อนหน้า) --</option>';
-    children.forEach(c => {
-        const type = c.level_type ? ' (' + c.level_type + ')' : '';
-        html += `<option value="${c.department_id}">${escHtml(c.department_name)}${escHtml(type)}</option>`;
-    });
-    sel.innerHTML = html;
-    wrap.classList.remove('hidden');
-}
-
-function hideDeptLevel(level) {
-    const sel = document.getElementById('dept_L' + level);
-    const wrap = document.getElementById('dept_L' + level + '_wrap');
-    if (sel) sel.innerHTML = '';
-    if (wrap) wrap.classList.add('hidden');
-}
-
-function updateDeptBreadcrumb(upToLevel) {
-    const bc = document.getElementById('deptBreadcrumb');
-    const parts = [];
-    for (let l = 1; l <= upToLevel; l++) {
-        const name = deptSelectedName[l];
-        if (name) parts.push(name);
-    }
-    if (parts.length === 0) { bc.classList.add('hidden'); return; }
-    bc.innerHTML = '<i class="fas fa-map-marker-alt mr-1 text-green-500"></i>' +
-        parts.map((p, i) => {
-            const isLast = i === parts.length - 1;
-            return isLast
-                ? `<span class="font-medium text-gray-700">${escHtml(p)}</span>`
-                : `<span>${escHtml(p)}</span><i class="fas fa-chevron-right mx-1 text-gray-300 text-xs"></i>`;
-        }).join('');
-    bc.classList.remove('hidden');
-}
-
-function escHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-// ── Assignment toggle ───────────────────────────────────────────
-function toggleAssignForm(checked) {
-    const fields = document.getElementById('assignFormFields');
-    if (checked) {
-        fields.classList.remove('opacity-40', 'pointer-events-none');
-    } else {
-        fields.classList.add('opacity-40', 'pointer-events-none');
-    }
-}
-
-// ── Form Submission ─────────────────────────────────────────────
-document.getElementById('createJobForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    if (!currentServiceCode) {
-        Swal.fire({ icon: 'warning', title: 'กรุณาเลือกประเภทบริการ', confirmButtonColor: '#16a34a' });
-        return;
-    }
-
-    const submitBtn = document.getElementById('submitBtn');
-    const submitText = document.getElementById('submitBtnText');
-    submitBtn.disabled = true;
-    submitText.textContent = 'กำลังสร้างงาน...';
-    submitBtn.querySelector('.fa-plus-circle')?.classList.replace('fa-plus-circle', 'fa-spinner');
-    submitBtn.querySelector('.fa-spinner')?.classList.add('animate-spin');
-
-    try {
-        const fd = new FormData(this);
-        fd.set('service_code', currentServiceCode);
-
-        // Only send assign fields if checkbox is ticked
-        const assignCheck = document.getElementById('assignImmediately');
-        if (!assignCheck.checked) {
-            fd.delete('assign_to');
-            fd.delete('assign_priority');
-            fd.delete('assign_notes');
-            fd.delete('assign_due_date');
-        }
-
-        const res = await fetch('api/create_job_api.php', { method: 'POST', body: fd });
-        const data = await res.json();
-
-        if (data.success) {
-            await Swal.fire({
-                icon: 'success',
-                title: 'สร้างงานสำเร็จ!',
-                html: 'รหัสคำขอ: <strong>' + data.request_code + '</strong>',
-                confirmButtonColor: '#16a34a',
-                confirmButtonText: 'ดูรายละเอียด'
-            });
-            window.location.href = 'request_detail.php?id=' + data.request_id;
-        } else {
-            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message, confirmButtonColor: '#16a34a' });
-        }
-    } catch (err) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อได้', confirmButtonColor: '#16a34a' });
-    } finally {
-        submitBtn.disabled = false;
-        submitText.textContent = 'สร้างงาน';
-        const spinner = submitBtn.querySelector('.fa-spinner');
-        if (spinner) spinner.classList.replace('fa-spinner', 'fa-plus-circle'), spinner.classList.remove('animate-spin');
-    }
-});
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
-<script>
-(function() {
-    const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-
-    // Shared formatDate: shows Buddhist year + Thai month abbreviation
-    function thaiFormatDate(date, format) {
-        const day   = date.getDate();
-        const month = thaiMonths[date.getMonth()];
-        const year  = date.getFullYear() + 543;
-        if (format === 'datetime') {
-            const hh = String(date.getHours()).padStart(2, '0');
-            const mm = String(date.getMinutes()).padStart(2, '0');
-            return `${day} ${month} ${year}  ${hh}:${mm} น.`;
-        }
-        return `${day} ${month} ${year}`;
-    }
-
-    // ── วันที่ต้องการให้แล้วเสร็จ (date only) ──────────────────
-    flatpickr('#expected_completion_date', {
-        locale: 'th',
-        dateFormat: 'Y-m-d',        // stored value sent to server
-        altInput: true,              // show Thai-formatted text to user
-        altFormat: 'j M Y',         // placeholder format (overridden below)
-        allowInput: false,
-        monthSelectorType: 'static',
-        formatDate: function(date, format) {
-            if (format === 'j M Y') return thaiFormatDate(date, 'date');
-            return flatpickr.formatDate(date, format);
-        }
-    });
-
-    // ── กำหนดส่งงาน (date + time) ──────────────────────────────
-    flatpickr('#assign_due_date', {
-        locale: 'th',
-        enableTime: true,
-        time_24hr: true,
-        dateFormat: 'Y-m-d H:i',    // stored value sent to server
-        altInput: true,
-        altFormat: 'j M Y H:i น.',  // placeholder format (overridden below)
-        allowInput: false,
-        monthSelectorType: 'static',
-        formatDate: function(date, format) {
-            if (format === 'j M Y H:i น.') return thaiFormatDate(date, 'datetime');
-            return flatpickr.formatDate(date, format);
-        }
-    });
-})();
-</script>

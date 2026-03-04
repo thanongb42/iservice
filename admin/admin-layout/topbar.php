@@ -211,11 +211,58 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
     </nav>
 
     <script>
+    // Sidebar state (shared with footer.php's initializeSidebar)
+    var sidebarExpanded = true;
+
+    // Toggle sidebar (desktop collapse/expand)
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        if (window.innerWidth >= 1024) {
+            sidebarExpanded = !sidebarExpanded;
+            const mainContent = document.getElementById('mainContent');
+            const collapseIcon = document.getElementById('collapseIcon');
+            const collapseText = document.getElementById('collapseText');
+            const menuTexts = document.querySelectorAll('.menu-text');
+            const sidebarLogo = document.getElementById('sidebarLogo');
+            const userInfo = document.getElementById('userInfo');
+            if (sidebarExpanded) {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                if (mainContent) { mainContent.classList.remove('lg:ml-[80px]'); mainContent.classList.add('lg:ml-[280px]'); }
+                if (collapseIcon) { collapseIcon.classList.remove('fa-chevron-right'); collapseIcon.classList.add('fa-chevron-left'); }
+                if (collapseText) collapseText.textContent = 'ย่อเมนู';
+                menuTexts.forEach(el => { el.style.opacity = '1'; el.style.width = 'auto'; });
+                if (sidebarLogo) sidebarLogo.style.display = 'block';
+                if (userInfo) userInfo.style.display = 'block';
+            } else {
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed');
+                if (mainContent) { mainContent.classList.remove('lg:ml-[280px]'); mainContent.classList.add('lg:ml-[80px]'); }
+                if (collapseIcon) { collapseIcon.classList.remove('fa-chevron-left'); collapseIcon.classList.add('fa-chevron-right'); }
+                if (collapseText) collapseText.textContent = '';
+                menuTexts.forEach(el => { el.style.opacity = '0'; el.style.width = '0'; });
+                if (sidebarLogo) sidebarLogo.style.display = 'none';
+                if (userInfo) userInfo.style.display = 'none';
+            }
+        } else {
+            toggleMobileSidebar();
+        }
+    }
+
     // Toggle notification dropdown
     function toggleNotifDropdown() {
         const dropdown = document.getElementById('notifDropdown');
         const userDropdown = document.getElementById('userDropdown');
         if (userDropdown) userDropdown.classList.add('hidden');
+        if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    // Toggle user dropdown
+    function toggleUserDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        const notifDropdown = document.getElementById('notifDropdown');
+        if (notifDropdown) notifDropdown.classList.add('hidden');
         if (dropdown) dropdown.classList.toggle('hidden');
     }
 
@@ -225,6 +272,12 @@ if (!$current_user_profile_image && isset($conn) && isset($_SESSION['user_id']))
         const notifBtn = event.target.closest('button[onclick="toggleNotifDropdown()"]');
         if (notifDropdown && !notifBtn && !notifDropdown.contains(event.target)) {
             notifDropdown.classList.add('hidden');
+        }
+
+        const userDropdown = document.getElementById('userDropdown');
+        const userBtn = event.target.closest('button[onclick="toggleUserDropdown()"]');
+        if (userDropdown && !userBtn && !userDropdown.contains(event.target)) {
+            userDropdown.classList.add('hidden');
         }
     });
 

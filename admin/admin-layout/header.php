@@ -28,9 +28,10 @@ if (!isset($system_settings)) {
 
 // Fallback for admin pages (assuming running from admin/)
 if (empty($favicon_path) || !file_exists($favicon_path)) {
-     // Try to see if we can find one
-     if (isset($logo_path)) {
+     if (isset($logo_path) && !empty($logo_path)) {
         $favicon_path = $logo_path;
+     } else {
+        $favicon_path = '../public/assets/images/logo/rangsit-small-logo.png';
      }
 }
 ?>
@@ -330,5 +331,16 @@ if (empty($favicon_path) || !file_exists($favicon_path)) {
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Early sidebar function definitions (must be before any onclick referencing them) -->
+    <script>
+    var mobileSidebarOpen = false;
+    function toggleMobileSidebar() {
+        mobileSidebarOpen = !mobileSidebarOpen;
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('mobileOverlay');
+        if (sidebar) sidebar.classList.toggle('active', mobileSidebarOpen);
+        if (overlay) overlay.classList.toggle('hidden', !mobileSidebarOpen);
+    }
+    </script>
     <!-- Mobile Overlay -->
     <div id="mobileOverlay" class="mobile-overlay fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="toggleMobileSidebar()"></div>
