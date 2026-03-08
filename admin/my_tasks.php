@@ -94,21 +94,14 @@ while ($task = $tasks_result->fetch_assoc()) {
 
 // Get internal jobs assigned to current user (active only)
 $my_internal_jobs = [];
-$_ij_sql = "SELECT ij.*,
-       CONCAT(IFNULL(ub.first_name,''), ' ', IFNULL(ub.last_name,'')) AS assigned_by_name,
-       d.department_name
-FROM internal_jobs ij
-LEFT JOIN users ub      ON ij.assigned_by   = ub.user_id
-LEFT JOIN departments d ON ij.department_id = d.department_id
-WHERE ij.assigned_to = ? AND ij.status NOT IN ('cancelled','completed')
-ORDER BY ij.scheduled_date ASC, ij.start_time ASC";
-$internal_jobs_stmt = $conn->prepare($_ij_sql);
-if ($internal_jobs_stmt) {
-    $internal_jobs_stmt->bind_param('i', $user_id);
-    $internal_jobs_stmt->execute();
-    $my_internal_jobs = $internal_jobs_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$_ij_err = '';
+$_ij_stmt = $conn->prepare("SELECT * FROM internal_jobs WHERE assigned_to = ? AND status NOT IN ('cancelled','completed') ORDER BY scheduled_date ASC");
+if ($_ij_stmt) {
+    $_ij_stmt->bind_param('i', $user_id);
+    $_ij_stmt->execute();
+    $my_internal_jobs = $_ij_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 } else {
-    error_log('[my_tasks] internal_jobs prepare failed: ' . $conn->error);
+    $_ij_err = $conn->error;
 }
 
 $page_title = 'งานของฉัน';
@@ -680,6 +673,8 @@ include 'admin-layout/topbar.php';
     }
 </style>
 
+<?php /* DEBUG */ ?>
+<!-- DEBUG uid=<?= $user_id ?> ij_count=<?= count($my_internal_jobs) ?> ij_err=<?= htmlspecialchars($_ij_err) ?> -->
 <!-- ── Page Header (mobile-compact) ──────────────────────────── -->
 <div class="flex items-center justify-between mb-4 px-1">
     <div>
