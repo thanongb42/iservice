@@ -673,8 +673,6 @@ include 'admin-layout/topbar.php';
     }
 </style>
 
-<?php /* DEBUG */ ?>
-<!-- DEBUG uid=<?= $user_id ?> ij_count=<?= count($my_internal_jobs) ?> ij_err=<?= htmlspecialchars($_ij_err) ?> -->
 <!-- ── Page Header (mobile-compact) ──────────────────────────── -->
 <div class="flex items-center justify-between mb-4 px-1">
     <div>
