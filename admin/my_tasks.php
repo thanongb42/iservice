@@ -506,6 +506,7 @@ include 'admin-layout/topbar.php';
     .calendar-task-item.status-accepted { background: #dbeafe; color: #0c4a6e; }
     .calendar-task-item.status-in_progress { background: #c7d2fe; color: #3730a3; }
     .calendar-task-item.status-completed { background: #dcfce7; color: #166534; }
+    .calendar-task-item.type-internal { background: #fed7aa; color: #9a3412; }
 
     .calendar-table td.other-month {
         background: #f9fafb;
@@ -724,14 +725,14 @@ include 'admin-layout/topbar.php';
 <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 overflow-hidden">
     <!-- Tab buttons -->
     <div class="flex border-b border-gray-100">
-        <button class="tab-button active flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('list-view', this)">
-            <i class="fas fa-list-ul"></i> รายการ
-        </button>
-        <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('calendar-view', this)">
+        <button class="tab-button active flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('calendar-view', this)">
             <i class="fas fa-calendar-alt"></i> ปฏิทิน
         </button>
+        <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('list-view', this)">
+            <i class="fas fa-list-ul"></i> งานตามคำร้อง
+        </button>
         <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('internal-jobs-view', this)">
-            <i class="fas fa-calendar-check"></i> งานปฏิทิน
+            <i class="fas fa-calendar-check"></i> งานตามแผนงาน
             <?php if (!empty($my_internal_jobs)): ?>
             <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold"><?= count($my_internal_jobs) ?></span>
             <?php endif; ?>
@@ -739,7 +740,7 @@ include 'admin-layout/topbar.php';
     </div>
 
     <!-- ── LIST VIEW ──────────────────────────────────────────── -->
-    <div id="list-view" class="tab-content active">
+    <div id="list-view" class="tab-content">
         <?php if (!empty($all_tasks)): ?>
 
         <!-- Search -->
@@ -868,7 +869,7 @@ include 'admin-layout/topbar.php';
     </div>
 
         <!-- Calendar View Tab -->
-        <div id="calendar-view" class="tab-content">
+        <div id="calendar-view" class="tab-content active">
             <div class="calendar-wrapper">
                 <div class="calendar-header">
                     <button onclick="previousMonth()"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
@@ -995,6 +996,7 @@ include 'admin-layout/topbar.php';
 
 <script>
     const tasksData = <?= json_encode($all_tasks) ?>;
+    const internalJobsData = <?= json_encode($my_internal_jobs) ?>;
     let currentMonth = new Date().getMonth();
     let currentYear  = new Date().getFullYear();
 
@@ -1087,9 +1089,15 @@ include 'admin-layout/topbar.php';
                 tasksDiv.classList.add('calendar-day-tasks');
                 dayTasks.forEach(task => {
                     const taskEl = document.createElement('div');
-                    taskEl.classList.add('calendar-task-item', `status-${task.status}`);
-                    taskEl.title = task.request_code;
-                    taskEl.textContent = task.request_code.substring(0, 10) + '...';
+                    if (task.type === 'internal') {
+                        taskEl.classList.add('calendar-task-item', 'type-internal');
+                        taskEl.title = task.title;
+                        taskEl.textContent = task.job_code;
+                    } else {
+                        taskEl.classList.add('calendar-task-item', `status-${task.status}`);
+                        taskEl.title = task.request_code;
+                        taskEl.textContent = task.request_code.substring(0, 10) + '...';
+                    }
                     tasksDiv.appendChild(taskEl);
                 });
                 cell.appendChild(tasksDiv);
@@ -1112,33 +1120,44 @@ include 'admin-layout/topbar.php';
 
     function getTasksForDay(date) {
         // Format date as YYYY-MM-DD without timezone conversion
-        const dateStr = date.getFullYear() + '-' + 
-                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+        const dateStr = date.getFullYear() + '-' +
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' +
                        String(date.getDate()).padStart(2, '0');
         const tasks = [];
 
         // Get tasks from tasksData array
         tasksData.forEach(task => {
-            let matchesDate = false;
-            
-            // Only use start_time for calendar display (for PHOTOGRAPHY, MC events with actual event dates)
             if (task.start_time) {
-                // Extract date part directly from string to avoid timezone issues
-                // start_time format: "2026-02-07 08:31:00"
-                const taskDateStr = task.start_time.split(' ')[0]; // Get "2026-02-07" part
+                const taskDateStr = task.start_time.split(' ')[0];
                 if (taskDateStr === dateStr) {
-                    matchesDate = true;
+                    tasks.push({
+                        type: 'task',
+                        assignment_id: task.assignment_id,
+                        request_code: task.request_code,
+                        status: task.status,
+                        start_time: task.start_time,
+                        end_time: task.end_time
+                    });
                 }
             }
-            
-            if (matchesDate) {
-                tasks.push({
-                    assignment_id: task.assignment_id,
-                    request_code: task.request_code,
-                    status: task.status,
-                    start_time: task.start_time,
-                    end_time: task.end_time
-                });
+        });
+
+        // Get internal jobs from internalJobsData array
+        internalJobsData.forEach(job => {
+            if (job.scheduled_date) {
+                const jobDateStr = job.scheduled_date.split(' ')[0];
+                if (jobDateStr === dateStr) {
+                    tasks.push({
+                        type: 'internal',
+                        job_id: job.job_id,
+                        job_code: job.job_code,
+                        title: job.title,
+                        status: job.status,
+                        start_time: job.start_time,
+                        end_time: job.end_time,
+                        location: job.location
+                    });
+                }
             }
         });
 
@@ -1149,50 +1168,60 @@ include 'admin-layout/topbar.php';
         const dayDetailsDiv = document.getElementById('day-details');
         const dateStr = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
+        const statusLabels = { pending: 'รอรับงาน', accepted: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', scheduled: 'กำหนดการแล้ว' };
+
         if (tasks.length === 0) {
             dayDetailsDiv.innerHTML = `<div class="day-details"><div class="day-details-empty">ไม่มีงานในวันนี้</div></div>`;
         } else {
             let html = `<div class="day-details"><div class="day-details-title">งานในวันที่ ${dateStr}</div>`;
             tasks.forEach(task => {
-                // Format time display if available
                 let timeDisplay = '';
                 if (task.start_time) {
-                    // Parse time from string "2026-02-07 08:31:00" to extract just time
-                    const timeParts = task.start_time.split(' ')[1]; // Get "08:31:00"
-                    const timeStr = timeParts.substring(0, 5); // Get "08:31"
-                    timeDisplay = `<div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">⏰ เวลา: ${timeStr}`;
+                    const timePart = task.start_time.includes(' ') ? task.start_time.split(' ')[1] : task.start_time;
+                    const timeStr = timePart.substring(0, 5);
+                    timeDisplay = `<div style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem;">⏰ เวลา: ${timeStr}`;
                     if (task.end_time) {
-                        const endTimeParts = task.end_time.split(' ')[1]; // Get time part
-                        const endTimeStr = endTimeParts.substring(0, 5); // Get time "HH:MM"
-                        timeDisplay += ` - ${endTimeStr}`;
+                        const endPart = task.end_time.includes(' ') ? task.end_time.split(' ')[1] : task.end_time;
+                        timeDisplay += ` - ${endPart.substring(0, 5)}`;
                     }
                     timeDisplay += '</div>';
                 }
-                
-                html += `
-                    <div class="task-card" onclick="event.stopPropagation()" style="border-left: 4px solid #0d9488;">
-                        <div class="task-header">
-                            <div>
-                                <div class="task-code">${task.request_code}</div>
-                                ${timeDisplay}
+
+                if (task.type === 'internal') {
+                    const locDisplay = task.location ? `<div style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem;">📍 ${task.location}</div>` : '';
+                    html += `
+                        <div class="task-card" onclick="event.stopPropagation()" style="border-left:4px solid #f97316;">
+                            <div class="task-header">
+                                <div>
+                                    <div class="task-code">${task.title}</div>
+                                    <div style="font-size:0.75rem;color:#9ca3af;">${task.job_code}</div>
+                                    ${timeDisplay}${locDisplay}
+                                </div>
+                                <span class="status-badge" style="background:#fed7aa;color:#9a3412;">${statusLabels[task.status] || task.status}</span>
                             </div>
-                            <span class="status-badge status-${task.status}">
-                                ${['pending', 'รอรับงาน', 'accepted', 'รับงานแล้ว', 'in_progress', 'กำลังดำเนินการ', 'completed', 'เสร็จสิ้น'][
-                                    ['pending', 'accepted', 'in_progress', 'completed'].indexOf(task.status) * 2 + 1
-                                ] || task.status}
-                            </span>
                         </div>
-                        <a href="task_detail.php?assignment_id=${task.assignment_id}" class="btn-status" style="background-color: #dbeafe; color: #0c4a6e; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; margin-top: 1rem;">
-                            <i class="fas fa-eye"></i> ดูรายละเอียด
-                        </a>
-                    </div>
-                `;
+                    `;
+                } else {
+                    html += `
+                        <div class="task-card" onclick="event.stopPropagation()" style="border-left:4px solid #0d9488;">
+                            <div class="task-header">
+                                <div>
+                                    <div class="task-code">${task.request_code}</div>
+                                    ${timeDisplay}
+                                </div>
+                                <span class="status-badge status-${task.status}">${statusLabels[task.status] || task.status}</span>
+                            </div>
+                            <a href="task_detail.php?assignment_id=${task.assignment_id}" class="btn-status" style="background-color:#dbeafe;color:#0c4a6e;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:0.5rem 1rem;margin-top:1rem;">
+                                <i class="fas fa-eye"></i> ดูรายละเอียด
+                            </a>
+                        </div>
+                    `;
+                }
             });
             html += `</div>`;
             dayDetailsDiv.innerHTML = html;
         }
-        
-        // Always show the div and scroll it into view
+
         dayDetailsDiv.style.display = 'block';
         dayDetailsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -1296,8 +1325,9 @@ include 'admin-layout/topbar.php';
         }
     }
 
-    // Initialize table on page load
+    // Initialize on page load — calendar is default tab
     document.addEventListener('DOMContentLoaded', function() {
+        renderCalendar();
         if (document.getElementById('tableBody')) {
             initializeTable();
             window.tasksTableInitialized = true;

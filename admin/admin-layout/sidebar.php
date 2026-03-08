@@ -66,6 +66,10 @@ if ($is_admin) {
             'label' => 'ปฏิบัติงาน',
             'items' => [
                 ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+                ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
+                    ['id' => 'staff_guide',         'icon' => 'fa-list-ul',        'label' => 'งานตามคำร้อง',  'url' => 'staff_guide.php'],
+                    ['id' => 'staff_guide_planned', 'icon' => 'fa-calendar-check', 'label' => 'งานตามแผนงาน', 'url' => 'staff_guide_planned.php'],
+                ]],
             ]
         ],
         'manage' => [
@@ -104,6 +108,8 @@ if ($is_admin) {
             'label' => 'ระบบ',
             'items' => [
                 ['id' => 'reports', 'icon' => 'fa-chart-bar', 'label' => 'รายงาน', 'url' => 'admin_report.php'],
+                ['id' => 'visitor_stats', 'icon' => 'fa-chart-line', 'label' => 'สถิติผู้เข้าชม', 'url' => 'visitor_stats.php'],
+                ['id' => 'form_test_runner', 'icon' => 'fa-flask', 'label' => 'ทดสอบฟอร์ม', 'url' => 'form_test_runner.php'],
                 ['id' => 'system_setting', 'icon' => 'fa-cog', 'label' => 'ตั้งค่าระบบ', 'url' => 'system_setting.php'],
             ]
         ]
@@ -120,18 +126,27 @@ if ($is_admin) {
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [
-                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
-                ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+                ['id' => 'my_tasks',        'icon' => 'fa-tasks',          'label' => 'งานของฉัน',   'url' => 'my_tasks.php'],
+                ['id' => 'create_job',      'icon' => 'fa-calendar-plus',  'label' => 'ปฏิทินงาน',  'url' => 'create_job.php'],
+                ['id' => 'service_requests','icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
+                ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
+                    ['id' => 'staff_guide',         'icon' => 'fa-list-ul',        'label' => 'งานตามคำร้อง',  'url' => 'staff_guide.php'],
+                    ['id' => 'staff_guide_planned', 'icon' => 'fa-calendar-check', 'label' => 'งานตามแผนงาน', 'url' => 'staff_guide_planned.php'],
+                ]],
             ]
         ],
     ];
 } else {
-    // ── Staff: my_tasks only ────────────────────────────────────────
+    // ── Staff: my_tasks + guide ─────────────────────────────────────
     $menu_groups = [
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [
                 ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+                ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
+                    ['id' => 'staff_guide',         'icon' => 'fa-list-ul',        'label' => 'งานตามคำร้อง',  'url' => 'staff_guide.php'],
+                    ['id' => 'staff_guide_planned', 'icon' => 'fa-calendar-check', 'label' => 'งานตามแผนงาน', 'url' => 'staff_guide_planned.php'],
+                ]],
             ]
         ]
     ];
@@ -238,6 +253,38 @@ if ($is_admin) {
     color: #fca5a5 !important;
 }
 
+/* Submenu */
+.sidebar-submenu-toggle {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.sidebar-submenu {
+    display: none;
+    overflow: hidden;
+}
+.sidebar-submenu.open {
+    display: block;
+}
+.sidebar-subitem {
+    padding-left: 2.75rem !important;
+    font-size: 0.825rem !important;
+}
+.sidebar-submenu-arrow {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,.4);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.sidebar-submenu-arrow.open {
+    transform: rotate(90deg);
+}
+#sidebar.sidebar-collapsed .sidebar-submenu { display: none !important; }
+#sidebar.sidebar-collapsed .sidebar-submenu-arrow { display: none; }
+
 /* Collapsed state */
 #sidebar.sidebar-collapsed .sidebar-menu-item {
     justify-content: center;
@@ -285,15 +332,43 @@ if ($is_admin) {
                 <?php endif; ?>
 
                 <?php foreach ($group['items'] as $item): ?>
-                    <a href="<?php echo $item['url']; ?>"
-                       class="sidebar-menu-item sidebar-item <?php echo $current_page === $item['id'] ? 'active' : ''; ?>">
-                        <i class="fas <?php echo $item['icon']; ?> mr-3"></i>
-                        <span class="menu-text sidebar-transition"><?php echo $item['label']; ?></span>
-                        <?php if (!empty($item['badge'])): ?>
-                            <span class="sidebar-badge"><?php echo $item['badge']; ?></span>
-                        <?php endif; ?>
-                        <span class="sidebar-tooltip"><?php echo $item['label']; ?></span>
-                    </a>
+                    <?php if (!empty($item['submenu'])): ?>
+                        <?php
+                            $submenu_active = false;
+                            foreach ($item['submenu'] as $sub) {
+                                if ($current_page === $sub['id']) { $submenu_active = true; break; }
+                            }
+                        ?>
+                        <div>
+                            <button onclick="toggleSubmenu('<?php echo $item['id']; ?>')"
+                                    class="sidebar-menu-item sidebar-submenu-toggle <?php echo $submenu_active ? 'active' : ''; ?>">
+                                <i class="fas <?php echo $item['icon']; ?> mr-3"></i>
+                                <span class="menu-text sidebar-transition"><?php echo $item['label']; ?></span>
+                                <i class="fas fa-chevron-right sidebar-submenu-arrow <?php echo $submenu_active ? 'open' : ''; ?>"
+                                   id="arrow-<?php echo $item['id']; ?>"></i>
+                            </button>
+                            <div class="sidebar-submenu <?php echo $submenu_active ? 'open' : ''; ?>"
+                                 id="submenu-<?php echo $item['id']; ?>">
+                                <?php foreach ($item['submenu'] as $sub): ?>
+                                    <a href="<?php echo $sub['url']; ?>"
+                                       class="sidebar-menu-item sidebar-subitem <?php echo $current_page === $sub['id'] ? 'active' : ''; ?>">
+                                        <i class="fas <?php echo $sub['icon']; ?> mr-3"></i>
+                                        <span class="menu-text sidebar-transition"><?php echo $sub['label']; ?></span>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <a href="<?php echo $item['url']; ?>"
+                           class="sidebar-menu-item sidebar-item <?php echo $current_page === $item['id'] ? 'active' : ''; ?>">
+                            <i class="fas <?php echo $item['icon']; ?> mr-3"></i>
+                            <span class="menu-text sidebar-transition"><?php echo $item['label']; ?></span>
+                            <?php if (!empty($item['badge'])): ?>
+                                <span class="sidebar-badge"><?php echo $item['badge']; ?></span>
+                            <?php endif; ?>
+                            <span class="sidebar-tooltip"><?php echo $item['label']; ?></span>
+                        </a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             <?php endforeach; ?>
 
@@ -324,3 +399,14 @@ if ($is_admin) {
         </div>
     </div>
 </aside>
+
+<script>
+function toggleSubmenu(id) {
+    const submenu = document.getElementById('submenu-' + id);
+    const arrow   = document.getElementById('arrow-' + id);
+    if (submenu) {
+        submenu.classList.toggle('open');
+        if (arrow) arrow.classList.toggle('open');
+    }
+}
+</script>

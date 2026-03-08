@@ -5,20 +5,19 @@
  */
 
 // Database credentials on local environment
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'iservice_db');
-define('DB_CHARSET', 'utf8mb4');
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'root');
+// define('DB_PASS', '');
+// define('DB_NAME', 'iservice_db');
+// define('DB_CHARSET', 'utf8mb4');
 
 
 // Database credentials on Hosting Production environment
-
-// define('DB_HOST', 'localhost');
-// define('DB_USER', 'rangsitadmin_iservice');
-// define('DB_PASS', 'IService@2026');
-// define('DB_NAME', 'rangsitadmin_iservice_db');
-// define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST', 'localhost');
+define('DB_USER', 'rangsitadmin_iservice');
+define('DB_PASS', 'IService@2026');
+define('DB_NAME', 'rangsitadmin_iservice_db');
+define('DB_CHARSET', 'utf8mb4');
 
 
 // Create connection
@@ -136,7 +135,7 @@ function require_manager_or_admin($redirect_if_denied = 'my_tasks.php') {
     $chk->bind_param('i', $uid);
     $chk->execute();
     if ($chk->get_result()->fetch_assoc()['cnt'] > 0) return;
-    $role_label = match($_SESSION['role'] ?? '') { 'staff'=>'เจ้าหน้าที่ (Staff)', 'user'=>'ผู้ใช้งานทั่วไป', default=>ucfirst($_SESSION['role'] ?? '-') };
+    $role_label = ['staff'=>'เจ้าหน้าที่ (Staff)','user'=>'ผู้ใช้งานทั่วไป'][$_SESSION['role'] ?? ''] ?? ucfirst($_SESSION['role'] ?? '-');
     $_SESSION['flash_error_title'] = 'ไม่มีสิทธิ์เข้าถึง';
     $_SESSION['flash_error']       = "หน้านี้สำหรับผู้จัดการ (Manager) หรือผู้ดูแลระบบเท่านั้น\nสิทธิ์ปัจจุบัน: {$role_label}";
     header('Location: ' . $redirect_if_denied); exit;
@@ -156,11 +155,8 @@ function require_admin_role(string $redirect_if_denied = 'my_tasks.php'): void {
         exit;
     }
     if (($_SESSION['role'] ?? '') !== 'admin') {
-        $role_label = match($_SESSION['role'] ?? '') {
-            'staff' => 'เจ้าหน้าที่ (Staff)',
-            'user'  => 'ผู้ใช้งานทั่วไป (User)',
-            default => ucfirst($_SESSION['role'] ?? 'ไม่ทราบ'),
-        };
+        $role_labels = ['staff' => 'เจ้าหน้าที่ (Staff)', 'user' => 'ผู้ใช้งานทั่วไป (User)'];
+        $role_label = $role_labels[$_SESSION['role'] ?? ''] ?? ucfirst($_SESSION['role'] ?? 'ไม่ทราบ');
         $_SESSION['flash_error_title'] = 'ไม่มีสิทธิ์เข้าถึง';
         $_SESSION['flash_error']       = "หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น\nสิทธิ์ปัจจุบันของคุณ: {$role_label}";
         header('Location: ' . $redirect_if_denied);

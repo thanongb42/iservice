@@ -49,6 +49,36 @@ if ($result->num_rows > 0) {
     $stats['completed_requests'] = 0;
 }
 
+// Internal jobs stats
+$stats['total_internal_jobs'] = 0; $stats['scheduled_jobs'] = 0;
+$stats['in_progress_jobs'] = 0; $stats['completed_jobs'] = 0; $stats['today_jobs'] = 0;
+$upcoming_jobs = null;
+$show_internal = $conn->query("SHOW TABLES LIKE 'internal_jobs'");
+if ($show_internal && $show_internal->num_rows > 0) {
+    $counts = [
+        'total_internal_jobs' => "SELECT COUNT(*) as c FROM internal_jobs",
+        'scheduled_jobs'      => "SELECT COUNT(*) as c FROM internal_jobs WHERE status = 'scheduled'",
+        'in_progress_jobs'    => "SELECT COUNT(*) as c FROM internal_jobs WHERE status = 'in_progress'",
+        'completed_jobs'      => "SELECT COUNT(*) as c FROM internal_jobs WHERE status = 'completed'",
+        'today_jobs'          => "SELECT COUNT(*) as c FROM internal_jobs WHERE scheduled_date = CURDATE() AND status != 'cancelled'",
+    ];
+    foreach ($counts as $key => $sql) {
+        $r = $conn->query($sql);
+        $stats[$key] = ($r && $row = $r->fetch_assoc()) ? intval($row['c']) : 0;
+    }
+    $upcoming_jobs = $conn->query("
+        SELECT ij.job_code, ij.title, ij.status, ij.scheduled_date,
+               ij.start_time, ij.end_time, ij.location,
+               u.username as assigned_name
+        FROM internal_jobs ij
+        LEFT JOIN users u ON ij.assigned_to = u.user_id
+        WHERE ij.scheduled_date >= CURDATE() AND ij.status != 'cancelled'
+        ORDER BY ij.scheduled_date ASC, ij.start_time ASC
+        LIMIT 6
+    ");
+    if (!$upcoming_jobs) $upcoming_jobs = null;
+}
+
 // Learning resources count
 $result = $conn->query("SHOW TABLES LIKE 'learning_resources'");
 if ($result->num_rows > 0) {
@@ -65,174 +95,6 @@ if ($result->num_rows > 0) {
     $stats['tech_news'] = $result->fetch_assoc()['count'];
 } else {
     $stats['tech_news'] = 0;
-}
-
-// Visitor statistics (daily aggregated in visitor_stats)
-$visitor_enabled = false;
-$visitor_period  = isset($_GET['visitor_period']) ? $_GET['visitor_period'] : 'month';
-$allowed_periods = ['day', 'week', 'month', 'quarter', 'year'];
-if (!in_array($visitor_period, $allowed_periods, true)) {
-    $visitor_period = 'month';
-}
-
-$visitor_stats      = [];
-$visitor_total_hits = 0;
-$visitor_min_year   = (int)date('Y');
-$visitor_max_year   = (int)date('Y');
-$visitor_year       = null;
-
-if (function_exists('table_exists') && table_exists('visitor_stats')) {
-    $visitor_enabled = true;
-
-    // Find available year range from data
-    $res_years = $conn->query("SELECT MIN(visit_date) AS min_d, MAX(visit_date) AS max_d FROM visitor_stats");
-    if ($res_years) {
-        $row_years = $res_years->fetch_assoc();
-        if (!empty($row_years['min_d'])) {
-            $visitor_min_year = (int)date('Y', strtotime($row_years['min_d']));
-        }
-        if (!empty($row_years['max_d'])) {
-            $visitor_max_year = (int)date('Y', strtotime($row_years['max_d']));
-        }
-    }
-
-    // Selected year (for week / month / quarter views)
-    if (isset($_GET['visitor_year'])) {
-        $tmp_year = (int)$_GET['visitor_year'];
-        if ($tmp_year >= $visitor_min_year && $tmp_year <= $visitor_max_year) {
-            $visitor_year = $tmp_year;
-        }
-    }
-    if ($visitor_year === null) {
-        $visitor_year = $visitor_max_year;
-    }
-
-    // Build statistics based on period
-    switch ($visitor_period) {
-        case 'day':
-            // Last 30 days
-            $sql = "
-                SELECT visit_date, SUM(visit_count) AS total_hits
-                FROM visitor_stats
-                WHERE visit_date >= CURDATE() - INTERVAL 29 DAY
-                GROUP BY visit_date
-                ORDER BY visit_date ASC
-            ";
-            $res = $conn->query($sql);
-            if ($res) {
-                while ($r = $res->fetch_assoc()) {
-                    $visitor_stats[] = [
-                        'label' => thdate('d/m/Y', $r['visit_date']),
-                        'total' => (int)$r['total_hits'],
-                    ];
-                    $visitor_total_hits += (int)$r['total_hits'];
-                }
-            }
-            break;
-
-        case 'week':
-            // Weekly summary for selected year (ISO week)
-            $sql = "
-                SELECT YEARWEEK(visit_date, 1) AS yw,
-                       MIN(visit_date) AS start_d,
-                       MAX(visit_date) AS end_d,
-                       SUM(visit_count) AS total_hits
-                FROM visitor_stats
-                WHERE YEAR(visit_date) = {$visitor_year}
-                GROUP BY yw
-                ORDER BY yw ASC
-            ";
-            $res = $conn->query($sql);
-            if ($res) {
-                while ($r = $res->fetch_assoc()) {
-                    $label = thdate('d/m', $r['start_d']) . ' - ' . thdate('d/m', $r['end_d']);
-                    $visitor_stats[] = [
-                        'label' => $label,
-                        'total' => (int)$r['total_hits'],
-                    ];
-                    $visitor_total_hits += (int)$r['total_hits'];
-                }
-            }
-            break;
-
-        case 'month':
-            // Monthly summary for selected year
-            $sql = "
-                SELECT MONTH(visit_date) AS m,
-                       SUM(visit_count) AS total_hits
-                FROM visitor_stats
-                WHERE YEAR(visit_date) = {$visitor_year}
-                GROUP BY m
-                ORDER BY m ASC
-            ";
-            $res = $conn->query($sql);
-            if ($res) {
-                $thai_months = [
-                    1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม',
-                    4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน',
-                    7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน',
-                    10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม',
-                ];
-                while ($r = $res->fetch_assoc()) {
-                    $m = (int)$r['m'];
-                    $label = $thai_months[$m] ?? "เดือนที่ {$m}";
-                    $visitor_stats[] = [
-                        'label' => $label,
-                        'total' => (int)$r['total_hits'],
-                    ];
-                    $visitor_total_hits += (int)$r['total_hits'];
-                }
-            }
-            break;
-
-        case 'quarter':
-            // Quarterly summary for selected year
-            $sql = "
-                SELECT QUARTER(visit_date) AS q,
-                       SUM(visit_count) AS total_hits
-                FROM visitor_stats
-                WHERE YEAR(visit_date) = {$visitor_year}
-                GROUP BY q
-                ORDER BY q ASC
-            ";
-            $res = $conn->query($sql);
-            if ($res) {
-                while ($r = $res->fetch_assoc()) {
-                    $q = (int)$r['q'];
-                    $label = 'ไตรมาส ' . $q;
-                    $visitor_stats[] = [
-                        'label' => $label,
-                        'total' => (int)$r['total_hits'],
-                    ];
-                    $visitor_total_hits += (int)$r['total_hits'];
-                }
-            }
-            break;
-
-        case 'year':
-            // Yearly summary for all years
-            $sql = "
-                SELECT YEAR(visit_date) AS y,
-                       SUM(visit_count) AS total_hits
-                FROM visitor_stats
-                GROUP BY y
-                ORDER BY y ASC
-            ";
-            $res = $conn->query($sql);
-            if ($res) {
-                while ($r = $res->fetch_assoc()) {
-                    $y = (int)$r['y'];
-                    $label = thdate('Y', "{$y}-01-01");
-                    $visitor_stats[] = [
-                        'label' => $label,
-                        'total' => (int)$r['total_hits'],
-                        'year'  => $y,
-                    ];
-                    $visitor_total_hits += (int)$r['total_hits'];
-                }
-            }
-            break;
-    }
 }
 
 // Recent users
@@ -371,107 +233,110 @@ include 'admin-layout/topbar.php';
     </div>
 </div>
 
-<?php if ($visitor_enabled): ?>
-<!-- Visitor Statistics -->
-<div class="bg-white rounded-xl shadow-md p-6 mb-8">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-        <div>
-            <h2 class="text-xl font-bold text-gray-900 flex items-center">
-                <i class="fas fa-chart-line text-indigo-600 mr-2"></i>
-                สถิติผู้เข้าชมเว็บไซต์
-            </h2>
-            <p class="text-sm text-gray-500 mt-1">
-                สรุปจำนวนการเข้าชมตามช่วงเวลา (รายวัน / สัปดาห์ / เดือน / ไตรมาส / ปี)
-            </p>
-        </div>
-        <form method="get" class="flex flex-wrap items-center gap-2">
-            <!-- Keep other dashboard query params (if any) -->
-            <?php foreach ($_GET as $k => $v): ?>
-                <?php if (in_array($k, ['visitor_period','visitor_year'], true)) continue; ?>
-                <input type="hidden" name="<?php echo htmlspecialchars($k); ?>" value="<?php echo htmlspecialchars($v); ?>">
-            <?php endforeach; ?>
-            <label class="text-sm text-gray-700">
-                ช่วงเวลา:
-                <select name="visitor_period" class="ml-1 border-gray-300 rounded-md text-sm px-2 py-1">
-                    <option value="day"     <?php echo $visitor_period === 'day' ? 'selected' : ''; ?>>รายวัน (30 วันที่ผ่านมา)</option>
-                    <option value="week"    <?php echo $visitor_period === 'week' ? 'selected' : ''; ?>>รายสัปดาห์ (ตามปี)</option>
-                    <option value="month"   <?php echo $visitor_period === 'month' ? 'selected' : ''; ?>>รายเดือน (ตามปี)</option>
-                    <option value="quarter" <?php echo $visitor_period === 'quarter' ? 'selected' : ''; ?>>รายไตรมาส (ตามปี)</option>
-                    <option value="year"    <?php echo $visitor_period === 'year' ? 'selected' : ''; ?>>รายปี</option>
-                </select>
-            </label>
-
-            <?php if ($visitor_period !== 'year'): ?>
-            <label class="text-sm text-gray-700">
-                ปี:
-                <select name="visitor_year" class="ml-1 border-gray-300 rounded-md text-sm px-2 py-1">
-                    <?php for ($y = $visitor_max_year; $y >= $visitor_min_year; $y--): ?>
-                        <option value="<?php echo $y; ?>" <?php echo ($y === $visitor_year) ? 'selected' : ''; ?>>
-                            <?php echo thdate('Y', "{$y}-01-01"); ?>
-                        </option>
-                    <?php endfor; ?>
-                </select>
-            </label>
-            <?php endif; ?>
-
-            <button type="submit" class="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition">
-                แสดงผล
-            </button>
-        </form>
+<!-- Internal Jobs Section -->
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900">
+            <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>งานตามแผน
+        </h2>
+        <a href="create_job.php" class="text-sm text-orange-600 hover:text-orange-700 font-medium">
+            ดูปฏิทินงาน <i class="fas fa-arrow-right ml-1"></i>
+        </a>
     </div>
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-        <div>
-            <p class="text-sm text-gray-600">
-                รวมทั้งหมด:
-                <span class="font-semibold text-indigo-700">
-                    <?php echo number_format($visitor_total_hits); ?>
-                </span>
-                ครั้ง
-            </p>
-            <?php if ($visitor_period !== 'day' && $visitor_period !== 'year'): ?>
-                <p class="text-xs text-gray-500">
-                    ปีที่เลือก: <?php echo thdate('Y', "{$visitor_year}-01-01"); ?>
-                </p>
-            <?php endif; ?>
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-orange-400 hover:shadow-md transition">
+            <p class="text-gray-500 text-xs font-medium">งานทั้งหมด</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo number_format($stats['total_internal_jobs']); ?></p>
+            <p class="text-orange-500 text-xs mt-1"><i class="fas fa-calendar-check mr-1"></i>งานตามแผนงาน</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-yellow-400 hover:shadow-md transition">
+            <p class="text-gray-500 text-xs font-medium">งานวันนี้</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo number_format($stats['today_jobs']); ?></p>
+            <p class="text-yellow-500 text-xs mt-1"><i class="fas fa-calendar-day mr-1"></i><?php echo thdate('d M Y', time()); ?></p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-blue-400 hover:shadow-md transition">
+            <p class="text-gray-500 text-xs font-medium">กำลังดำเนินการ</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo number_format($stats['in_progress_jobs']); ?></p>
+            <p class="text-blue-500 text-xs mt-1"><i class="fas fa-spinner mr-1"></i>in progress</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-400 hover:shadow-md transition">
+            <p class="text-gray-500 text-xs font-medium">เสร็จสิ้น</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo number_format($stats['completed_jobs']); ?></p>
+            <p class="text-green-500 text-xs mt-1"><i class="fas fa-check-circle mr-1"></i>completed</p>
         </div>
     </div>
 
-    <?php if (!empty($visitor_stats)): ?>
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">
-                        ช่วงเวลา
-                    </th>
-                    <th class="px-4 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">
-                        จำนวนเข้าชม (ครั้ง)
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <?php foreach ($visitor_stats as $row): ?>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2 whitespace-nowrap text-gray-800">
-                        <?php echo htmlspecialchars($row['label']); ?>
-                    </td>
-                    <td class="px-4 py-2 whitespace-nowrap text-right text-gray-900 font-medium">
-                        <?php echo number_format($row['total']); ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+    <!-- Upcoming jobs list -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-base font-semibold text-gray-800 mb-4">
+            <i class="fas fa-calendar-week text-orange-500 mr-2"></i>งานที่กำลังจะมาถึง
+        </h3>
+        <?php if ($upcoming_jobs instanceof mysqli_result && $upcoming_jobs->num_rows > 0): ?>
+        <div class="space-y-3">
+            <?php
+            $job_status_colors = ['scheduled'=>'bg-yellow-100 text-yellow-800','in_progress'=>'bg-blue-100 text-blue-800','completed'=>'bg-green-100 text-green-800'];
+            $job_status_labels = ['scheduled'=>'รอดำเนินการ','in_progress'=>'กำลังดำเนินการ','completed'=>'เสร็จสิ้น'];
+            while ($job = $upcoming_jobs->fetch_assoc()):
+                $is_today    = ($job['scheduled_date'] === date('Y-m-d'));
+                $status_color = $job_status_colors[$job['status']] ?? 'bg-gray-100 text-gray-800';
+                $status_label = $job_status_labels[$job['status']] ?? $job['status'];
+            ?>
+            <div class="flex items-center gap-4 p-3 rounded-lg <?php echo $is_today ? 'bg-orange-50 border border-orange-200' : 'hover:bg-gray-50'; ?>">
+                <div class="flex-shrink-0 text-center w-12">
+                    <div class="text-xs font-bold <?php echo $is_today ? 'text-orange-600' : 'text-gray-500'; ?>">
+                        <?php echo thdate('d', strtotime($job['scheduled_date'])); ?>
+                    </div>
+                    <div class="text-xs <?php echo $is_today ? 'text-orange-400' : 'text-gray-400'; ?>">
+                        <?php echo thdate('M', strtotime($job['scheduled_date'])); ?>
+                    </div>
+                    <?php if ($is_today): ?>
+                    <div class="text-xs font-bold text-orange-500">วันนี้</div>
+                    <?php endif; ?>
+                </div>
+                <div class="w-1 h-10 rounded-full bg-orange-300 flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate"><?php echo htmlspecialchars($job['title']); ?></p>
+                    <p class="text-xs text-gray-500">
+                        <?php echo htmlspecialchars($job['job_code']); ?>
+                        <?php if ($job['start_time']): ?> · <?php echo substr($job['start_time'], 0, 5); ?><?php endif; ?>
+                        <?php if ($job['location']): ?> · <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($job['location']); ?><?php endif; ?>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <?php if ($job['assigned_name']): ?>
+                    <span class="text-xs text-gray-500 hidden sm:block"><?php echo htmlspecialchars($job['assigned_name']); ?></span>
+                    <?php endif; ?>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $status_color; ?>"><?php echo $status_label; ?></span>
+                </div>
+            </div>
+            <?php endwhile; ?>
+        </div>
+        <?php else: ?>
+        <div class="text-center py-8 text-gray-400">
+            <i class="fas fa-calendar-check text-3xl mb-2"></i>
+            <p class="text-sm">ไม่มีงานที่กำลังจะมาถึง</p>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php else: ?>
-    <div class="text-center py-8 text-gray-500">
-        <i class="fas fa-info-circle text-3xl mb-2"></i>
-        <p>ยังไม่มีข้อมูลสถิติการเข้าชมสำหรับช่วงเวลาที่เลือก</p>
-    </div>
-    <?php endif; ?>
 </div>
-<?php endif; ?>
+
+<!-- Visitor Statistics shortcut banner -->
+<div class="bg-white rounded-xl shadow-md p-5 mb-8 flex items-center justify-between border-l-4 border-indigo-500">
+    <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-chart-line text-indigo-600 text-xl"></i>
+        </div>
+        <div>
+            <h2 class="text-base font-bold text-gray-900">สถิติผู้เข้าชมเว็บไซต์</h2>
+            <p class="text-sm text-gray-500">ดูจำนวนผู้เข้าชม เลือกช่วงวันที่ และกราฟรายวันได้ในหน้านี้</p>
+        </div>
+    </div>
+    <a href="visitor_stats.php" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 whitespace-nowrap">
+        <i class="fas fa-external-link-alt text-xs"></i> ดูรายงาน
+    </a>
+</div>
 
 <!-- Quick Actions & Recent Activity -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -506,27 +371,15 @@ include 'admin-layout/topbar.php';
             <i class="fas fa-history text-teal-600 mr-2"></i>กิจกรรมล่าสุด
         </h2>
         <div class="space-y-4">
+            <?php
+            $req_bg  = ['pending'=>'bg-yellow-100','in_progress'=>'bg-blue-100','completed'=>'bg-green-100','cancelled'=>'bg-red-100'];
+            $req_icon = ['pending'=>'fa-clock text-yellow-600','in_progress'=>'fa-spinner text-blue-600','completed'=>'fa-check text-green-600','cancelled'=>'fa-times text-red-600'];
+            ?>
             <?php if ($recent_requests instanceof mysqli_result && $recent_requests->num_rows > 0): ?>
                 <?php while ($request = $recent_requests->fetch_assoc()): ?>
                 <div class="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg">
-                    <div class="w-10 h-10 <?php
-                        echo match($request['status']) {
-                            'pending' => 'bg-yellow-100',
-                            'in_progress' => 'bg-blue-100',
-                            'completed' => 'bg-green-100',
-                            'cancelled' => 'bg-red-100',
-                            default => 'bg-gray-100'
-                        };
-                    ?> rounded-full flex items-center justify-center">
-                        <i class="fas <?php
-                            echo match($request['status']) {
-                                'pending' => 'fa-clock text-yellow-600',
-                                'in_progress' => 'fa-spinner text-blue-600',
-                                'completed' => 'fa-check text-green-600',
-                                'cancelled' => 'fa-times text-red-600',
-                                default => 'fa-question text-gray-600'
-                            };
-                        ?>"></i>
+                    <div class="w-10 h-10 <?php echo $req_bg[$request['status']] ?? 'bg-gray-100'; ?> rounded-full flex items-center justify-center">
+                        <i class="fas <?php echo $req_icon[$request['status']] ?? 'fa-question text-gray-600'; ?>"></i>
                     </div>
                     <div class="flex-1">
                         <p class="font-medium text-gray-900 text-sm"><?php echo htmlspecialchars($request['service_name'] ?? $request['service_code']); ?></p>
