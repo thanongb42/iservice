@@ -67,6 +67,174 @@ if ($result->num_rows > 0) {
     $stats['tech_news'] = 0;
 }
 
+// Visitor statistics (daily aggregated in visitor_stats)
+$visitor_enabled = false;
+$visitor_period  = isset($_GET['visitor_period']) ? $_GET['visitor_period'] : 'month';
+$allowed_periods = ['day', 'week', 'month', 'quarter', 'year'];
+if (!in_array($visitor_period, $allowed_periods, true)) {
+    $visitor_period = 'month';
+}
+
+$visitor_stats      = [];
+$visitor_total_hits = 0;
+$visitor_min_year   = (int)date('Y');
+$visitor_max_year   = (int)date('Y');
+$visitor_year       = null;
+
+if (function_exists('table_exists') && table_exists('visitor_stats')) {
+    $visitor_enabled = true;
+
+    // Find available year range from data
+    $res_years = $conn->query("SELECT MIN(visit_date) AS min_d, MAX(visit_date) AS max_d FROM visitor_stats");
+    if ($res_years) {
+        $row_years = $res_years->fetch_assoc();
+        if (!empty($row_years['min_d'])) {
+            $visitor_min_year = (int)date('Y', strtotime($row_years['min_d']));
+        }
+        if (!empty($row_years['max_d'])) {
+            $visitor_max_year = (int)date('Y', strtotime($row_years['max_d']));
+        }
+    }
+
+    // Selected year (for week / month / quarter views)
+    if (isset($_GET['visitor_year'])) {
+        $tmp_year = (int)$_GET['visitor_year'];
+        if ($tmp_year >= $visitor_min_year && $tmp_year <= $visitor_max_year) {
+            $visitor_year = $tmp_year;
+        }
+    }
+    if ($visitor_year === null) {
+        $visitor_year = $visitor_max_year;
+    }
+
+    // Build statistics based on period
+    switch ($visitor_period) {
+        case 'day':
+            // Last 30 days
+            $sql = "
+                SELECT visit_date, SUM(visit_count) AS total_hits
+                FROM visitor_stats
+                WHERE visit_date >= CURDATE() - INTERVAL 29 DAY
+                GROUP BY visit_date
+                ORDER BY visit_date ASC
+            ";
+            $res = $conn->query($sql);
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $visitor_stats[] = [
+                        'label' => thdate('d/m/Y', $r['visit_date']),
+                        'total' => (int)$r['total_hits'],
+                    ];
+                    $visitor_total_hits += (int)$r['total_hits'];
+                }
+            }
+            break;
+
+        case 'week':
+            // Weekly summary for selected year (ISO week)
+            $sql = "
+                SELECT YEARWEEK(visit_date, 1) AS yw,
+                       MIN(visit_date) AS start_d,
+                       MAX(visit_date) AS end_d,
+                       SUM(visit_count) AS total_hits
+                FROM visitor_stats
+                WHERE YEAR(visit_date) = {$visitor_year}
+                GROUP BY yw
+                ORDER BY yw ASC
+            ";
+            $res = $conn->query($sql);
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $label = thdate('d/m', $r['start_d']) . ' - ' . thdate('d/m', $r['end_d']);
+                    $visitor_stats[] = [
+                        'label' => $label,
+                        'total' => (int)$r['total_hits'],
+                    ];
+                    $visitor_total_hits += (int)$r['total_hits'];
+                }
+            }
+            break;
+
+        case 'month':
+            // Monthly summary for selected year
+            $sql = "
+                SELECT MONTH(visit_date) AS m,
+                       SUM(visit_count) AS total_hits
+                FROM visitor_stats
+                WHERE YEAR(visit_date) = {$visitor_year}
+                GROUP BY m
+                ORDER BY m ASC
+            ";
+            $res = $conn->query($sql);
+            if ($res) {
+                $thai_months = [
+                    1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม',
+                    4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน',
+                    7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน',
+                    10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม',
+                ];
+                while ($r = $res->fetch_assoc()) {
+                    $m = (int)$r['m'];
+                    $label = $thai_months[$m] ?? "เดือนที่ {$m}";
+                    $visitor_stats[] = [
+                        'label' => $label,
+                        'total' => (int)$r['total_hits'],
+                    ];
+                    $visitor_total_hits += (int)$r['total_hits'];
+                }
+            }
+            break;
+
+        case 'quarter':
+            // Quarterly summary for selected year
+            $sql = "
+                SELECT QUARTER(visit_date) AS q,
+                       SUM(visit_count) AS total_hits
+                FROM visitor_stats
+                WHERE YEAR(visit_date) = {$visitor_year}
+                GROUP BY q
+                ORDER BY q ASC
+            ";
+            $res = $conn->query($sql);
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $q = (int)$r['q'];
+                    $label = 'ไตรมาส ' . $q;
+                    $visitor_stats[] = [
+                        'label' => $label,
+                        'total' => (int)$r['total_hits'],
+                    ];
+                    $visitor_total_hits += (int)$r['total_hits'];
+                }
+            }
+            break;
+
+        case 'year':
+            // Yearly summary for all years
+            $sql = "
+                SELECT YEAR(visit_date) AS y,
+                       SUM(visit_count) AS total_hits
+                FROM visitor_stats
+                GROUP BY y
+                ORDER BY y ASC
+            ";
+            $res = $conn->query($sql);
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $y = (int)$r['y'];
+                    $label = thdate('Y', "{$y}-01-01");
+                    $visitor_stats[] = [
+                        'label' => $label,
+                        'total' => (int)$r['total_hits'],
+                        'year'  => $y,
+                    ];
+                    $visitor_total_hits += (int)$r['total_hits'];
+                }
+            }
+            break;
+    }
+}
+
 // Recent users
 $recent_users = $conn->query("SELECT * FROM v_users_full ORDER BY created_at DESC LIMIT 5");
 
@@ -202,6 +370,108 @@ include 'admin-layout/topbar.php';
         </div>
     </div>
 </div>
+
+<?php if ($visitor_enabled): ?>
+<!-- Visitor Statistics -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-chart-line text-indigo-600 mr-2"></i>
+                สถิติผู้เข้าชมเว็บไซต์
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+                สรุปจำนวนการเข้าชมตามช่วงเวลา (รายวัน / สัปดาห์ / เดือน / ไตรมาส / ปี)
+            </p>
+        </div>
+        <form method="get" class="flex flex-wrap items-center gap-2">
+            <!-- Keep other dashboard query params (if any) -->
+            <?php foreach ($_GET as $k => $v): ?>
+                <?php if (in_array($k, ['visitor_period','visitor_year'], true)) continue; ?>
+                <input type="hidden" name="<?php echo htmlspecialchars($k); ?>" value="<?php echo htmlspecialchars($v); ?>">
+            <?php endforeach; ?>
+            <label class="text-sm text-gray-700">
+                ช่วงเวลา:
+                <select name="visitor_period" class="ml-1 border-gray-300 rounded-md text-sm px-2 py-1">
+                    <option value="day"     <?php echo $visitor_period === 'day' ? 'selected' : ''; ?>>รายวัน (30 วันที่ผ่านมา)</option>
+                    <option value="week"    <?php echo $visitor_period === 'week' ? 'selected' : ''; ?>>รายสัปดาห์ (ตามปี)</option>
+                    <option value="month"   <?php echo $visitor_period === 'month' ? 'selected' : ''; ?>>รายเดือน (ตามปี)</option>
+                    <option value="quarter" <?php echo $visitor_period === 'quarter' ? 'selected' : ''; ?>>รายไตรมาส (ตามปี)</option>
+                    <option value="year"    <?php echo $visitor_period === 'year' ? 'selected' : ''; ?>>รายปี</option>
+                </select>
+            </label>
+
+            <?php if ($visitor_period !== 'year'): ?>
+            <label class="text-sm text-gray-700">
+                ปี:
+                <select name="visitor_year" class="ml-1 border-gray-300 rounded-md text-sm px-2 py-1">
+                    <?php for ($y = $visitor_max_year; $y >= $visitor_min_year; $y--): ?>
+                        <option value="<?php echo $y; ?>" <?php echo ($y === $visitor_year) ? 'selected' : ''; ?>>
+                            <?php echo thdate('Y', "{$y}-01-01"); ?>
+                        </option>
+                    <?php endfor; ?>
+                </select>
+            </label>
+            <?php endif; ?>
+
+            <button type="submit" class="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition">
+                แสดงผล
+            </button>
+        </form>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <div>
+            <p class="text-sm text-gray-600">
+                รวมทั้งหมด:
+                <span class="font-semibold text-indigo-700">
+                    <?php echo number_format($visitor_total_hits); ?>
+                </span>
+                ครั้ง
+            </p>
+            <?php if ($visitor_period !== 'day' && $visitor_period !== 'year'): ?>
+                <p class="text-xs text-gray-500">
+                    ปีที่เลือก: <?php echo thdate('Y', "{$visitor_year}-01-01"); ?>
+                </p>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if (!empty($visitor_stats)): ?>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                        ช่วงเวลา
+                    </th>
+                    <th class="px-4 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">
+                        จำนวนเข้าชม (ครั้ง)
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <?php foreach ($visitor_stats as $row): ?>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 whitespace-nowrap text-gray-800">
+                        <?php echo htmlspecialchars($row['label']); ?>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-right text-gray-900 font-medium">
+                        <?php echo number_format($row['total']); ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <div class="text-center py-8 text-gray-500">
+        <i class="fas fa-info-circle text-3xl mb-2"></i>
+        <p>ยังไม่มีข้อมูลสถิติการเข้าชมสำหรับช่วงเวลาที่เลือก</p>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <!-- Quick Actions & Recent Activity -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

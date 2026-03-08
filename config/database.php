@@ -5,20 +5,20 @@
  */
 
 // Database credentials on local environment
-// define('DB_HOST', 'localhost');
-// define('DB_USER', 'root');
-// define('DB_PASS', '');
-// define('DB_NAME', 'iservice_db');
-// define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'iservice_db');
+define('DB_CHARSET', 'utf8mb4');
 
 
 // Database credentials on Hosting Production environment
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'rangsitadmin_iservice');
-define('DB_PASS', 'IService@2026');
-define('DB_NAME', 'rangsitadmin_iservice_db');
-define('DB_CHARSET', 'utf8mb4');
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'rangsitadmin_iservice');
+// define('DB_PASS', 'IService@2026');
+// define('DB_NAME', 'rangsitadmin_iservice_db');
+// define('DB_CHARSET', 'utf8mb4');
 
 
 // Create connection
@@ -93,10 +93,41 @@ function fix_asset_path($path, $from_admin = false) {
 }
 
 /**
+ * Session timeout: ถ้าไม่ได้ใช้งานเกินกำหนดเวลา ให้ logout และ redirect ไปหน้า login
+ * เรียกใช้หลัง session_start() เมื่อมี user_id ใน session
+ *
+ * @param int $timeout_seconds ระยะเวลาไม่ใช้งาน (วินาที) ค่าเริ่มต้น 30 นาที
+ * @param string $login_url URL ไปหน้า login (relative) เช่น 'login.php' หรือ '../login.php'
+ */
+function check_session_timeout($timeout_seconds = 1800, $login_url = 'login.php') {
+    if (!isset($_SESSION['user_id'])) {
+        return;
+    }
+    $now = time();
+    if (!isset($_SESSION['last_activity'])) {
+        $_SESSION['last_activity'] = $now;
+        return;
+    }
+    if (($now - $_SESSION['last_activity']) > (int) $timeout_seconds) {
+        $_SESSION = array();
+        if (ini_get('session.use_cookies')) {
+            $p = session_get_cookie_params();
+            setcookie(session_name(), '', $now - 3600, $p['path'], $p['domain'], !empty($p['secure']), !empty($p['httponly']));
+        }
+        session_destroy();
+        $sep = strpos($login_url, '?') !== false ? '&' : '?';
+        header('Location: ' . $login_url . $sep . 'timeout=1');
+        exit;
+    }
+    $_SESSION['last_activity'] = $now;
+}
+
+/**
  * Access guard for manager-or-admin pages (service_requests, dashboard)
  * admin OR role_code IN ('manager','all') → ผ่าน
  */
-function require_manager_or_admin(string $redirect_if_denied = 'my_tasks.php'): void {
+function require_manager_or_admin($redirect_if_denied = 'my_tasks.php') {
+    check_session_timeout(1800, '../login.php');
     if (!isset($_SESSION['user_id'])) { header('Location: ../login.php'); exit; }
     if (($_SESSION['role'] ?? '') === 'admin') return;
     global $conn;
@@ -119,6 +150,7 @@ function require_manager_or_admin(string $redirect_if_denied = 'my_tasks.php'): 
  * @param string $redirect_if_denied  relative path จากโฟลเดอร์ admin/
  */
 function require_admin_role(string $redirect_if_denied = 'my_tasks.php'): void {
+    check_session_timeout(1800, '../login.php');
     if (!isset($_SESSION['user_id'])) {
         header('Location: ../login.php');
         exit;

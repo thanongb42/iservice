@@ -2,6 +2,8 @@
 session_start();
 require_once '../config/database.php';
 
+check_session_timeout(1800, '../login.php');
+
 // Check if user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: ../login.php');

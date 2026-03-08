@@ -213,6 +213,7 @@ $_SESSION['last_name']   = $user['last_name'];
 $_SESSION['email']       = $user['email'];
 $_SESSION['role']        = $user['role'];
 $_SESSION['full_name']   = trim(($user['prefix_name'] ?? '') . ' ' . $user['first_name'] . ' ' . $user['last_name']);
+$_SESSION['last_activity'] = time();
 
 // Update last login timestamp
 $upd = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");

@@ -139,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         $_SESSION['email']      = $user['email'];
         $_SESSION['role']       = $user['role'];
         $_SESSION['full_name']  = trim(($user['prefix_name'] ?? '') . ' ' . $user['first_name'] . ' ' . $user['last_name']);
+        $_SESSION['last_activity'] = time();
 
         $update_stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
         $update_stmt->bind_param("i", $user['user_id']);
@@ -336,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     ['icon'=>'fa-inbox',         'color'=>'text-teal-300',  'title'=>'รับคำขอบริการออนไลน์',        'desc'=>'ประชาชนยื่นคำขอผ่านเว็บได้ทันที'],
                     ['icon'=>'fa-tasks',          'color'=>'text-emerald-300','title'=>'มอบหมายและติดตามงาน',         'desc'=>'ระบบ assign งานให้เจ้าหน้าที่แบบ real-time'],
                     ['icon'=>'fa-chart-bar',      'color'=>'text-cyan-300',  'title'=>'รายงานและสถิติ',               'desc'=>'Dashboard ภาพรวมและ export รายงาน'],
-                    ['icon'=>'fa-bell',           'color'=>'text-yellow-300','title'=>'แจ้งเตือนผ่าน LINE',           'desc'=>'เจ้าหน้าที่รับแจ้งเตือนงานใหม่ทันที'],
+                    ['icon'=>'fa-bell',           'color'=>'text-yellow-300','title'=>'แจ้งเตือนผ่าน LINE Bot',       'desc'=>'รับแจ้งเตือนงานใหม่/ยกเลิกผ่าน LINE ทันที'],
                     ['icon'=>'fa-building',       'color'=>'text-purple-300','title'=>'จัดการหน่วยงาน 4 ระดับ',      'desc'=>'สำนัก → กอง → ฝ่าย → งาน'],
                 ];
                 foreach ($features as $i => $f): ?>
@@ -350,6 +351,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     </div>
                 </div>
                 <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- LINE Bot Add-Friend Banner -->
+        <div class="relative z-10 mb-5 fade-left delay-5">
+            <div class="flex items-center gap-4 bg-white/10 backdrop-blur border border-white/20 rounded-2xl px-4 py-3">
+                <!-- QR code -->
+                <div class="flex-shrink-0">
+                    <img src="asset/line-bot/qrcode/732lbasj.png"
+                         alt="LINE Bot QR Code"
+                         class="w-16 h-16 rounded-xl border-2 border-white/30 object-cover bg-white p-0.5">
+                </div>
+                <!-- Text + CTA -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <i class="fab fa-line text-[#06C755] text-base"></i>
+                        <span class="text-white text-sm font-bold">เพิ่ม RCM-iService Bot</span>
+                    </div>
+                    <p class="text-teal-200 text-xs leading-snug mb-2">สแกน QR หรือกดปุ่มด้านล่างเพื่อรับแจ้งเตือนงานผ่าน LINE</p>
+                    <a href="line-add-friend.php" target="_blank"
+                       class="inline-flex items-center gap-1.5 bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-105">
+                        <i class="fab fa-line"></i> เพิ่มเพื่อน
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -500,12 +525,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     </span>
                 </div>
             </div>
+
+            <!-- LINE Bot Add Friend card -->
+            <div class="mt-5 fade-right delay-5">
+                <div class="rounded-2xl border border-[#06C755]/25 bg-gradient-to-r from-[#06C755]/8 to-white overflow-hidden">
+                    <div class="flex items-stretch">
+                        <!-- QR side -->
+                        <div class="flex-shrink-0 bg-white flex items-center justify-center p-3 border-r border-[#06C755]/20">
+                            <a href="line-add-friend.php" target="_blank" title="ดูหน้าเพิ่มเพื่อน">
+                                <img src="asset/line-bot/qrcode/732lbasj.png"
+                                     alt="LINE Bot QR Code"
+                                     class="w-20 h-20 object-contain rounded-lg hover:opacity-80 transition">
+                            </a>
+                        </div>
+                        <!-- Info side -->
+                        <div class="flex-1 px-4 py-3 flex flex-col justify-center">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <i class="fab fa-line text-[#06C755] text-base"></i>
+                                <p class="text-sm font-bold text-gray-800">RCM-iService Bot</p>
+                            </div>
+                            <p class="text-xs text-gray-500 leading-snug mb-2.5">
+                                เพิ่มบอทเป็นเพื่อนเพื่อรับแจ้งเตือนงาน<br>ผ่าน LINE ได้ทันที
+                            </p>
+                            <a href="line-add-friend.php" target="_blank"
+                               class="inline-flex items-center gap-1.5 self-start bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm shadow-green-200 transition-all hover:scale-105 active:scale-100">
+                                <i class="fab fa-line"></i>
+                                เพิ่มเพื่อน
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
 </div><!-- end flex -->
 
 <script>
+    // Session timeout message
+    <?php if (!empty($_GET['timeout'])): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            icon: 'info',
+            title: 'เซสชันหมดอายุ',
+            text: 'ไม่ได้ใช้งานเกิน 30 นาที กรุณาเข้าสู่ระบบใหม่',
+            confirmButtonColor: '#0f766e'
+        });
+    });
+    <?php endif; ?>
+
     // LINE error alert
     <?php if (!empty($line_error)): ?>
     document.addEventListener('DOMContentLoaded', function() {

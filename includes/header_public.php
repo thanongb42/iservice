@@ -6,6 +6,32 @@ if (session_status() === PHP_SESSION_NONE) {
 // Ensure database connection
 require_once __DIR__ . '/../config/database.php';
 
+// Auto logout หลังไม่ใช้งาน 30 นาที (หน้า public ที่ล็อกอินอยู่)
+if (function_exists('check_session_timeout')) {
+    check_session_timeout(1800, 'login.php');
+}
+
+// Simple visitor counter (daily aggregate)
+if (function_exists('table_exists') && table_exists('visitor_stats')) {
+    try {
+        $today = date('Y-m-d');
+        if (isset($conn) && $conn instanceof mysqli) {
+            $stmt = $conn->prepare("
+                INSERT INTO visitor_stats (visit_date, visit_count)
+                VALUES (?, 1)
+                ON DUPLICATE KEY UPDATE visit_count = visit_count + 1
+            ");
+            if ($stmt) {
+                $stmt->bind_param('s', $today);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    } catch (Throwable $e) {
+        // เงียบไว้ ไม่ให้มีผลกับผู้ใช้งานหากนับสถิติล้มเหลว
+    }
+}
+
 // Load navigation menu if not already loaded
 if (!isset($nav_html)) {
     require_once __DIR__ . '/nav_menu_loader.php';
