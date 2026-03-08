@@ -13,7 +13,6 @@ header('Content-Type: application/json; charset=utf-8');
 // Auth: manager/admin can do everything.
 // Exception: assigned staff can update_status of their own job.
 $action = $_REQUEST['action'] ?? '';
-check_session_timeout(1800, '../../login.php');
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบ']);
     exit;
