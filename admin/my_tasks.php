@@ -93,20 +93,23 @@ while ($task = $tasks_result->fetch_assoc()) {
 }
 
 // Get internal jobs assigned to current user (active only)
-$internal_jobs_stmt = $conn->prepare("
-    SELECT ij.*,
-           CONCAT(IFNULL(pb.prefix_name,''), ub.first_name, ' ', ub.last_name) AS assigned_by_name,
-           d.department_name
-    FROM internal_jobs ij
-    LEFT JOIN users ub      ON ij.assigned_by    = ub.user_id
-    LEFT JOIN prefixes pb   ON ub.prefix_id      = pb.prefix_id
-    LEFT JOIN departments d ON ij.department_id  = d.department_id
-    WHERE ij.assigned_to = ? AND ij.status NOT IN ('cancelled','completed')
-    ORDER BY ij.scheduled_date ASC, ij.start_time ASC
-");
-$internal_jobs_stmt->bind_param('i', $user_id);
-$internal_jobs_stmt->execute();
-$my_internal_jobs = $internal_jobs_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$my_internal_jobs = [];
+$_ij_sql = "SELECT ij.*,
+       CONCAT(IFNULL(ub.first_name,''), ' ', IFNULL(ub.last_name,'')) AS assigned_by_name,
+       d.department_name
+FROM internal_jobs ij
+LEFT JOIN users ub      ON ij.assigned_by   = ub.user_id
+LEFT JOIN departments d ON ij.department_id = d.department_id
+WHERE ij.assigned_to = ? AND ij.status NOT IN ('cancelled','completed')
+ORDER BY ij.scheduled_date ASC, ij.start_time ASC";
+$internal_jobs_stmt = $conn->prepare($_ij_sql);
+if ($internal_jobs_stmt) {
+    $internal_jobs_stmt->bind_param('i', $user_id);
+    $internal_jobs_stmt->execute();
+    $my_internal_jobs = $internal_jobs_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+} else {
+    error_log('[my_tasks] internal_jobs prepare failed: ' . $conn->error);
+}
 
 $page_title = 'งานของฉัน';
 $current_page = 'my_tasks';
