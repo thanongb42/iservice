@@ -159,7 +159,7 @@ try {
                      location, notes)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ");
-            $stmt->bind_param('ssssssiiiissssss',
+            $stmt->bind_param('ssssssiiissssss',
                 $job_code, $title, $description, $job_type, $service_type, $priority,
                 $assigned_to, $assigned_by, $dept_id,
                 $sched_date, $start_time, $end_time, $due_date,
