@@ -10,9 +10,18 @@ require_once '../../includes/line_helper.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-require_manager_or_admin();
+// Auth: manager/admin can do everything.
+// Exception: assigned staff can update_status of their own job.
+$action = $_REQUEST['action'] ?? '';
+check_session_timeout(1800, '../../login.php');
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบ']);
+    exit;
+}
+if ($action !== 'update_status') {
+    require_manager_or_admin();
+}
 
-$action   = $_REQUEST['action'] ?? '';
 $response = ['success' => false, 'message' => 'Unknown action'];
 
 try {
@@ -232,6 +241,23 @@ try {
             $notes  = trim($_POST['notes']    ?? '');
             $allowed = ['scheduled','in_progress','completed','cancelled'];
             if (!in_array($status, $allowed)) throw new Exception('สถานะไม่ถูกต้อง');
+
+            // Permission: manager/admin OR assigned person
+            $is_mgr = (($_SESSION['role'] ?? '') === 'admin');
+            if (!$is_mgr) {
+                $uid = intval($_SESSION['user_id']);
+                $chk = $conn->prepare("SELECT COUNT(*) as cnt FROM user_roles ur JOIN roles r ON ur.role_id=r.role_id WHERE ur.user_id=? AND r.role_code IN ('manager','all') AND ur.is_active=1 AND r.is_active=1");
+                $chk->bind_param('i', $uid);
+                $chk->execute();
+                $is_mgr = $chk->get_result()->fetch_assoc()['cnt'] > 0;
+            }
+            if (!$is_mgr) {
+                $uid = intval($_SESSION['user_id']);
+                $own = $conn->prepare("SELECT job_id FROM internal_jobs WHERE job_id=? AND assigned_to=?");
+                $own->bind_param('ii', $job_id, $uid);
+                $own->execute();
+                if (!$own->get_result()->fetch_assoc()) throw new Exception('ไม่มีสิทธิ์อัปเดตสถานะงานนี้');
+            }
 
             $extra = '';
             if ($status === 'in_progress') $extra = ', started_at = NOW()';
