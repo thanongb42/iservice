@@ -730,6 +730,12 @@ include 'admin-layout/topbar.php';
         <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('calendar-view', this)">
             <i class="fas fa-calendar-alt"></i> ปฏิทิน
         </button>
+        <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('internal-jobs-view', this)">
+            <i class="fas fa-calendar-check"></i> งานปฏิทิน
+            <?php if (!empty($my_internal_jobs)): ?>
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold"><?= count($my_internal_jobs) ?></span>
+            <?php endif; ?>
+        </button>
     </div>
 
     <!-- ── LIST VIEW ──────────────────────────────────────────── -->
@@ -890,6 +896,100 @@ include 'admin-layout/topbar.php';
                     <!-- Will be filled by JavaScript -->
                 </div>
             </div>
+        </div>
+
+        <!-- ── Internal Jobs Tab ──────────────────────────────── -->
+        <div id="internal-jobs-view" class="tab-content">
+        <?php if (!empty($my_internal_jobs)): ?>
+        <div class="p-3 space-y-2.5">
+        <?php
+        $job_status_cfg = [
+            'scheduled'  => ['color'=>'#f59e0b','bg'=>'#fffbeb','badge'=>'bg-amber-100 text-amber-800',  'label'=>'กำหนดการแล้ว','icon'=>'fa-calendar-alt'],
+            'in_progress'=> ['color'=>'#8b5cf6','bg'=>'#f5f3ff','badge'=>'bg-purple-100 text-purple-800','label'=>'กำลังดำเนินการ','icon'=>'fa-spinner'],
+            'completed'  => ['color'=>'#10b981','bg'=>'#f0fdf4','badge'=>'bg-green-100 text-green-800',  'label'=>'เสร็จสิ้น',   'icon'=>'fa-check-double'],
+            'cancelled'  => ['color'=>'#6b7280','bg'=>'#f9fafb','badge'=>'bg-gray-100 text-gray-600',   'label'=>'ยกเลิก',      'icon'=>'fa-ban'],
+        ];
+        $job_type_icons = [
+            'PHOTOGRAPHY'=>'fa-camera','MC'=>'fa-microphone','LED'=>'fa-tv',
+            'IT_SUPPORT'=>'fa-desktop','routine'=>'fa-tasks','event'=>'fa-star',
+        ];
+        foreach ($my_internal_jobs as $job):
+            $sc  = $job_status_cfg[$job['status']] ?? $job_status_cfg['scheduled'];
+            $jic = $job_type_icons[$job['service_type'] ?? $job['job_type']] ?? 'fa-briefcase';
+            $sched = $job['scheduled_date'] ? thdate('d M Y', strtotime($job['scheduled_date'])) : 'ยังไม่กำหนด';
+            $time_str = '';
+            if ($job['start_time']) {
+                $time_str = substr($job['start_time'], 0, 5);
+                if ($job['end_time']) $time_str .= ' - ' . substr($job['end_time'], 0, 5);
+                $time_str .= ' น.';
+            }
+        ?>
+        <div class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-gray-100 bg-white">
+            <div class="flex">
+                <div class="w-1.5 flex-shrink-0" style="background:<?= $sc['color'] ?>;"></div>
+                <div class="flex-1 p-4 min-w-0">
+                    <div class="flex items-start gap-2.5 mb-2">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                             style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>;">
+                            <i class="fas <?= $jic ?> text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-gray-900 text-[15px] leading-snug truncate"><?= htmlspecialchars($job['title']) ?></p>
+                            <p class="text-xs font-mono text-gray-400 mt-0.5"><?= htmlspecialchars($job['job_code']) ?></p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 <?= $sc['badge'] ?>">
+                            <i class="fas <?= $sc['icon'] ?> text-[10px]"></i>
+                            <?= $sc['label'] ?>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-500 mb-3">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-calendar-alt text-gray-300"></i>
+                            <?= htmlspecialchars($sched) ?>
+                            <?php if ($time_str): ?><span class="text-gray-400">&nbsp;<?= htmlspecialchars($time_str) ?></span><?php endif; ?>
+                        </span>
+                        <?php if ($job['location']): ?>
+                        <span class="flex items-center gap-1 truncate">
+                            <i class="fas fa-map-marker-alt text-gray-300"></i>
+                            <?= htmlspecialchars($job['location']) ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="create_job.php" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                           style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>; border:1.5px solid <?= $sc['color'] ?>40;">
+                            <i class="fas fa-external-link-alt text-xs"></i>
+                            <span>ดูรายละเอียด</span>
+                        </a>
+                        <?php if ($job['status'] === 'scheduled'): ?>
+                        <button onclick="updateInternalJobStatus(<?= $job['job_id'] ?>, 'in_progress', '<?= htmlspecialchars($job['job_code']) ?>')"
+                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                                style="background:#8b5cf6;">
+                            <i class="fas fa-play"></i>
+                            <span class="hidden sm:inline">เริ่มงาน</span>
+                        </button>
+                        <?php elseif ($job['status'] === 'in_progress'): ?>
+                        <button onclick="updateInternalJobStatus(<?= $job['job_id'] ?>, 'completed', '<?= htmlspecialchars($job['job_code']) ?>')"
+                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                                style="background:#10b981;">
+                            <i class="fas fa-check"></i>
+                            <span class="hidden sm:inline">เสร็จสิ้น</span>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+        <?php else: ?>
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-calendar-check text-4xl text-gray-300"></i>
+            </div>
+            <p class="font-semibold text-gray-500">ไม่มีงานปฏิทินที่ได้รับมอบหมาย</p>
+        </div>
+        <?php endif; ?>
         </div>
     </div>
 
@@ -1206,111 +1306,5 @@ include 'admin-layout/topbar.php';
 
 </script>
 
-<?php if (!empty($my_internal_jobs)): ?>
-<!-- ── Internal Jobs Section ────────────────────────────────── -->
-<div class="mt-6">
-    <div class="flex items-center gap-2 mb-3 px-1">
-        <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-            <i class="fas fa-calendar-check text-orange-600 text-sm"></i>
-        </div>
-        <div>
-            <h2 class="text-base font-bold text-gray-800">งานกำหนดการ (ปฏิทินงาน)</h2>
-            <p class="text-xs text-gray-400">งานที่ได้รับมอบหมายจากระบบปฏิทินภายใน</p>
-        </div>
-        <span class="ml-auto px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold"><?= count($my_internal_jobs) ?> งาน</span>
-    </div>
-
-    <div class="space-y-2.5">
-    <?php
-    $job_status_cfg = [
-        'scheduled'  => ['color'=>'#f59e0b','bg'=>'#fffbeb','badge'=>'bg-amber-100 text-amber-800',  'label'=>'กำหนดการแล้ว','icon'=>'fa-calendar-alt'],
-        'in_progress'=> ['color'=>'#8b5cf6','bg'=>'#f5f3ff','badge'=>'bg-purple-100 text-purple-800','label'=>'กำลังดำเนินการ','icon'=>'fa-spinner'],
-        'completed'  => ['color'=>'#10b981','bg'=>'#f0fdf4','badge'=>'bg-green-100 text-green-800',  'label'=>'เสร็จสิ้น',   'icon'=>'fa-check-double'],
-        'cancelled'  => ['color'=>'#6b7280','bg'=>'#f9fafb','badge'=>'bg-gray-100 text-gray-600',   'label'=>'ยกเลิก',      'icon'=>'fa-ban'],
-    ];
-    $job_type_icons = [
-        'PHOTOGRAPHY'=>'fa-camera','MC'=>'fa-microphone','LED'=>'fa-tv',
-        'IT_SUPPORT'=>'fa-desktop','routine'=>'fa-tasks','event'=>'fa-star',
-    ];
-    foreach ($my_internal_jobs as $job):
-        $sc  = $job_status_cfg[$job['status']] ?? $job_status_cfg['scheduled'];
-        $jic = $job_type_icons[$job['service_type'] ?? $job['job_type']] ?? 'fa-briefcase';
-        $sched = $job['scheduled_date'] ? thdate('d M Y', strtotime($job['scheduled_date'])) : 'ยังไม่กำหนด';
-        $time_str = '';
-        if ($job['start_time']) {
-            $time_str = substr($job['start_time'], 0, 5);
-            if ($job['end_time']) $time_str .= ' - ' . substr($job['end_time'], 0, 5);
-            $time_str .= ' น.';
-        }
-    ?>
-    <div class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-gray-100 bg-white">
-        <div class="flex">
-            <div class="w-1.5 flex-shrink-0" style="background:<?= $sc['color'] ?>;"></div>
-            <div class="flex-1 p-4 min-w-0">
-                <!-- Row 1: icon + title + badge -->
-                <div class="flex items-start gap-2.5 mb-2">
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                         style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>;">
-                        <i class="fas <?= $jic ?> text-sm"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold text-gray-900 text-[15px] leading-snug truncate">
-                            <?= htmlspecialchars($job['title']) ?>
-                        </p>
-                        <p class="text-xs font-mono text-gray-400 mt-0.5"><?= htmlspecialchars($job['job_code']) ?></p>
-                    </div>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 <?= $sc['badge'] ?>">
-                        <i class="fas <?= $sc['icon'] ?> text-[10px]"></i>
-                        <?= $sc['label'] ?>
-                    </span>
-                </div>
-
-                <!-- Row 2: date + location -->
-                <div class="flex items-center gap-3 text-xs text-gray-500 mb-3">
-                    <span class="flex items-center gap-1">
-                        <i class="fas fa-calendar-alt text-gray-300"></i>
-                        <?= htmlspecialchars($sched) ?>
-                        <?php if ($time_str): ?>
-                        <span class="text-gray-400">&nbsp;<?= htmlspecialchars($time_str) ?></span>
-                        <?php endif; ?>
-                    </span>
-                    <?php if ($job['location']): ?>
-                    <span class="flex items-center gap-1 truncate">
-                        <i class="fas fa-map-marker-alt text-gray-300"></i>
-                        <?= htmlspecialchars($job['location']) ?>
-                    </span>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Row 3: actions -->
-                <div class="flex gap-2">
-                    <a href="create_job.php" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
-                       style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>; border:1.5px solid <?= $sc['color'] ?>40;">
-                        <i class="fas fa-external-link-alt text-xs"></i>
-                        <span>ดูรายละเอียด</span>
-                    </a>
-                    <?php if ($job['status'] === 'scheduled'): ?>
-                    <button onclick="updateInternalJobStatus(<?= $job['job_id'] ?>, 'in_progress', '<?= htmlspecialchars($job['job_code']) ?>')"
-                            class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
-                            style="background:#8b5cf6;">
-                        <i class="fas fa-play"></i>
-                        <span class="hidden sm:inline">เริ่มงาน</span>
-                    </button>
-                    <?php elseif ($job['status'] === 'in_progress'): ?>
-                    <button onclick="updateInternalJobStatus(<?= $job['job_id'] ?>, 'completed', '<?= htmlspecialchars($job['job_code']) ?>')"
-                            class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
-                            style="background:#10b981;">
-                        <i class="fas fa-check"></i>
-                        <span class="hidden sm:inline">เสร็จสิ้น</span>
-                    </button>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endforeach; ?>
-    </div>
-</div>
-<?php endif; ?>
 
 <?php include 'admin-layout/footer.php'; ?>
