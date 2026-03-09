@@ -75,13 +75,89 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($page_title) ? $page_title : $org_name; ?></title>
+    <?php
+    $seo_site_url    = 'https://iservice.rangsitcity.go.th';
+    $seo_title       = isset($page_title) ? $page_title . ' | ' . $org_name : $org_name . ' — ' . $app_description;
+    $seo_description = isset($meta_description) ? $meta_description : $app_description . ' ฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ เทศบาลนครรังสิต — ยื่นคำร้อง ติดตามสถานะ และรับบริการดิจิทัล';
+    $seo_keywords    = isset($meta_keywords) ? $meta_keywords : 'เทศบาลนครรังสิต, เทศบาล, นครรังสิต, รังสิต, ปทุมธานี, iService, ฝ่ายบริการและเผยแพร่วิชาการ, ฝ่ายบริการ, เผยแพร่วิชาการ, กองยุทธศาสตร์และงบประมาณ, กองยุทธศาสตร์, งบประมาณ, บริการดิจิทัล, บริการออนไลน์, ยื่นคำร้อง, คำร้อง, ติดตามสถานะ, ระบบบริการออนไลน์, ระบบงานภายใน';
+    $seo_image       = $seo_site_url . '/' . ltrim($logo_path, '/');
+    $seo_current_url = $seo_site_url . '/' . ltrim($_SERVER['REQUEST_URI'] ?? '', '/');
+    ?>
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
+
+    <!-- Basic SEO -->
+    <meta name="description" content="<?php echo htmlspecialchars($seo_description); ?>">
+    <meta name="keywords" content="<?php echo htmlspecialchars($seo_keywords); ?>">
+    <meta name="author" content="เทศบาลนครรังสิต">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?php echo htmlspecialchars($seo_current_url); ?>">
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="<?php echo $seo_site_url; ?>/sitemap.xml">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="<?php echo htmlspecialchars($seo_current_url); ?>">
+    <meta property="og:site_name"   content="<?php echo htmlspecialchars($org_name); ?>">
+    <meta property="og:title"       content="<?php echo htmlspecialchars($seo_title); ?>">
+    <meta property="og:description" content="<?php echo htmlspecialchars($seo_description); ?>">
+    <meta property="og:image"       content="<?php echo htmlspecialchars($seo_image); ?>">
+    <meta property="og:image:width"  content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:locale"      content="th_TH">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary">
+    <meta name="twitter:title"       content="<?php echo htmlspecialchars($seo_title); ?>">
+    <meta name="twitter:description" content="<?php echo htmlspecialchars($seo_description); ?>">
+    <meta name="twitter:image"       content="<?php echo htmlspecialchars($seo_image); ?>">
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($logo_path); ?>">
+    <link rel="apple-touch-icon"      href="<?php echo htmlspecialchars($logo_path); ?>">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "GovernmentOrganization",
+        "name": "<?php echo addslashes($org_name); ?>",
+        "description": "<?php echo addslashes($seo_description); ?>",
+        "url": "<?php echo $seo_site_url; ?>",
+        "logo": "<?php echo $seo_image; ?>",
+        "image": "<?php echo $seo_image; ?>",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "รังสิต",
+            "addressRegion": "ปทุมธานี",
+            "addressCountry": "TH"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": "Thai"
+        }
+    }
+    </script>
+    <!-- Preconnect to speed up external resources -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Tailwind CSS CDN (must be synchronous — cannot defer) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Sarabun font — async non-render-blocking -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap"></noscript>
+
+    <!-- Font Awesome loaded async (non-render-blocking) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <style>
+        /* Font Awesome — force font-display: swap to avoid invisible text */
+        @font-face { font-family: 'Font Awesome 6 Free'; font-display: swap; }
+        @font-face { font-family: 'Font Awesome 6 Brands'; font-display: swap; }
+
         * {
             margin: 0;
             padding: 0;
@@ -193,7 +269,7 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center space-x-4">
                     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-teal-500 shadow-md">
-                        <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="<?php echo htmlspecialchars($org_name); ?>" class="w-full h-full object-contain p-1">
+                        <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="<?php echo htmlspecialchars($org_name); ?>" class="w-full h-full object-contain p-1" width="64" height="64" loading="eager" fetchpriority="high">
                     </div>
                     <div>
                         <h1 class="text-xl md:text-2xl font-display font-bold text-gray-900 leading-tight"><?php echo htmlspecialchars($org_name); ?></h1>

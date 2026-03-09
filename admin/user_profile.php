@@ -648,9 +648,9 @@ include 'admin-layout/topbar.php';
                         $bot_basic_id = getProfileSetting('line_bot_basic_id');
                         if ($bot_basic_id): ?>
                         <p class="text-xs text-gray-400 mt-2 text-center">
-                            * ต้อง <a href="https://line.me/R/ti/p/<?= htmlspecialchars($bot_basic_id) ?>"
+                            * ต้อง <a href="../line-add-friend.php"
                                       target="_blank"
-                                      class="text-green-600 underline">เพิ่ม Bot เป็นเพื่อน</a> ก่อนรับแจ้งเตือน
+                                      class="text-green-600 underline font-medium">เพิ่ม Bot เป็นเพื่อน</a> ก่อนรับแจ้งเตือน
                         </p>
                         <?php endif; ?>
                     <?php endif; ?>

@@ -4,6 +4,26 @@
  * ใช้สำหรับส่งอีเมลแจ้งเตือนต่างๆ
  */
 
+require_once __DIR__ . '/line_helper.php';
+
+/**
+ * คืนค่า base path ของแอป ('' บน production root domain, '/iservice' บน localhost)
+ * ใช้ DOCUMENT_ROOT เทียบกับ __DIR__ ของ email_helper เพื่อให้ทำงานได้ทั้งสอง env
+ */
+function _app_base_url(): string {
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        $proto = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
+    $host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $doc_root  = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+    $app_dir   = rtrim(str_replace('\\', '/', dirname(__DIR__)), '/');
+    $base_path = ($doc_root !== '' && strpos($app_dir, $doc_root) === 0)
+                 ? substr($app_dir, strlen($doc_root))
+                 : '';
+    return $proto . '://' . $host . $base_path;
+}
+
 /**
  * Notify admin/staff users via Email when a new request is submitted
  */
@@ -19,10 +39,9 @@ function notify_admins_new_request($request_id, $conn) {
     $result = $conn->query("SELECT CONCAT(COALESCE(p.prefix_name, ''), u.first_name, ' ', u.last_name) AS full_name, u.email FROM users u LEFT JOIN prefixes p ON u.prefix_id = p.prefix_id WHERE u.role IN ('admin','staff') AND u.status = 'active' AND u.email != '' AND u.email IS NOT NULL");
     if (!$result || $result->num_rows === 0) return;
 
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'];
-    $tracking_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
-    $admin_url    = "$protocol://$host/iservice/admin/service_requests.php";
+    $base         = _app_base_url();
+    $tracking_url = $base . '/tracking.php?req=' . $request['request_code'];
+    $admin_url    = $base . '/admin/service_requests.php';
 
     $subject = "[iService] คำร้องใหม่: " . $request['service_name'] . " (" . $request['request_code'] . ")";
     $message = "
@@ -99,9 +118,7 @@ function send_line_notification($request_id, $conn) {
     $request = $stmt->get_result()->fetch_assoc();
     if (!$request) return;
 
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'];
-    $tracking_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
+    $tracking_url = _app_base_url() . '/tracking.php?req=' . $request['request_code'];
 
     $text  = "📋 คำร้องใหม่เข้าระบบ\n";
     $text .= "────────────────\n";
@@ -161,15 +178,7 @@ function send_request_notification($request_id, $conn) {
     $subject = "ได้รับคำร้องขอใช้บริการ: " . $request['service_name'] . " (" . $request['request_code'] . ")";
     
     // Tracking URL
-    // Assume HTTP/HTTPS based on current connection
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-    $host = $_SERVER['HTTP_HOST'];
-    
-    // Adjust path if script is in a subdirectory (e.g. /iservice/)
-    $script_dir = dirname($_SERVER['PHP_SELF']);
-    // Clean up if call stack makes PHP_SELF weird, but usually $_SERVER['REQUEST_URI'] is better base
-    // Let's simplified: assume 'iservice' is the root folder name as seen in workspace
-    $base_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
+    $base_url = _app_base_url() . '/tracking.php?req=' . $request['request_code'];
     
     $message = "
     <html>
@@ -194,7 +203,7 @@ function send_request_notification($request_id, $conn) {
             <ul>
                 <li><strong>รหัสคำขอ:</strong> " . $request['request_code'] . "</li>
                 <li><strong>วันที่ส่ง:</strong> " . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
-                <li><strong>หัวข้อ:</strong> " . htmlspecialchars($request['subject']) . "</li>
+                <li><strong>หัวข้อ/รายละเอียด:</strong> " . htmlspecialchars(isset($request['subject']) && $request['subject'] !== '' ? $request['subject'] : (isset($request['description']) ? mb_substr($request['description'], 0, 80) : $request['request_code'])) . "</li>
             </ul>
             <p>ท่านสามารถติดตามสถานะคำร้องได้ที่ลิงก์ด้านล่างนี้:</p>
             <p><a href='$base_url' class='button'>ติดตามสถานะคำร้อง</a></p>
@@ -244,7 +253,12 @@ function send_status_update_notification($request_id, $conn, $new_status, $notes
     if (!$request) {
         return false;
     }
-    
+    // ส่งเฉพาะเมื่อผู้ยื่นกรอกอีเมล (ไม่ต้อง login ก็รับแจ้งเตือนได้)
+    $to = trim($request['requester_email'] ?? '');
+    if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
     // Status translation
     $status_label = 'รอการดำเนินการ';
     $status_color = '#eab308'; // yellow-500
@@ -256,13 +270,10 @@ function send_status_update_notification($request_id, $conn, $new_status, $notes
         case 'cancelled': $status_label = 'ยกเลิก'; $status_color = '#6b7280'; break;
     }
 
-    $to = $request['requester_email'];
     $subject = "อัปเดตสถานะคำร้อง: " . $request['service_name'] . " (" . $request['request_code'] . ")";
     
     // Tracking URL
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-    $host = $_SERVER['HTTP_HOST'];
-    $base_url = "$protocol://$host/iservice/tracking.php?req=" . $request['request_code'];
+    $base_url = _app_base_url() . '/tracking.php?req=' . $request['request_code'];
     
     $message = "
     <html>
@@ -295,7 +306,7 @@ function send_status_update_notification($request_id, $conn, $new_status, $notes
             <ul>
                 <li><strong>รหัสคำขอ:</strong> " . $request['request_code'] . "</li>
                 <li><strong>วันที่ส่ง:</strong> " . thdate('d/m/Y H:i', strtotime($request['created_at'])) . "</li>
-                <li><strong>หัวข้อ:</strong> " . htmlspecialchars($request['subject']) . "</li>
+                <li><strong>หัวข้อ/รายละเอียด:</strong> " . htmlspecialchars(isset($request['subject']) && $request['subject'] !== '' ? $request['subject'] : (isset($request['description']) ? mb_substr($request['description'], 0, 80) : $request['request_code'])) . "</li>
             </ul>
             <p>ท่านสามารถตรวจสอบรายละเอียดเพิ่มเติมได้ที่:</p>
             <p><a href='$base_url' class='button'>ติดตามสถานะคำร้อง</a></p>
@@ -311,16 +322,82 @@ function send_status_update_notification($request_id, $conn, $new_status, $notes
     // Headers
     $headers = "MIME-Version: 1.0" . "\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: iService Alert <noreply@rangsit.local>" . "\r\n";
-    
-    // Log or Send
+    $headers .= "From: iService Alert <noreply@rangsitcity.go.th>" . "\r\n";
+
+    // ส่ง LINE push ไปผู้ยื่นคำขอ (ถ้ามี requester_line_user_id)
+    send_line_status_to_requester($request_id, $conn, $new_status, $notes);
+
+    // Log or Send email
     if ($is_localhost) {
         $log_content = "----------------------------------------\n";
-        $log_content .= "UPDATE NOTIFICATION\n";
+        $log_content .= "UPDATE NOTIFICATION (requester)\n";
         $log_content .= "To: $to\nSubject: $subject\nStatus: $status_label\nLink: $base_url\n\n";
         file_put_contents(__DIR__ . '/../storage/email_log.txt', $log_content, FILE_APPEND);
-        return true; 
+        return true;
     } else {
         return @mail($to, $subject, $message, $headers);
     }
+}
+
+/**
+ * ส่ง LINE push message แจ้งเตือนผู้ยื่นคำขอโดยตรง (ตอนรับคำขอใหม่)
+ * ใช้ requester_line_user_id ที่บันทึกไว้ใน service_requests
+ */
+function send_line_to_requester(int $request_id, $conn): bool {
+    $stmt = $conn->prepare("SELECT r.request_code, r.requester_name, r.requester_line_user_id, m.service_name FROM service_requests r JOIN my_service m ON r.service_code = m.service_code WHERE r.request_id = ?");
+    if (!$stmt) return false;
+    $stmt->bind_param("i", $request_id);
+    $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+
+    if (!$request || empty($request['requester_line_user_id'])) return false;
+
+    $tracking_url = _app_base_url() . '/tracking.php?req=' . $request['request_code'];
+
+    $text  = "✅ ระบบได้รับคำขอของคุณแล้ว\n";
+    $text .= "────────────────\n";
+    $text .= "รหัสคำขอ: " . $request['request_code'] . "\n";
+    $text .= "บริการ: " . $request['service_name'] . "\n";
+    $text .= "ผู้ยื่น: " . $request['requester_name'] . "\n";
+    $text .= "────────────────\n";
+    $text .= "ติดตามสถานะ:\n" . $tracking_url;
+
+    return send_line_push_to_user($request['requester_line_user_id'], $text, $conn);
+}
+
+/**
+ * ส่ง LINE push message แจ้งผู้ยื่นคำขอเมื่อสถานะเปลี่ยน
+ */
+function send_line_status_to_requester(int $request_id, $conn, string $new_status, string $notes = ''): bool {
+    $stmt = $conn->prepare("SELECT r.request_code, r.requester_name, r.requester_line_user_id, m.service_name FROM service_requests r JOIN my_service m ON r.service_code = m.service_code WHERE r.request_id = ?");
+    if (!$stmt) return false;
+    $stmt->bind_param("i", $request_id);
+    $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+
+    if (!$request || empty($request['requester_line_user_id'])) return false;
+
+    $status_label = match ($new_status) {
+        'pending'     => '⏳ รอการดำเนินการ',
+        'in_progress' => '🔄 กำลังดำเนินการ',
+        'completed'   => '✅ เสร็จสิ้น',
+        'rejected'    => '❌ ถูกปฏิเสธ',
+        'cancelled'   => '🚫 ยกเลิก',
+        default       => $new_status,
+    };
+
+    $tracking_url = _app_base_url() . '/tracking.php?req=' . $request['request_code'];
+
+    $text  = "📋 อัปเดตสถานะคำขอ\n";
+    $text .= "────────────────\n";
+    $text .= "รหัส: " . $request['request_code'] . "\n";
+    $text .= "บริการ: " . $request['service_name'] . "\n";
+    $text .= "สถานะ: " . $status_label . "\n";
+    if (!empty($notes)) {
+        $text .= "หมายเหตุ: " . $notes . "\n";
+    }
+    $text .= "────────────────\n";
+    $text .= "ติดตามสถานะ:\n" . $tracking_url;
+
+    return send_line_push_to_user($request['requester_line_user_id'], $text, $conn);
 }

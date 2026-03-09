@@ -4,9 +4,24 @@
  * ฟอร์มส่งคำขอบริการ (รองรับทุกบริการ)
  */
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/nav_menu_loader.php';
 require_once 'includes/email_helper.php'; // Add Email Helper
+
+// LINE disconnect request
+if (isset($_GET['line_disconnect'])) {
+    unset($_SESSION['req_line_user_id'], $_SESSION['req_line_display_name']);
+    header('Location: request-form.php?service=' . urlencode($_GET['service'] ?? ''));
+    exit;
+}
+
+// LINE connect state (จาก session)
+$req_line_user_id      = $_SESSION['req_line_user_id'] ?? '';
+$req_line_display_name = $_SESSION['req_line_display_name'] ?? '';
 
 // Get service code from URL
 $service_code = isset($_GET['service']) ? clean_input($_GET['service']) : '';
@@ -41,8 +56,11 @@ $nav_menus = get_menu_structure();
 $nav_html = render_nav_menu($nav_menus);
 
 $page_title = ($service_code === 'QR_CODE')
-    ? 'สร้าง QR Code ฟรี'
-    : 'ยื่นคำขอ' . htmlspecialchars($service['service_name']);
+    ? 'สร้าง QR Code ฟรี | เทศบาลนครรังสิต'
+    : 'ยื่นคำขอ' . htmlspecialchars($service['service_name']) . ' | เทศบาลนครรังสิต';
+$meta_description = ($service_code === 'QR_CODE')
+    ? 'สร้าง QR Code ฟรีสำหรับหน่วยงาน ฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ เทศบาลนครรังสิต'
+    : 'ยื่นคำขอใช้บริการ ' . htmlspecialchars($service['service_name']) . ' ออนไลน์ ฝ่ายบริการและเผยแพร่วิชาการ เทศบาลนครรังสิต';
 $extra_styles = '
     .service-field { display: none; }
     .service-field.active { display: block; }
@@ -88,6 +106,56 @@ include __DIR__ . '/includes/header_public.php';
                     </p>
                 </div>
 
+                <!-- LINE Notification Connect -->
+                <?php
+                $line_auth_url = 'line_request_auth.php?return_to=' . urlencode('request-form.php?service=' . $service_code);
+                ?>
+                <?php if (!empty($req_line_user_id)): ?>
+                <!-- สถานะ: เชื่อมต่อแล้ว -->
+                <div class="mb-8 flex flex-wrap items-center gap-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-[#06C755] rounded-full flex items-center justify-center">
+                        <i class="fab fa-line text-white text-2xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <i class="fas fa-check-circle text-green-500"></i>
+                            <span class="font-bold text-gray-900">เชื่อมต่อ LINE แล้ว</span>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            ระบบจะส่งแจ้งเตือนสถานะคำขอไปที่ LINE ของ
+                            <strong class="text-gray-800"><?= htmlspecialchars($req_line_display_name) ?></strong>
+                            โดยอัตโนมัติ
+                        </p>
+                    </div>
+                    <a href="?service=<?= urlencode($service_code) ?>&line_disconnect=1"
+                       class="text-xs text-gray-400 hover:text-red-500 underline whitespace-nowrap transition-colors">
+                        ยกเลิก
+                    </a>
+                </div>
+                <input type="hidden" name="requester_line_user_id" value="<?= htmlspecialchars($req_line_user_id) ?>">
+                <?php else: ?>
+                <!-- สถานะ: ยังไม่ได้เชื่อมต่อ -->
+                <div class="mb-8 flex flex-wrap items-center gap-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white border-2 border-green-200 rounded-full flex items-center justify-center">
+                        <i class="fab fa-line text-[#06C755] text-2xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="font-bold text-gray-900">รับแจ้งเตือนผ่าน LINE</span>
+                            <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">ไม่บังคับ</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">
+                            เชื่อมต่อ LINE เพื่อรับแจ้งเตือนเมื่อคำขอได้รับการดำเนินการ
+                            (ระบบจะส่งข้อความตรงถึง LINE ของคุณ)
+                        </p>
+                        <a href="<?= htmlspecialchars($line_auth_url) ?>"
+                           class="inline-flex items-center gap-2 bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all hover:scale-105 shadow-sm">
+                            <i class="fab fa-line"></i> เชื่อมต่อ LINE เพื่อรับแจ้งเตือน
+                        </a>
+                    </div>
+                </div>
+                <input type="hidden" name="requester_line_user_id" value="">
+                <?php endif; ?>
 
                 <!-- Common Fields -->
                 <?php if ($service_code !== 'QR_CODE'): ?>
@@ -261,7 +329,7 @@ include __DIR__ . '/includes/header_public.php';
                     </div>
 
                     <!-- Submit / Generate Button -->
-                    <div class="flex items-center gap-4 pt-6 border-t border-gray-100">
+                    <div class="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
                         <?php if ($service_code === 'QR_CODE'): ?>
                         <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5">
                             <i class="fas fa-qrcode mr-2"></i> สร้าง QR Code
@@ -273,6 +341,10 @@ include __DIR__ . '/includes/header_public.php';
                         <?php endif; ?>
                         <a href="index.php" class="px-6 py-4 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold transition">
                             ยกเลิก
+                        </a>
+                        <a href="help.php" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-2 px-5 py-4 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition text-sm border border-blue-200">
+                            <i class="fas fa-book-open"></i> คู่มือการใช้งาน
                         </a>
                     </div>
                 </div>

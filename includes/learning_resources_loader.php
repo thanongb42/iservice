@@ -196,6 +196,7 @@ function render_learning_resources($resources) {
                 <img src="' . htmlspecialchars($cover_image) . '"
                      alt="' . htmlspecialchars($resource['title']) . '"
                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                     width="400" height="192" loading="lazy" decoding="async"
                      onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\\\'http://www.w3.org/2000/svg\\\' width=\\\'400\\\' height=\\\'300\\\'%3E%3Crect fill=\\\'%23E5E7EB\\\' width=\\\'400\\\' height=\\\'300\\\'/%3E%3Ctext fill=\\\'%236B7280\\\' font-family=\\\'Arial,sans-serif\\\' font-size=\\\'18\\\' x=\\\'50%25\\\' y=\\\'50%25\\\' text-anchor=\\\'middle\\\' dominant-baseline=\\\'middle\\\'%3ENo Image%3C/text%3E%3C/svg%3E\'; this.onerror=null;">
 
                 <!-- Featured Badge -->

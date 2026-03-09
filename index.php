@@ -23,7 +23,8 @@ $latest_news = get_latest_tech_news(3); // ดึงข่าวล่าสุ�
 $tech_news_html = render_tech_news_cards($all_news);
 $tech_updates_html = render_tech_updates($latest_news);
 
-$page_title = "ระบบบริการของฝ่ายบริการและเผยแพ่วิชาการ เทศบาลนครรังสิต";
+$page_title = "ระบบบริการออนไลน์ | ฝ่ายบริการและเผยแพร่วิชาการ เทศบาลนครรังสิต";
+$meta_description = "ยื่นคำร้องออนไลน์ ติดตามสถานะงาน และรับบริการดิจิทัลจากฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ เทศบาลนครรังสิต ปทุมธานี";
 $extra_styles = '
         .hero-gradient {
             background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 50%, #7fb069 100%);
@@ -251,9 +252,9 @@ include __DIR__ . '/includes/header_public.php';
                             <i class="fas fa-tracking mr-2"></i>
                             ติดตามงาน
                         </a>
-                        <a href="admin/my_service.php" class="inline-flex items-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
-                            <i class="fas fa-play-circle mr-2"></i>
-                            ดูวิธีใช้งาน
+                        <a href="help.php" class="inline-flex items-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
+                            <i class="fas fa-book-open mr-2"></i>
+                            คู่มือการใช้งาน
                         </a>
                     </div>
 

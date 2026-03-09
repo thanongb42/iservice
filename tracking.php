@@ -125,7 +125,10 @@ $nav_html = render_nav_menu($nav_menus);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ติดตามสถานะคำร้อง - iService</title>
+    <title>ติดตามสถานะคำร้อง | ฝ่ายบริการและเผยแพร่วิชาการ เทศบาลนครรังสิต</title>
+    <meta name="description" content="ติดตามสถานะคำร้องออนไลน์ ตรวจสอบความคืบหน้างานบริการของฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ เทศบาลนครรังสิต">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://iservice.rangsitcity.go.th/tracking.php">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

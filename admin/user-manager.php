@@ -507,6 +507,11 @@ include 'admin-layout/topbar.php';
                             <option value="inactive">ไม่ใช้งาน</option>
                             <option value="suspended">ระงับ</option>
                         </select>
+                        <select id="filterLine" class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                            <option value="">LINE ทั้งหมด</option>
+                            <option value="linked">เชื่อมต่อแล้ว</option>
+                            <option value="unlinked">ยังไม่เชื่อมต่อ</option>
+                        </select>
                         <button onclick="openAddUserModal()" class="btn btn-primary">
                             <i class="fas fa-plus"></i>
                             <span class="hidden sm:inline">เพิ่มผู้ใช้</span>
@@ -533,13 +538,14 @@ include 'admin-layout/topbar.php';
                             <th class="sortable" data-col="4" onclick="sortTable(4)">หน่วยงาน <span class="sort-icon">↕</span></th>
                             <th class="sortable" data-col="5" onclick="sortTable(5)">บทบาท <span class="sort-icon">↕</span></th>
                             <th class="sortable" data-col="6" onclick="sortTable(6)">สถานะ <span class="sort-icon">↕</span></th>
+                            <th>LINE</th>
                             <th class="text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($users_result->num_rows > 0): ?>
                             <?php while ($user = $users_result->fetch_assoc()): ?>
-                            <tr data-role="<?php echo $user['role']; ?>" data-status="<?php echo $user['status']; ?>" data-user-id="<?php echo $user['user_id']; ?>">
+                            <tr data-role="<?php echo $user['role']; ?>" data-status="<?php echo $user['status']; ?>" data-line="<?php echo !empty($user['line_user_id']) ? 'linked' : 'unlinked'; ?>" data-user-id="<?php echo $user['user_id']; ?>">
                                 <td>
                                     <span class="text-gray-500 text-sm">#<?php echo $user['user_id']; ?></span>
                                 </td>
@@ -585,6 +591,29 @@ include 'admin-layout/topbar.php';
                                     </span>
                                 </td>
                                 <td>
+                                    <?php if (!empty($user['line_user_id'])): ?>
+                                    <div class="flex items-center gap-2">
+                                        <?php if (!empty($user['line_picture_url'])): ?>
+                                            <img src="<?= htmlspecialchars($user['line_picture_url']) ?>"
+                                                 class="w-8 h-8 rounded-full object-cover border border-green-200 flex-shrink-0"
+                                                 onerror="this.outerHTML='<div class=\'w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0\'><i class=\'fab fa-line text-green-600 text-sm\'></i></div>'">
+                                        <?php else: ?>
+                                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                                <i class="fab fa-line text-green-600 text-sm"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-medium text-green-700 truncate max-w-[100px]"><?= htmlspecialchars($user['line_display_name'] ?? '') ?></p>
+                                            <p class="text-xs text-gray-400 font-mono truncate max-w-[100px]" title="<?= htmlspecialchars($user['line_user_id']) ?>"><?= htmlspecialchars($user['line_user_id']) ?></p>
+                                        </div>
+                                    </div>
+                                    <?php else: ?>
+                                    <span class="inline-flex items-center gap-1 text-xs text-gray-400">
+                                        <i class="fab fa-line"></i> ยังไม่เชื่อมต่อ
+                                    </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
                                     <div class="flex items-center justify-center gap-1">
                                         <button class="action-btn action-btn-view" onclick="viewUser(<?php echo $user['user_id']; ?>)" title="ดู">
                                             <i class="fas fa-eye"></i>
@@ -606,7 +635,7 @@ include 'admin-layout/topbar.php';
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center py-12 text-gray-400">
+                                <td colspan="9" class="text-center py-12 text-gray-400">
                                     <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
                                     <p>ไม่พบข้อมูลผู้ใช้งาน</p>
                                 </td>
@@ -848,33 +877,34 @@ include 'admin-layout/topbar.php';
         const searchInput = document.getElementById('searchInput');
         const filterRole = document.getElementById('filterRole');
         const filterStatus = document.getElementById('filterStatus');
+        const filterLine = document.getElementById('filterLine');
         const tableRows = document.querySelectorAll('#usersTable tbody tr');
 
         function filterTable() {
             const searchTerm = searchInput.value.toLowerCase();
             const roleFilter = filterRole.value;
             const statusFilter = filterStatus.value;
+            const lineFilter = filterLine.value;
 
             tableRows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 const role = row.dataset.role;
                 const status = row.dataset.status;
+                const line = row.dataset.line;
 
                 const matchesSearch = text.includes(searchTerm);
                 const matchesRole = !roleFilter || role === roleFilter;
                 const matchesStatus = !statusFilter || status === statusFilter;
+                const matchesLine = !lineFilter || line === lineFilter;
 
-                if (matchesSearch && matchesRole && matchesStatus) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = (matchesSearch && matchesRole && matchesStatus && matchesLine) ? '' : 'none';
             });
         }
 
         searchInput.addEventListener('input', filterTable);
         filterRole.addEventListener('change', filterTable);
         filterStatus.addEventListener('change', filterTable);
+        filterLine.addEventListener('change', filterTable);
 
         // Sort functionality
         let sortState = { col: -1, asc: true };

@@ -525,17 +525,127 @@ include 'admin-layout/topbar.php';
             <?php endif; ?>
 
             <!-- ข้อมูลเพิ่มเติม (Service-specific) -->
-            <?php if ($service_details): ?>
+            <?php if ($service_details):
+            $field_labels = [
+                'event_name'             => 'ชื่องาน/โครงการ',
+                'event_type'             => 'ประเภทงาน',
+                'event_date'             => 'วันที่จัดงาน',
+                'event_time_start'       => 'เวลาเริ่ม',
+                'event_time_end'         => 'เวลาสิ้นสุด',
+                'event_location'         => 'สถานที่จัดงาน',
+                'location'               => 'สถานที่',
+                'purpose'                => 'วัตถุประสงค์',
+                'number_of_photographers'=> 'จำนวนช่างภาพ',
+                'video_required'         => 'ต้องการวิดีโอ',
+                'drone_required'         => 'ต้องการโดรน',
+                'delivery_format'        => 'รูปแบบการส่งมอบ',
+                'special_requirements'   => 'ข้อมูลเพิ่มเติม',
+                'photo_type'             => 'ประเภทการถ่าย',
+                'mc_count'               => 'จำนวนพิธีกร',
+                'language'               => 'ภาษา',
+                'script_status'          => 'สถานะบทพูด',
+                'dress_code'             => 'การแต่งกาย',
+                'requested_username'     => 'ชื่อผู้ใช้ที่ต้องการ',
+                'email_format'           => 'รูปแบบอีเมล',
+                'quota_mb'               => 'พื้นที่ (MB)',
+                'is_new_account'         => 'ประเภทคำขอ',
+                'existing_email'         => 'อีเมลเดิม',
+                'firstname_en'           => 'ชื่อ (อังกฤษ)',
+                'lastname_en'            => 'นามสกุล (อังกฤษ)',
+                'folder_name'            => 'ชื่อโฟลเดอร์',
+                'storage_size_gb'        => 'ขนาดที่ขอ',
+                'permission_type'        => 'สิทธิ์การเข้าถึง',
+                'shared_with'            => 'ผู้ใช้งานร่วม',
+                'backup_required'        => 'ต้องการ Backup',
+                'issue_type'             => 'ประเภทปัญหา',
+                'urgency_level'          => 'ระดับความเร่งด่วน',
+                'device_type'            => 'ประเภทอุปกรณ์',
+                'device_brand'           => 'ยี่ห้ออุปกรณ์',
+                'symptoms'               => 'อาการ/ปัญหา',
+                'error_message'          => 'ข้อความแสดงข้อผิดพลาด',
+                'when_occurred'          => 'เกิดเหตุเมื่อ',
+                'printer_type'           => 'ประเภทเครื่องพิมพ์',
+                'printer_brand'          => 'ยี่ห้อ',
+                'printer_model'          => 'รุ่น',
+                'serial_number'          => 'Serial Number',
+                'problem_description'    => 'รายละเอียดปัญหา',
+                'error_code'             => 'รหัส Error',
+                'toner_color'            => 'สีหมึก',
+                'supplies_needed'        => 'วัสดุที่ต้องการ',
+                'qr_type'                => 'ประเภท QR',
+                'qr_size'                => 'ขนาด QR',
+                'qr_content'             => 'เนื้อหา',
+                'output_format'          => 'รูปแบบไฟล์',
+                'color_primary'          => 'สี QR',
+                'color_background'       => 'สีพื้นหลัง',
+                'logo_url'               => 'URL โลโก้',
+                'media_title'            => 'ชื่อสื่อ/หัวข้อ',
+                'media_type'             => 'ประเภทสื่อ',
+                'display_date_start'     => 'วันที่เริ่มแสดง',
+                'display_date_end'       => 'วันที่สิ้นสุด',
+                'media_url'              => 'URL สื่อ',
+                'website_type'           => 'ประเภทเว็บไซต์',
+                'project_name'           => 'ชื่อโปรเจค',
+                'target_audience'        => 'กลุ่มเป้าหมาย',
+                'number_of_pages'        => 'จำนวนหน้า',
+                'features_required'      => 'ฟีเจอร์ที่ต้องการ',
+                'has_existing_site'      => 'มีเว็บไซต์เดิม',
+                'existing_url'           => 'URL เดิม',
+                'domain_name'            => 'ชื่อโดเมน',
+                'hosting_required'       => 'ต้องการ Hosting',
+                'color_preferences'      => 'โทนสีที่ต้องการ',
+                'reference_sites'        => 'เว็บอ้างอิง',
+                'budget'                 => 'งบประมาณ',
+                'request_type'           => 'ประเภทคำขอ',
+                'current_issue'          => 'ปัญหาที่พบ',
+                'citizen_id'             => 'เลขบัตรประชาชน',
+            ];
+            $value_maps = [
+                'is_new_account'  => ['1'=>'สร้างบัญชีใหม่', '0'=>'ขอเพิ่ม Quota / Reset Password'],
+                'issue_type'      => ['hardware'=>'ฮาร์ดแวร์','software'=>'ซอฟต์แวร์','network'=>'เครือข่าย','other'=>'อื่นๆ','repair'=>'ซ่อมแซม/แจ้งปัญหา','toner_replacement'=>'เติมหมึก/เปลี่ยนตลับหมึก','paper_jam'=>'กระดาษติด','driver_install'=>'ติดตั้ง Driver/เชื่อมต่อ','new_installation'=>'ติดตั้งเครื่องใหม่'],
+                'urgency_level'   => ['low'=>'ต่ำ — ยังใช้งานได้','medium'=>'ปานกลาง — ส่งผลกระทบบางส่วน','high'=>'สูง — ส่งผลกระทบมาก','critical'=>'วิกฤต — ไม่สามารถทำงานได้'],
+                'printer_type'    => ['inkjet'=>'Inkjet','laser'=>'Laser','multifunction'=>'Multifunction (All-in-One)','scanner'=>'Scanner','plotter'=>'Plotter','3d_printer'=>'3D Printer'],
+                'permission_type' => ['read_only'=>'อ่านอย่างเดียว','read_write'=>'อ่าน-เขียน','full_control'=>'ควบคุมเต็ม'],
+                'backup_required' => ['1'=>'ต้องการ Backup','0'=>'ไม่ต้องการ'],
+                'event_type'      => ['formal'=>'พิธีการ/ทางการ','entertainment'=>'สันทนาการ/รื่นเริง','seminar'=>'อบรม/สัมมนา','press'=>'แถลงข่าว','other'=>'อื่นๆ'],
+                'language'        => ['TH'=>'ไทย','EN'=>'อังกฤษ','BOTH'=>'ไทย + อังกฤษ'],
+                'script_status'   => ['not_ready'=>'ยังไม่มี (ขอให้พิธีกรเตรียม)','draft'=>'มีร่างให้','ready'=>'มีบทสมบูรณ์ให้'],
+                'qr_type'         => ['url'=>'URL/เว็บไซต์','text'=>'ข้อความ','vcard'=>'นามบัตร (vCard)','wifi'=>'WiFi','payment'=>'QR Payment'],
+                'qr_size'         => ['200'=>'เล็ก (200×200 px)','400'=>'กลาง (400×400 px)','800'=>'ใหญ่ (800×800 px)','1200'=>'ใหญ่มาก (1200×1200 px)'],
+                'output_format'   => ['png'=>'PNG','svg'=>'SVG'],
+                'media_type'      => ['image'=>'ภาพนิ่ง','video'=>'วิดีโอ','animation'=>'แอนิเมชัน (GIF)'],
+                'website_type'    => ['landing_page'=>'Landing Page','corporate'=>'Corporate (หน่วยงาน)','blog'=>'Blog/ข่าวสาร','ecommerce'=>'E-Commerce','portal'=>'Portal (Web App)','other'=>'อื่นๆ'],
+                'number_of_pages' => ['1'=>'1–5 หน้า','10'=>'6–10 หน้า','20'=>'11–20 หน้า','50'=>'มากกว่า 20 หน้า'],
+                'has_existing_site'  => ['1'=>'มีเว็บไซต์เดิม','0'=>'ไม่มี'],
+                'hosting_required'   => ['1'=>'ต้องการ Hosting','0'=>'ไม่ต้องการ'],
+                'video_required'     => ['1'=>'ต้องการ','0'=>'ไม่ต้องการ'],
+                'drone_required'     => ['1'=>'ต้องการ','0'=>'ไม่ต้องการ'],
+            ];
+            $hidden_fields = ['id','request_id','created_at','updated_at'];
+            ?>
             <div class="detail-card">
                 <h3><i class="fas fa-info-circle text-blue-600"></i> ข้อมูลเพิ่มเติม</h3>
-                <div class="detail-row full">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <?php foreach ($service_details as $key => $value): ?>
-                        <?php if ($key !== 'request_id' && !is_null($value) && $value !== ''): ?>
-                        <div class="detail-item" style="margin-bottom: 1rem;">
-                            <span class="detail-label"><?= htmlspecialchars(str_replace('_', ' ', ucfirst($key))) ?></span>
-                            <span class="detail-value text"><?= htmlspecialchars($value) ?></span>
+                        <?php if (in_array($key, $hidden_fields) || is_null($value) || $value === '') continue;
+                        $label = $field_labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
+                        $display = (string)$value;
+                        if (isset($value_maps[$key][$display])) {
+                            $display = $value_maps[$key][$display];
+                        } elseif (preg_match('/_date$/', $key) && $value) {
+                            $display = thdate('d/m/Y', strtotime($value));
+                        } elseif (preg_match('/_time(_start|_end)?$/', $key) && $value) {
+                            $ts = strtotime($value); $display = $ts ? date('H:i', $ts) : $value;
+                        } elseif ($key === 'storage_size_gb') {
+                            $display = intval($value) >= 1000 ? number_format(intval($value)/1000,0).' TB' : intval($value).' GB';
+                        } elseif (in_array($key, ['number_of_photographers','mc_count'])) {
+                            $display = intval($value).' คน';
+                        }
+                        ?>
+                        <div class="detail-item">
+                            <span class="detail-label"><?= htmlspecialchars($label) ?></span>
+                            <span class="detail-value text"><?= htmlspecialchars($display) ?></span>
                         </div>
-                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </div>

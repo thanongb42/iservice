@@ -529,6 +529,8 @@ if ($action === 'update_status') {
                 $upd_ip = $conn->prepare("UPDATE service_requests SET status = 'in_progress', started_at = COALESCE(started_at, NOW()) WHERE request_id = ?");
                 $upd_ip->bind_param("i", $request_id);
                 $upd_ip->execute();
+                require_once __DIR__ . '/../../includes/email_helper.php';
+                send_status_update_notification($request_id, $conn, 'in_progress', '');
 
             } elseif ($new_status === 'completed') {
                 // Check if all assignments are completed
@@ -545,10 +547,12 @@ if ($action === 'update_status') {
                     $upd_done = $conn->prepare("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = ?");
                     $upd_done->bind_param("i", $request_id);
                     $upd_done->execute();
+                    require_once __DIR__ . '/../../includes/email_helper.php';
+                    send_status_update_notification($request_id, $conn, 'completed', '');
                 }
             }
         }
-        
+
         $status_labels = [
             'accepted'    => 'รับงานแล้ว',
             'in_progress' => 'เริ่มดำเนินการแล้ว',

@@ -5,6 +5,7 @@
  */
 
 require_once '../config/database.php';
+require_once __DIR__ . '/../includes/email_helper.php';
 session_start();
 
 // Check if user is logged in and is admin or manager
@@ -137,34 +138,37 @@ $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Update request
-    $requester_name = clean_input($_POST['requester_name']);
-    $requester_email = clean_input($_POST['requester_email']);
-    $requester_phone = clean_input($_POST['requester_phone']);
-    $department_id = intval($_POST['department_id']);
-    $priority = clean_input($_POST['priority']);
-    $status = clean_input($_POST['status']);
-    $admin_notes = clean_input($_POST['admin_notes']);
-    $description = clean_input($_POST['description']);
-    
+    $requester_name     = clean_input($_POST['requester_name']);
+    $requester_email    = clean_input($_POST['requester_email']);
+    $requester_phone    = clean_input($_POST['requester_phone']);
+    $requester_position = clean_input($_POST['requester_position'] ?? '');
+    $department_id      = intval($_POST['department_id']);
+    $priority           = clean_input($_POST['priority']);
+    $status             = clean_input($_POST['status']);
+    $admin_notes        = clean_input($_POST['admin_notes']);
+    $description        = clean_input($_POST['description']);
+
     $update_stmt = $conn->prepare("
-        UPDATE service_requests 
-        SET requester_name = ?, 
-            requester_email = ?, 
-            requester_phone = ?,
-            department_id = ?,
-            priority = ?,
-            status = ?,
-            admin_notes = ?,
-            description = ?
+        UPDATE service_requests
+        SET requester_name     = ?,
+            requester_email    = ?,
+            requester_phone    = ?,
+            requester_position = ?,
+            department_id      = ?,
+            priority           = ?,
+            status             = ?,
+            admin_notes        = ?,
+            description        = ?
         WHERE request_id = ?
     ");
-    
-    $update_stmt->bind_param("sssisissi", 
-        $requester_name, $requester_email, $requester_phone, 
+
+    $update_stmt->bind_param("ssssisissi",
+        $requester_name, $requester_email, $requester_phone, $requester_position,
         $department_id, $priority, $status, $admin_notes, $description, $request_id
     );
     
     if ($update_stmt->execute()) {
+        send_status_update_notification($request_id, $conn, $status, $admin_notes);
         $_SESSION['success_msg'] = 'อัปเดตข้อมูลสำเร็จ';
         // Refresh request data
         $stmt->execute();
@@ -187,6 +191,7 @@ if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $reject_stmt->bind_param("si", $rejection_reason, $request_id);
     
     if ($reject_stmt->execute()) {
+        send_status_update_notification($request_id, $conn, 'rejected', $rejection_reason);
         $_SESSION['success_msg'] = 'ปฏิเสธคำขอสำเร็จ';
         $stmt->execute();
         $request = $stmt->get_result()->fetch_assoc();
@@ -393,22 +398,49 @@ include __DIR__ . '/admin-layout/topbar.php';
                     <form method="POST" id="updateForm" class="space-y-4">
                         <input type="hidden" name="action" value="update">
                         
+                        <!-- LINE Status Banner -->
+                        <?php if (!empty($request['requester_line_user_id'])): ?>
+                        <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+                            <span class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                <i class="fab fa-line text-white text-sm"></i>
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-green-800">เชื่อมต่อ LINE แล้ว — รับการแจ้งเตือนอัตโนมัติ</p>
+                                <p class="text-xs text-green-600 truncate">LINE ID: <?= htmlspecialchars($request['requester_line_user_id']) ?></p>
+                            </div>
+                            <span class="flex-shrink-0 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">✓ Active</span>
+                        </div>
+                        <?php else: ?>
+                        <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                            <span class="flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                                <i class="fab fa-line text-white text-sm"></i>
+                            </span>
+                            <p class="text-sm text-gray-500">ผู้ร้องขอยังไม่ได้เชื่อมต่อ LINE — จะไม่ได้รับแจ้งเตือนผ่าน LINE</p>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล</label>
-                                <input type="text" name="requester_name" value="<?= htmlspecialchars($request['requester_name']) ?>" 
+                                <input type="text" name="requester_name" value="<?= htmlspecialchars($request['requester_name']) ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-                            
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
-                                <input type="email" name="requester_email" value="<?= htmlspecialchars($request['requester_email'] ?? '') ?>" 
+                                <input type="email" name="requester_email" value="<?= htmlspecialchars($request['requester_email'] ?? '') ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-                            
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์โทร</label>
-                                <input type="tel" name="requester_phone" value="<?= htmlspecialchars($request['requester_phone'] ?? '') ?>" 
+                                <input type="tel" name="requester_phone" value="<?= htmlspecialchars($request['requester_phone'] ?? '') ?>"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
+                                <input type="text" name="requester_position" value="<?= htmlspecialchars($request['requester_position'] ?? '') ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
                             

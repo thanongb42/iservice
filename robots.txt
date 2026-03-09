@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Block sensitive directories
+Disallow: /admin/
+Disallow: /api/
+Disallow: /config/
+Disallow: /includes/
+Disallow: /storage/
+Disallow: /database/
+Disallow: /app/
+Disallow: /forms/
+Disallow: /logs/
+
+# Block debug/temp files
+Disallow: /check_*.php
+Disallow: /debug_*.php
+Disallow: /test_*.php
+
+Sitemap: https://iservice.rangsitcity.go.th/sitemap.xml

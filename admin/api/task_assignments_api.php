@@ -179,6 +179,8 @@ function assignTask() {
         $upd_req = $conn->prepare("UPDATE service_requests SET status = 'in_progress' WHERE request_id = ? AND status = 'pending'");
         $upd_req->bind_param("i", $request_id);
         $upd_req->execute();
+        require_once __DIR__ . '/../../includes/email_helper.php';
+        send_status_update_notification($request_id, $conn, 'in_progress', '');
 
         $response['success'] = true;
         $response['message'] = 'มอบหมายงานสำเร็จ';
@@ -295,6 +297,14 @@ function reassignTask() {
     if ($stmt->execute()) {
         logTaskHistory($assignment_id, 'reassigned', null, null, $user_id, "เปลี่ยนผู้รับผิดชอบจาก #$old_assigned เป็น #$new_assigned_to. $notes");
 
+        // แจ้งเตือนผู้ร้องขอผ่าน LINE
+        try {
+            require_once '../../includes/email_helper.php';
+            send_line_status_to_requester($assignment['request_id'], $conn, 'in_progress', 'มีการเปลี่ยนแปลงผู้รับผิดชอบดูแลคำขอของคุณ');
+        } catch (Exception $e) {
+            error_log('reassignTask requester LINE notify error: ' . $e->getMessage());
+        }
+
         $response['success'] = true;
         $response['message'] = 'เปลี่ยนผู้รับผิดชอบสำเร็จ';
     } else {
@@ -331,6 +341,42 @@ function cancelTask() {
 
     if ($stmt->execute()) {
         logTaskHistory($assignment_id, 'cancelled', $old_status, 'cancelled', $user_id, $notes);
+
+        // LINE notification — แจ้งเจ้าหน้าที่ที่ถูกยกเลิก
+        try {
+            require_once '../../includes/line_helper.php';
+            $nl = $conn->prepare("
+                SELECT u.line_user_id, sr.request_code, sr.service_name, sr.department_name,
+                       sr.request_id, sr.requester_line_user_id
+                FROM task_assignments ta
+                JOIN users u ON ta.assigned_to = u.user_id
+                JOIN service_requests sr ON ta.request_id = sr.request_id
+                WHERE ta.assignment_id = ?
+            ");
+            $nl->bind_param('i', $assignment_id);
+            $nl->execute();
+            $nl_data = $nl->get_result()->fetch_assoc();
+            if ($nl_data) {
+                // แจ้งเจ้าหน้าที่
+                if (!empty($nl_data['line_user_id'])) {
+                    $msg  = "❌ ยกเลิกการมอบหมายงาน\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "รหัสคำขอ: {$nl_data['request_code']}\n";
+                    $msg .= "บริการ: {$nl_data['service_name']}\n";
+                    $msg .= "หน่วยงาน: {$nl_data['department_name']}\n";
+                    $msg .= "────────────────\n";
+                    $msg .= "งานนี้ถูกยกเลิกการมอบหมายแล้ว";
+                    send_line_push_to_user($nl_data['line_user_id'], $msg, $conn);
+                }
+                // แจ้งผู้ร้องขอ
+                if (!empty($nl_data['requester_line_user_id'])) {
+                    require_once '../../includes/email_helper.php';
+                    send_line_status_to_requester($nl_data['request_id'], $conn, 'pending', 'คำขอของคุณอยู่ระหว่างการพิจารณามอบหมายงานใหม่');
+                }
+            }
+        } catch (Exception $e) {
+            error_log('cancelTask LINE notify error: ' . $e->getMessage());
+        }
 
         $response['success'] = true;
         $response['message'] = 'ยกเลิกการมอบหมายสำเร็จ';
@@ -498,6 +544,8 @@ function checkAndUpdateRequestStatus($request_id) {
         $upd_done = $conn->prepare("UPDATE service_requests SET status = 'completed', completed_at = NOW() WHERE request_id = ?");
         $upd_done->bind_param("i", $request_id);
         $upd_done->execute();
+        require_once __DIR__ . '/../../includes/email_helper.php';
+        send_status_update_notification($request_id, $conn, 'completed', '');
     }
 }
 ?>

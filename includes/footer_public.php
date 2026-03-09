@@ -44,7 +44,7 @@ if (!isset($footer_org_name) || !isset($footer_logo)) {
                         <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-sky-500 rounded-full flex items-center justify-center transition-colors">
                             <i class="fab fa-twitter text-white"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors">
+                        <a href="line-add-friend.php" title="เพิ่มเพื่อน LINE Bot" class="w-10 h-10 bg-gray-700 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors">
                             <i class="fab fa-line text-white"></i>
                         </a>
                         <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">

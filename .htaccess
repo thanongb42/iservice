@@ -1,3 +1,44 @@
+# ── Gzip Compression ─────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml font/woff2
+</IfModule>
+
+# ── Browser Caching ───────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    # Images
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png  "access plus 1 month"
+    ExpiresByType image/gif  "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon  "access plus 1 year"
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff  "access plus 1 year"
+    # CSS & JS
+    ExpiresByType text/css         "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    # HTML (ไม่ cache นาน เพราะ dynamic)
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# ── Serve WebP images when browser supports it ───────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_FILENAME} \.(jpe?g|png)$
+    RewriteCond %{REQUEST_FILENAME}.webp -f
+    RewriteRule ^ %{REQUEST_URI}.webp [T=image/webp,L]
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpe?g|png)$">
+        Header append Vary Accept
+    </FilesMatch>
+</IfModule>
+
 # ── Deny direct access to sensitive files ────────────────────────────────
 <FilesMatch "^\.env|^\.env\.|composer\.(json|lock)$|package\.json$">
     Require all denied
@@ -19,6 +60,9 @@
     # ────────────────────────────────────────────────────────────────────────
 
     RewriteBase /iservice/
+
+    # Serve favicon from existing logo PNG
+    RewriteRule ^favicon\.ico$ public/assets/images/logo/rangsit-small-logo.png [L,T=image/x-icon]
 
     # Skip rewrite for actual files and directories
     RewriteCond %{REQUEST_FILENAME} -f [OR]

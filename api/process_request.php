@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email_helper.php';
+require_once __DIR__ . '/../includes/line_helper.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -102,6 +103,8 @@ try {
     $email = clean_input($_POST['requester_email'] ?? '');
     $phone = clean_input($_POST['requester_phone'] ?? '');
     $position = clean_input($_POST['position'] ?? '');
+    // LINE User ID จาก session (ปลอดภัยกว่าอ่านจาก POST โดยตรง)
+    $requester_line_user_id = $_SESSION['req_line_user_id'] ?? '';
     $priority = isset($_POST['priority']) ? clean_input($_POST['priority']) : 'medium';
     $target_date = !empty($_POST['target_date']) ? clean_input($_POST['target_date']) : NULL;
     $description = clean_input($_POST['notes'] ?? '');
@@ -172,13 +175,15 @@ try {
     $stmt = $conn->prepare("INSERT INTO service_requests (
         user_id, request_code, service_code, service_name,
         requester_prefix_id, requester_name, requester_email, requester_phone, requester_position,
+        requester_line_user_id,
         department_id, department_name, subject, description,
         priority, expected_completion_date, attachments
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $stmt->bind_param("isssissssissssss",
+    $stmt->bind_param("isssisssssissssss",
         $user_id, $request_code, $service_code, $service_name,
         $prefix_id, $name, $email, $phone, $position,
+        $requester_line_user_id,
         $dept_id, $dept_name, $subject, $description,
         $priority, $target_date, $attachments_json
     );
@@ -292,7 +297,7 @@ try {
             $references = clean_input($_POST['reference_sites'] ?? '');
             $colors = clean_input($_POST['color_preferences'] ?? '');
             $budget = clean_input($_POST['budget'] ?? '');
-            $stmt->bind_param("issssisisssss", $request_id, $web_type, $proj_name, $purpose, $audience, $pages, $features, $has_site, $existing_url, $domain, $hosting, $references, $colors, $budget);
+            $stmt->bind_param("issssisisissss", $request_id, $web_type, $proj_name, $purpose, $audience, $pages, $features, $has_site, $existing_url, $domain, $hosting, $references, $colors, $budget);
             break;
 
         case 'PRINTER':
@@ -381,10 +386,14 @@ try {
     // 7. Success
     $conn->commit();
 
+    // ล้าง LINE session หลัง submit สำเร็จ
+    unset($_SESSION['req_line_user_id'], $_SESSION['req_line_display_name']);
+
     // Send notifications
-    send_request_notification($request_id, $conn);   // Email to requester
-    notify_admins_new_request($request_id, $conn);    // Email to admin/staff
-    send_line_notification($request_id, $conn);       // LINE group
+    send_request_notification($request_id, $conn);          // Email to requester
+    notify_admins_new_request($request_id, $conn);           // Email to admin/staff
+    send_line_notification($request_id, $conn);              // LINE group (admin)
+    send_line_to_requester($request_id, $conn);              // LINE direct to requester
 
     $response['success'] = true;
     $response['message'] = "ส่งคำขอเรียบร้อยแล้ว รหัสคำขอของคุณคือ: $request_code";
