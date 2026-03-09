@@ -16,6 +16,20 @@ if (isset($conn)) {
     }
 }
 
+// Count my active tasks (pending + accepted + in_progress) for current user
+$my_tasks_count = 0;
+if (isset($conn) && isset($_SESSION['user_id'])) {
+    $mt_stmt = $conn->prepare("
+        SELECT COUNT(*) as cnt FROM task_assignments
+        WHERE assigned_to = ? AND status IN ('pending', 'accepted', 'in_progress')
+    ");
+    if ($mt_stmt) {
+        $mt_stmt->bind_param('i', $_SESSION['user_id']);
+        $mt_stmt->execute();
+        $my_tasks_count = intval($mt_stmt->get_result()->fetch_assoc()['cnt']);
+    }
+}
+
 // Tier detection
 $is_admin   = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
 $is_manager = $is_admin; // admin also counts as manager
@@ -65,7 +79,7 @@ if ($is_admin) {
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [
-                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php', 'badge' => $my_tasks_count > 0 ? $my_tasks_count : null],
                 ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
                     ['id' => 'staff_guide',         'icon' => 'fa-list-ul',        'label' => 'งานตามคำร้อง',  'url' => 'staff_guide.php'],
                     ['id' => 'staff_guide_planned', 'icon' => 'fa-calendar-check', 'label' => 'งานตามแผนงาน', 'url' => 'staff_guide_planned.php'],
@@ -126,7 +140,7 @@ if ($is_admin) {
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [
-                ['id' => 'my_tasks',        'icon' => 'fa-tasks',          'label' => 'งานของฉัน',   'url' => 'my_tasks.php'],
+                ['id' => 'my_tasks',        'icon' => 'fa-tasks',          'label' => 'งานของฉัน',   'url' => 'my_tasks.php', 'badge' => $my_tasks_count > 0 ? $my_tasks_count : null],
                 ['id' => 'create_job',      'icon' => 'fa-calendar-plus',  'label' => 'ปฏิทินงาน',  'url' => 'create_job.php'],
                 ['id' => 'service_requests','icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
                 ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
@@ -142,7 +156,7 @@ if ($is_admin) {
         'operation' => [
             'label' => 'ปฏิบัติงาน',
             'items' => [
-                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php'],
+                ['id' => 'my_tasks', 'icon' => 'fa-tasks', 'label' => 'งานของฉัน', 'url' => 'my_tasks.php', 'badge' => $my_tasks_count > 0 ? $my_tasks_count : null],
                 ['id' => 'staff_guide_group', 'icon' => 'fa-book-open', 'label' => 'คู่มือการใช้งาน', 'submenu' => [
                     ['id' => 'staff_guide',         'icon' => 'fa-list-ul',        'label' => 'งานตามคำร้อง',  'url' => 'staff_guide.php'],
                     ['id' => 'staff_guide_planned', 'icon' => 'fa-calendar-check', 'label' => 'งานตามแผนงาน', 'url' => 'staff_guide_planned.php'],

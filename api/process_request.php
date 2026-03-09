@@ -279,7 +279,7 @@ try {
             $drone = 0;
             $delivery = clean_input($_POST['delivery_format']);
             $special = clean_input($_POST['notes'] ?? '');
-            $stmt->bind_param("isssssiiiiss", $request_id, $event_name, $event_type, $event_date, $time_start, $time_end, $event_loc, $photographers, $video, $drone, $delivery, $special);
+            $stmt->bind_param("issssssiiiss", $request_id, $event_name, $event_type, $event_date, $time_start, $time_end, $event_loc, $photographers, $video, $drone, $delivery, $special);
             break;
 
         case 'WEB_DESIGN':

@@ -37,6 +37,21 @@ $breadcrumb = [
     ['label' => htmlspecialchars($request['request_code'])]
 ];
 
+// Service detail table mapping
+$service_detail_tables = [
+    'EMAIL'       => 'request_email_details',
+    'NAS'         => 'request_nas_details',
+    'IT_SUPPORT'  => 'request_it_support_details',
+    'PHOTOGRAPHY' => 'request_photography_details',
+    'MC'          => 'request_mc_details',
+    'QR_CODE'     => 'request_qrcode_details',
+    'PRINTER'     => 'request_printer_details',
+    'WEB_DESIGN'  => 'request_webdesign_details',
+    'LED'         => 'request_led_details',
+    'INTERNET'    => 'request_internet_details',
+];
+$service_detail_table = $service_detail_tables[$request['service_code']] ?? null;
+
 // Get service-specific details if exists
 $service_details = [];
 switch ($request['service_code']) {
@@ -46,28 +61,28 @@ switch ($request['service_code']) {
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
         break;
-    
+
     case 'NAS':
         $detail_stmt = $conn->prepare("SELECT * FROM request_nas_details WHERE request_id = ?");
         $detail_stmt->bind_param("i", $request_id);
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
         break;
-    
+
     case 'IT_SUPPORT':
         $detail_stmt = $conn->prepare("SELECT * FROM request_it_support_details WHERE request_id = ?");
         $detail_stmt->bind_param("i", $request_id);
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
         break;
-    
+
     case 'PHOTOGRAPHY':
         $detail_stmt = $conn->prepare("SELECT * FROM request_photography_details WHERE request_id = ?");
         $detail_stmt->bind_param("i", $request_id);
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
         break;
-    
+
     case 'MC':
         $detail_stmt = $conn->prepare("SELECT * FROM request_mc_details WHERE request_id = ?");
         $detail_stmt->bind_param("i", $request_id);
@@ -200,6 +215,28 @@ if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// AJAX: update single service-detail field
+if ($action === 'update_service_detail' && $_SERVER['REQUEST_METHOD'] === 'POST' && $service_detail_table) {
+    header('Content-Type: application/json');
+    $field = preg_replace('/[^a-z0-9_]/', '', strtolower($_POST['field'] ?? ''));
+    $value = $_POST['value'] ?? '';
+    $sd_hidden = ['id', 'request_id', 'created_at', 'updated_at'];
+    if ($field && !in_array($field, $sd_hidden) && array_key_exists($field, $service_details)) {
+        $upd = $conn->prepare("UPDATE `{$service_detail_table}` SET `{$field}` = ? WHERE request_id = ?");
+        if ($upd) {
+            $upd->bind_param('si', $value, $request_id);
+            if ($upd->execute()) {
+                echo json_encode(['success' => true]);
+                exit;
+            }
+            echo json_encode(['success' => false, 'message' => $conn->error]);
+            exit;
+        }
+    }
+    echo json_encode(['success' => false, 'message' => 'Invalid field']);
+    exit;
+}
+
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Delete request
     $delete_stmt = $conn->prepare("DELETE FROM service_requests WHERE request_id = ?");
@@ -238,18 +275,83 @@ include __DIR__ . '/admin-layout/topbar.php';
     .swal-status-popup { border-radius: 16px !important; }
     .swal-status-confirm-btn { border-radius: 10px !important; padding: 10px 28px !important; font-weight: 600 !important; font-size: 0.95rem !important; }
     .swal-status-cancel-btn { border-radius: 10px !important; padding: 10px 28px !important; font-weight: 600 !important; font-size: 0.95rem !important; }
+
+    /* ═══════════════════════════════════════════════════
+       PRINT / PDF STYLES
+    ═══════════════════════════════════════════════════ */
+    @media print {
+        /* Hide everything outside main content */
+        #sidebar, nav.sticky, #mainContent > nav,
+        .no-print, #toggleEditBtn, #edit-section,
+        .action-buttons-row, #newAssignSection,
+        .lg\:col-span-1 { display: none !important; }
+
+        /* Reset layout */
+        body { margin: 0; background: #fff !important; font-family: 'Sarabun', sans-serif; }
+        #mainContent { margin-left: 0 !important; padding: 0 !important; }
+        .p-4 { padding: 0 !important; }
+        .lg\:col-span-2 { width: 100% !important; max-width: 100% !important; }
+        .grid.grid-cols-1.lg\:grid-cols-3 { display: block !important; }
+
+        /* Card styling for print */
+        .bg-white.rounded-lg.shadow-lg {
+            box-shadow: none !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            break-inside: avoid;
+            margin-bottom: 12px !important;
+        }
+
+        /* Print header */
+        #print-header { display: block !important; }
+
+        /* Colors */
+        .bg-teal-600, .bg-green-500, .bg-blue-500, .bg-yellow-500,
+        .bg-red-500, .bg-gray-500 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+        /* Tracking steps */
+        .relative.flex.justify-between { flex-wrap: wrap; gap: 8px; }
+
+        /* Font size */
+        body { font-size: 12px; }
+        h1 { font-size: 20px !important; }
+        h2 { font-size: 14px !important; }
+
+        /* Page break */
+        @page { margin: 15mm 12mm; size: A4; }
+    }
+    #print-header { display: none; }
 </style>
 
 <!-- mainContent div is already opened in topbar.php -->
     <div class="p-4">
-        <!-- Breadcrumb -->
-        <nav class="text-gray-600 text-sm mb-4">
+        <!-- Breadcrumb (screen only) -->
+        <nav class="no-print text-gray-600 text-sm mb-4">
             <a href="index.php" class="hover:text-teal-600"><i class="fas fa-home mr-1"></i>หน้าหลัก</a>
             <span class="mx-2">/</span>
             <a href="service_requests.php" class="hover:text-teal-600">จัดการคำขอบริการ</a>
             <span class="mx-2">/</span>
             <span class="text-gray-900 font-bold"><?= htmlspecialchars($request['request_code']) ?></span>
         </nav>
+
+        <!-- Print Header (print only) -->
+        <div id="print-header" style="border-bottom:3px solid #0f766e;padding-bottom:12px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:52px;height:52px;background:linear-gradient(135deg,#065f46,#0d9488);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <span style="color:#fff;font-size:22px;">⚙</span>
+                    </div>
+                    <div>
+                        <p style="margin:0;font-size:13px;color:#6b7280;">เทศบาลนครรังสิต — iService ระบบแจ้งบริการดิจิทัล</p>
+                        <p style="margin:2px 0 0;font-size:18px;font-weight:700;color:#065f46;"><?= htmlspecialchars($request['request_code']) ?></p>
+                    </div>
+                </div>
+                <div style="text-align:right;font-size:11px;color:#6b7280;">
+                    <p style="margin:0;">พิมพ์เมื่อ: <?= thdate('d/m/Y H:i', time()) ?> น.</p>
+                    <p style="margin:2px 0 0;">URL: <?= htmlspecialchars("https://iservice.rangsitcity.go.th/admin/request_detail.php?id={$request_id}") ?></p>
+                </div>
+            </div>
+        </div>
 
         <!-- Success/Error Messages -->
         <?php if (isset($_SESSION['success_msg'])): ?>
@@ -290,54 +392,57 @@ include __DIR__ . '/admin-layout/topbar.php';
                     </span>
                 </div>
                 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <!-- Status Badge -->
+                    <?php
+                    $status_labels = [
+                        'pending' => 'รอการอนุมัติ',
+                        'in_progress' => 'กำลังดำเนินการ',
+                        'completed' => 'เสร็จสิ้น',
+                        'rejected' => 'ปฏิเสธ',
+                        'cancelled' => 'ยกเลิก'
+                    ];
+                    $priority_labels = [
+                        'urgent' => 'เร่งด่วน',
+                        'high' => 'สูง',
+                        'medium' => 'ปานกลาง',
+                        'low' => 'ต่ำ'
+                    ];
+                    ?>
                     <span class="px-4 py-2 rounded-full font-bold text-white
-                        <?php 
-                        echo match($request['status']) {
+                        <?= match($request['status']) {
                             'pending' => 'bg-yellow-500',
                             'in_progress' => 'bg-blue-500',
                             'completed' => 'bg-green-500',
                             'rejected' => 'bg-red-500',
                             'cancelled' => 'bg-gray-500',
                             default => 'bg-gray-500'
-                        };
-                        ?>
-                    ">
-                        <?php
-                        $status_labels = [
-                            'pending' => 'รอการอนุมัติ',
-                            'in_progress' => 'กำลังดำเนินการ',
-                            'completed' => 'เสร็จสิ้น',
-                            'rejected' => 'ปฏิเสธ',
-                            'cancelled' => 'ยกเลิก'
-                        ];
-                        echo $status_labels[$request['status']] ?? 'ไม่ทราบ';
-                        ?>
+                        } ?>">
+                        <?= $status_labels[$request['status']] ?? 'ไม่ทราบ' ?>
                     </span>
-                    
+
                     <!-- Priority Badge -->
                     <span class="px-4 py-2 rounded-full font-bold
-                        <?php
-                        echo match($request['priority']) {
+                        <?= match($request['priority']) {
                             'urgent' => 'bg-red-100 text-red-700',
                             'high' => 'bg-orange-100 text-orange-700',
                             'medium' => 'bg-blue-100 text-blue-700',
                             'low' => 'bg-green-100 text-green-700',
                             default => 'bg-gray-100 text-gray-700'
-                        };
-                        ?>
-                    ">
-                        <?php
-                        $priority_labels = [
-                            'urgent' => 'เร่งด่วน',
-                            'high' => 'สูง',
-                            'medium' => 'ปานกลาง',
-                            'low' => 'ต่ำ'
-                        ];
-                        echo $priority_labels[$request['priority']] ?? 'ไม่ทราบ';
-                        ?>
+                        } ?>">
+                        <?= $priority_labels[$request['priority']] ?? 'ไม่ทราบ' ?>
                     </span>
+
+                    <!-- Edit Toggle Button -->
+                    <button id="toggleEditBtn" onclick="toggleEditMode()"
+                        class="px-4 py-2 rounded-lg font-bold border border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition flex items-center gap-2">
+                        <i class="fas fa-pencil-alt"></i> แก้ไข
+                    </button>
+                    <!-- Print Button -->
+                    <button onclick="window.open('request_print.php?id=<?= $request_id ?>', '_blank')"
+                        class="no-print px-4 py-2 rounded-lg font-bold border border-gray-400 text-gray-600 hover:bg-gray-600 hover:text-white transition flex items-center gap-2">
+                        <i class="fas fa-print"></i> พิมพ์/PDF
+                    </button>
                 </div>
             </div>
         </div>
@@ -393,33 +498,92 @@ include __DIR__ . '/admin-layout/topbar.php';
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
             <div class="lg:col-span-2">
-                <!-- Request Information -->
-                <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+                <!-- Request Information — VIEW MODE (default) -->
+                <div id="view-section" class="bg-white rounded-lg shadow-lg p-6 mb-4">
                     <h2 class="text-xl font-bold text-gray-900 mb-4 pb-3 border-b">ข้อมูลผู้ร้องขอ</h2>
-                    
-                    <form method="POST" id="updateForm" class="space-y-4">
-                        <input type="hidden" name="action" value="update">
-                        
-                        <!-- LINE Status Banner -->
-                        <?php if (!empty($request['requester_line_user_id'])): ?>
-                        <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg mb-4">
-                            <span class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                <i class="fab fa-line text-white text-sm"></i>
-                            </span>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold text-green-800">เชื่อมต่อ LINE แล้ว — รับการแจ้งเตือนอัตโนมัติ</p>
-                                <p class="text-xs text-green-600 truncate">LINE ID: <?= htmlspecialchars($request['requester_line_user_id']) ?></p>
-                            </div>
-                            <span class="flex-shrink-0 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">✓ Active</span>
+
+                    <!-- LINE Status Banner -->
+                    <?php if (!empty($request['requester_line_user_id'])): ?>
+                    <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+                        <span class="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <i class="fab fa-line text-white text-sm"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-green-800">เชื่อมต่อ LINE แล้ว — รับการแจ้งเตือนอัตโนมัติ</p>
+                            <p class="text-xs text-green-600 truncate">LINE ID: <?= htmlspecialchars($request['requester_line_user_id']) ?></p>
                         </div>
-                        <?php else: ?>
-                        <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-                            <span class="flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                                <i class="fab fa-line text-white text-sm"></i>
-                            </span>
-                            <p class="text-sm text-gray-500">ผู้ร้องขอยังไม่ได้เชื่อมต่อ LINE — จะไม่ได้รับแจ้งเตือนผ่าน LINE</p>
+                        <span class="flex-shrink-0 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">✓ Active</span>
+                    </div>
+                    <?php else: ?>
+                    <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                        <span class="flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                            <i class="fab fa-line text-white text-sm"></i>
+                        </span>
+                        <p class="text-sm text-gray-500">ผู้ร้องขอยังไม่ได้เชื่อมต่อ LINE — จะไม่ได้รับแจ้งเตือนผ่าน LINE</p>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php
+                    $dept_name_display = '-';
+                    foreach ($departments as $d) {
+                        if ($d['department_id'] == $request['department_id']) { $dept_name_display = $d['department_name']; break; }
+                    }
+                    $rname_display = trim($request['requester_name'] ?? '');
+                    if (!$rname_display || $rname_display === '0') $rname_display = '-';
+                    ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">ชื่อ-นามสกุล</p>
+                            <p class="text-gray-900 font-semibold"><?= htmlspecialchars($rname_display) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">อีเมล</p>
+                            <p class="text-gray-900 font-semibold"><?= htmlspecialchars($request['requester_email'] ?? '-') ?: '-' ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">เบอร์โทร</p>
+                            <p class="text-gray-900 font-semibold"><?= htmlspecialchars($request['requester_phone'] ?? '-') ?: '-' ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">ตำแหน่ง</p>
+                            <p class="text-gray-900 font-semibold"><?= htmlspecialchars($request['requester_position'] ?? '-') ?: '-' ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">แผนก/หน่วยงาน</p>
+                            <p class="text-gray-900 font-semibold"><?= htmlspecialchars($dept_name_display) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">ความสำคัญ</p>
+                            <p class="text-gray-900 font-semibold"><?= $priority_labels[$request['priority']] ?? htmlspecialchars($request['priority']) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">สถานะ</p>
+                            <p class="text-gray-900 font-semibold"><?= $status_labels[$request['status']] ?? htmlspecialchars($request['status']) ?></p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">รายละเอียด</p>
+                            <p class="text-gray-900 whitespace-pre-wrap"><?= htmlspecialchars($request['description']) ?: '-' ?></p>
+                        </div>
+                        <?php if (!empty($request['admin_notes'])): ?>
+                        <div class="md:col-span-2">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">หมายเหตุของเจ้าหน้าที่</p>
+                            <p class="text-gray-900 whitespace-pre-wrap"><?= htmlspecialchars($request['admin_notes']) ?></p>
                         </div>
                         <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Request Information — EDIT MODE (hidden by default) -->
+                <div id="edit-section" style="display:none;" class="bg-white rounded-lg shadow-lg p-6 mb-4 border-2 border-teal-400">
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b">
+                        <h2 class="text-xl font-bold text-gray-900">แก้ไขข้อมูลผู้ร้องขอ</h2>
+                        <button type="button" onclick="toggleEditMode()" class="text-gray-400 hover:text-gray-600 text-sm">
+                            <i class="fas fa-times mr-1"></i>ยกเลิก
+                        </button>
+                    </div>
+
+                    <form method="POST" id="updateForm" class="space-y-4">
+                        <input type="hidden" name="action" value="update">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -427,25 +591,21 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 <input type="text" name="requester_name" value="<?= htmlspecialchars($request['requester_name']) ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
                                 <input type="email" name="requester_email" value="<?= htmlspecialchars($request['requester_email'] ?? '') ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์โทร</label>
                                 <input type="tel" name="requester_phone" value="<?= htmlspecialchars($request['requester_phone'] ?? '') ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
                                 <input type="text" name="requester_position" value="<?= htmlspecialchars($request['requester_position'] ?? '') ?>"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">แผนก/หน่วยงาน</label>
                                 <select name="department_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
@@ -457,7 +617,6 @@ include __DIR__ . '/admin-layout/topbar.php';
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">ความสำคัญ</label>
                                 <select name="priority" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
@@ -467,7 +626,6 @@ include __DIR__ . '/admin-layout/topbar.php';
                                     <option value="urgent" <?= $request['priority'] === 'urgent' ? 'selected' : '' ?>>เร่งด่วน</option>
                                 </select>
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">สถานะ</label>
                                 <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
@@ -479,22 +637,25 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">รายละเอียด</label>
-                            <textarea name="description" rows="4" 
+                            <textarea name="description" rows="4"
                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"><?= htmlspecialchars($request['description']) ?></textarea>
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุของเจ้าหน้าที่</label>
-                            <textarea name="admin_notes" rows="3" 
+                            <textarea name="admin_notes" rows="3"
                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"><?= htmlspecialchars($request['admin_notes'] ?? '') ?></textarea>
                         </div>
-                        
+
                         <div class="flex gap-2">
                             <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-bold">
                                 <i class="fas fa-save mr-2"></i>บันทึกการเปลี่ยนแปลง
+                            </button>
+                            <button type="button" onclick="toggleEditMode()" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 font-bold">
+                                ยกเลิก
                             </button>
                         </div>
                     </form>
@@ -688,14 +849,17 @@ include __DIR__ . '/admin-layout/topbar.php';
 
                     // ── ฟิลด์ที่ซ่อน (ไม่แสดง) ──────────────────────────────────
                     $hidden_fields = ['id', 'request_id', 'created_at', 'updated_at'];
+                    // ฟิลด์ที่ไม่อนุญาตให้แก้ไข (mapped values / calculated)
+                    $readonly_fields = array_merge(array_keys($value_maps), ['storage_size_gb']);
                     ?>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="service-detail-grid">
                         <?php foreach ($service_details as $key => $value): ?>
-                            <?php if (in_array($key, $hidden_fields) || $value === null || $value === '') continue; ?>
+                            <?php if (in_array($key, $hidden_fields)) continue; ?>
                             <div>
                                 <?php
                                 $label = $field_labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
-                                $display_value = (string)$value;
+                                $raw_value   = (string)$value;
+                                $display_value = $raw_value;
 
                                 // 1. แปลค่า coded → ภาษาไทย
                                 if (isset($value_maps[$key][$display_value])) {
@@ -720,12 +884,91 @@ include __DIR__ . '/admin-layout/topbar.php';
                                 elseif (in_array($key, ['number_of_photographers','mc_count'])) {
                                     $display_value = intval($value).' คน';
                                 }
+                                // ถ้าค่าเป็น null หรือ '' ให้แสดง dash
+                                if ($display_value === '' || $display_value === null) {
+                                    $display_value = '-';
+                                }
+                                $can_edit = !in_array($key, $readonly_fields) && !in_array($key, $hidden_fields);
                                 ?>
                                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5"><?= htmlspecialchars($label) ?></p>
-                                <p class="text-gray-900 font-semibold"><?= htmlspecialchars($display_value) ?></p>
+                                <div class="flex items-center gap-2 group">
+                                    <p class="text-gray-900 font-semibold sd-display-val" data-field="<?= htmlspecialchars($key) ?>"><?= htmlspecialchars($display_value) ?></p>
+                                    <?php if ($can_edit): ?>
+                                    <button type="button"
+                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-teal-600 transition-all text-xs"
+                                        title="แก้ไข"
+                                        onclick="sdEditField(this, '<?= htmlspecialchars($key) ?>', <?= json_encode($raw_value) ?>)">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
+
+                    <script>
+                    function sdEditField(btn, field, currentVal) {
+                        const displayEl = btn.previousElementSibling;
+                        const wrapper   = btn.parentElement;
+                        // Already editing?
+                        if (wrapper.querySelector('.sd-edit-input')) return;
+
+                        btn.style.display = 'none';
+                        const input = document.createElement('input');
+                        input.type  = 'text';
+                        input.value = currentVal;
+                        input.className = 'sd-edit-input border border-teal-400 rounded px-2 py-0.5 text-sm text-gray-900 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-teal-500';
+
+                        const saveBtn = document.createElement('button');
+                        saveBtn.type = 'button';
+                        saveBtn.textContent = 'บันทึก';
+                        saveBtn.className = 'text-xs bg-teal-600 text-white px-2 py-0.5 rounded hover:bg-teal-700';
+
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.type = 'button';
+                        cancelBtn.textContent = 'ยกเลิก';
+                        cancelBtn.className = 'text-xs text-gray-500 hover:text-gray-700 px-1';
+
+                        displayEl.style.display = 'none';
+                        wrapper.appendChild(input);
+                        wrapper.appendChild(saveBtn);
+                        wrapper.appendChild(cancelBtn);
+                        input.focus();
+
+                        cancelBtn.onclick = () => {
+                            input.remove(); saveBtn.remove(); cancelBtn.remove();
+                            displayEl.style.display = '';
+                            btn.style.display = '';
+                        };
+
+                        saveBtn.onclick = () => {
+                            const newVal = input.value.trim();
+                            saveBtn.disabled = true;
+                            saveBtn.textContent = '...';
+                            fetch('request_detail.php?id=<?= $request_id ?>', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: new URLSearchParams({action: 'update_service_detail', field: field, value: newVal})
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    displayEl.textContent = newVal || '-';
+                                    input.remove(); saveBtn.remove(); cancelBtn.remove();
+                                    displayEl.style.display = '';
+                                    btn.style.display = '';
+                                    // update raw value on button for next edit
+                                    btn.setAttribute('onclick', `sdEditField(this, '${field}', ${JSON.stringify(newVal)})`);
+                                } else {
+                                    alert('ไม่สามารถบันทึกได้: ' + (data.message || 'Unknown error'));
+                                    saveBtn.disabled = false;
+                                    saveBtn.textContent = 'บันทึก';
+                                }
+                            })
+                            .catch(() => { alert('เกิดข้อผิดพลาด'); saveBtn.disabled = false; saveBtn.textContent = 'บันทึก'; });
+                        };
+                    }
+                    </script>
                 </div>
                 <?php endif; ?>
 
@@ -1205,6 +1448,44 @@ async function cancelAssignment(assignmentId) {
         }
     } catch (error) {
         Swal.fire('ผิดพลาด', 'ไม่สามารถยกเลิกได้', 'error');
+    }
+}
+
+function printRequest() {
+    // Make sure we're in view mode before printing
+    const editSec = document.getElementById('edit-section');
+    const viewSec = document.getElementById('view-section');
+    if (editSec && editSec.style.display !== 'none') {
+        editSec.style.display = 'none';
+        viewSec.style.display = '';
+    }
+    window.print();
+}
+
+// Auto-open edit mode if ?edit=1 in URL
+if (new URLSearchParams(window.location.search).get('edit') === '1') {
+    document.addEventListener('DOMContentLoaded', function() { toggleEditMode(); });
+}
+
+// Toggle between view and edit mode for the requester info section
+function toggleEditMode() {
+    const viewSec = document.getElementById('view-section');
+    const editSec = document.getElementById('edit-section');
+    const btn = document.getElementById('toggleEditBtn');
+    const isEditing = editSec.style.display !== 'none';
+    if (isEditing) {
+        editSec.style.display = 'none';
+        viewSec.style.display = '';
+        btn.innerHTML = '<i class="fas fa-pencil-alt"></i> แก้ไข';
+        btn.classList.remove('bg-teal-600', 'text-white');
+        btn.classList.add('text-teal-600');
+    } else {
+        viewSec.style.display = 'none';
+        editSec.style.display = '';
+        btn.innerHTML = '<i class="fas fa-times"></i> ดูข้อมูล';
+        btn.classList.add('bg-teal-600', 'text-white');
+        btn.classList.remove('text-teal-600');
+        editSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 </script>

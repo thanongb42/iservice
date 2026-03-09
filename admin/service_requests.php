@@ -43,8 +43,15 @@ $count_row = $count_result->fetch_assoc();
 $total_items = $count_row['total'];
 $total_pages = ceil($total_items / $items_per_page);
 
-// Get paginated service requests
-$sql = "SELECT * FROM v_service_requests_full ORDER BY created_at DESC LIMIT ? OFFSET ?";
+// Get paginated service requests (with event date from photography/MC detail tables)
+$sql = "SELECT v.*,
+    COALESCE(pd.event_date, md.event_date) as work_event_date,
+    COALESCE(pd.event_time_start, md.event_time_start) as work_time_start,
+    COALESCE(pd.event_name, md.event_name) as work_event_name
+    FROM v_service_requests_full v
+    LEFT JOIN request_photography_details pd ON v.request_id = pd.request_id
+    LEFT JOIN request_mc_details md ON v.request_id = md.request_id
+    ORDER BY v.created_at DESC LIMIT ? OFFSET ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('ii', $items_per_page, $offset);
 $stmt->execute();
@@ -540,12 +547,13 @@ include 'admin-layout/topbar.php';
                         <tr>
                             <th class="sortable" data-col="0" onclick="sortTable(0)">รหัสคำขอ <span class="sort-icon">↕</span></th>
                             <th class="sortable" data-col="1" onclick="sortTable(1)">บริการ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="2" onclick="sortTable(2)">ผู้ขอ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="3" onclick="sortTable(3)">หน่วยงาน <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="4" onclick="sortTable(4)">สถานะ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="5" onclick="sortTable(5)">ความสำคัญ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="6" onclick="sortTable(6)">มอบหมายให้ <span class="sort-icon">↕</span></th>
-                            <th class="sortable" data-col="7" onclick="sortTable(7)">วันที่สร้าง <span class="sort-icon">↕</span></th>
+                            <th>วันเวลางาน</th>
+                            <th class="sortable" data-col="3" onclick="sortTable(3)">ผู้ขอ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="4" onclick="sortTable(4)">หน่วยงาน <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="5" onclick="sortTable(5)">สถานะ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="6" onclick="sortTable(6)">ความสำคัญ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="7" onclick="sortTable(7)">มอบหมายให้ <span class="sort-icon">↕</span></th>
+                            <th class="sortable" data-col="8" onclick="sortTable(8)">วันที่สร้าง <span class="sort-icon">↕</span></th>
                             <th style="width: 180px;">การดำเนินการ</th>
                         </tr>
                     </thead>
@@ -555,12 +563,23 @@ include 'admin-layout/topbar.php';
                                 data-status="<?= $req['status'] ?? '' ?>"
                                 data-service="<?= $req['service_code'] ?? '' ?>"
                                 data-priority="<?= $req['priority'] ?? '' ?>"
-                                data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
+                                data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['requester_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
                                 <td class="font-mono text-sm"><?= htmlspecialchars($req['request_code'] ?? '#' . str_pad($req['request_id'], 4, '0', STR_PAD_LEFT)) ?></td>
                                 <td><?= htmlspecialchars(isset($req['service_name']) ? $req['service_name'] : getServiceName($req['service_code'] ?? 'N/A')) ?></td>
+                                <td class="text-sm">
+                                    <?php if (!empty($req['work_event_date'])): ?>
+                                        <span class="font-medium text-blue-700"><?= formatThaiDate($req['work_event_date'], false) ?></span>
+                                        <?php if (!empty($req['work_time_start'])): ?>
+                                            <br><small class="text-gray-500"><?= htmlspecialchars(substr($req['work_time_start'], 0, 5)) ?><?= !empty($req['work_time_end']) ? '–' . substr($req['work_time_end'], 0, 5) : '' ?> น.</small>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-gray-400">-</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
-                                    <?= htmlspecialchars($req['user_full_name'] ?? 'N/A') ?>
-                                    <br><small class="text-gray-500"><?= htmlspecialchars($req['user_email'] ?? '-') ?></small>
+                                    <?php $rname = trim($req['requester_name'] ?? ''); ?>
+                                    <?= htmlspecialchars($rname && $rname !== '0' ? $rname : '-') ?>
+                                    <br><small class="text-gray-500"><?= htmlspecialchars($req['requester_email'] ?? '-') ?></small>
                                 </td>
                                 <td><?= htmlspecialchars($req['department_name'] ?? '-') ?></td>
                                 <td>
@@ -600,7 +619,7 @@ include 'admin-layout/topbar.php';
                                     <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="ดูรายละเอียด">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="อัปเดตสถานะ">
+                                    <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>&edit=1'" class="action-btn text-green-600 hover:bg-green-50" title="แก้ไขข้อมูล">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="มอบหมายงาน">
@@ -690,7 +709,7 @@ include 'admin-layout/topbar.php';
                      data-status="<?= $req['status'] ?? '' ?>"
                      data-service="<?= $req['service_code'] ?? '' ?>"
                      data-priority="<?= $req['priority'] ?? '' ?>"
-                     data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['user_full_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
+                     data-search="<?= strtolower(($req['request_code'] ?? '') . ' ' . ($req['requester_name'] ?? '') . ' ' . ($req['department_name'] ?? '')) ?>">
                     <div class="flex items-start justify-between gap-2 mb-2">
                         <span class="req-card-code"><?= htmlspecialchars($req['request_code'] ?? '#' . str_pad($req['request_id'], 4, '0', STR_PAD_LEFT)) ?></span>
                         <span class="status-badge status-<?= $req['status'] ?>"><?= getThaiStatus($req['status']) ?></span>
@@ -698,8 +717,9 @@ include 'admin-layout/topbar.php';
                     <p class="text-sm font-semibold text-gray-800 mb-2">
                         <?= htmlspecialchars(isset($req['service_name']) ? $req['service_name'] : getServiceName($req['service_code'] ?? 'N/A')) ?>
                     </p>
-                    <p class="text-sm text-gray-700"><?= htmlspecialchars($req['user_full_name'] ?? 'N/A') ?></p>
-                    <p class="text-xs text-gray-400"><?= htmlspecialchars($req['user_email'] ?? '-') ?></p>
+                    <?php $rname_card = trim($req['requester_name'] ?? ''); ?>
+                    <p class="text-sm text-gray-700"><?= htmlspecialchars($rname_card && $rname_card !== '0' ? $rname_card : '-') ?></p>
+                    <p class="text-xs text-gray-400"><?= htmlspecialchars($req['requester_email'] ?? '-') ?></p>
                     <?php if (!empty($req['department_name'])): ?>
                     <p class="text-xs text-gray-500 mt-1">
                         <i class="fas fa-building mr-1"></i><?= htmlspecialchars($req['department_name']) ?>
@@ -723,7 +743,7 @@ include 'admin-layout/topbar.php';
                     </p>
                     <div class="req-card-actions">
                         <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>'" class="action-btn text-blue-600 hover:bg-blue-50" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button>
-                        <button onclick="updateStatus(<?= $req['request_id'] ?>)" class="action-btn text-green-600 hover:bg-green-50" title="อัปเดตสถานะ"><i class="fas fa-edit"></i></button>
+                        <button onclick="window.location.href='request_detail.php?id=<?= $req['request_id'] ?>&edit=1'" class="action-btn text-green-600 hover:bg-green-50" title="แก้ไขข้อมูล"><i class="fas fa-edit"></i></button>
                         <button onclick="assignRequest(<?= $req['request_id'] ?>)" class="action-btn text-purple-600 hover:bg-purple-50" title="มอบหมายงาน"><i class="fas fa-user-tag"></i></button>
                         <button onclick="updatePriority(<?= $req['request_id'] ?>)" class="action-btn text-orange-600 hover:bg-orange-50" title="อัปเดตความสำคัญ"><i class="fas fa-flag"></i></button>
                         <button onclick="deleteRequest(<?= $req['request_id'] ?>)" class="action-btn text-red-600 hover:bg-red-50" title="ลบ"><i class="fas fa-trash"></i></button>
@@ -1914,13 +1934,13 @@ include 'admin-layout/topbar.php';
                     const parts = cell.textContent.trim().split('-');
                     return parseInt(parts[parts.length - 1]) || 0;
                 }
-                if (col === 4) {
+                if (col === 5) {
                     return statusOrder[row.dataset.status] || 0;
                 }
-                if (col === 5) {
+                if (col === 6) {
                     return priorityOrder[row.dataset.priority] || 0;
                 }
-                if (col === 7) {
+                if (col === 8) {
                     return cell.dataset.sort || '';
                 }
                 return cell.textContent.trim().toLowerCase();
