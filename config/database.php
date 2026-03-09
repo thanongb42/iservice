@@ -4,20 +4,26 @@
  * ไฟล์ตั้งค่าการเชื่อมต่อฐานข้อมูล
  */
 
-// Database credentials on local environment
-// define('DB_HOST', 'localhost');
-// define('DB_USER', 'root');
-// define('DB_PASS', '');
-// define('DB_NAME', 'iservice_db');
-// define('DB_CHARSET', 'utf8mb4');
+// Auto-detect environment: localhost vs production
+$_is_local = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1', '::1'])
+          || (($_SERVER['SERVER_ADDR'] ?? '') === '127.0.0.1');
 
-
-// Database credentials on Hosting Production environment
-define('DB_HOST', 'localhost');
-define('DB_USER', 'rangsitadmin_iservice');
-define('DB_PASS', 'IService@2026');
-define('DB_NAME', 'rangsitadmin_iservice_db');
+if ($_is_local) {
+    // Local (XAMPP)
+    define('DB_HOST',    'localhost');
+    define('DB_USER',    'root');
+    define('DB_PASS',    '');
+    define('DB_NAME',    'iservice_db');
+} else {
+    // Production (Hosting)
+    define('DB_HOST',    'localhost');
+    define('DB_USER',    'rangsitadmin_iservice');
+    define('DB_PASS',    'IService@2026');
+    define('DB_NAME',    'rangsitadmin_iservice_db');
+}
 define('DB_CHARSET', 'utf8mb4');
+define('IS_LOCAL',   $_is_local);
+unset($_is_local);
 
 
 // Create connection

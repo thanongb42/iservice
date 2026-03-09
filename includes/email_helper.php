@@ -81,7 +81,7 @@ function notify_admins_new_request($request_id, $conn) {
     $headers .= "Content-type:text/html;charset=UTF-8\r\n";
     $headers .= "From: iService Alert <noreply@rangsitcity.go.th>\r\n";
 
-    $is_localhost = in_array($_SERVER['SERVER_NAME'], ['localhost', '127.0.0.1']);
+    $is_localhost = defined('IS_LOCAL') ? IS_LOCAL : in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 
     while ($user = $result->fetch_assoc()) {
         if ($is_localhost) {
@@ -152,7 +152,7 @@ function send_line_notification($request_id, $conn) {
 
 function send_request_notification($request_id, $conn) {
     // Check if we are running in a local environment without SMTP
-    $is_localhost = ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1');
+    $is_localhost = defined('IS_LOCAL') ? IS_LOCAL : in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
     
     // In a real production environment, you would use PHPMailer here.
     // For now, on XAMPP windows default, mail() usually fails without configuration.
@@ -236,7 +236,7 @@ function send_request_notification($request_id, $conn) {
 
 function send_status_update_notification($request_id, $conn, $new_status, $notes = '') {
     // Check if we are running in a local environment without SMTP
-    $is_localhost = ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1');
+    $is_localhost = defined('IS_LOCAL') ? IS_LOCAL : in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 
     // 1. Fetch Request Details
     $sql = "SELECT r.*, m.service_name 
