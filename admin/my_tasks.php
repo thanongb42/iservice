@@ -72,12 +72,14 @@ $tasks_query = "SELECT ta.*, sr.request_code, sr.service_name, sr.requester_name
                 LEFT JOIN prefixes p_by ON u_by.prefix_id = p_by.prefix_id
                 LEFT JOIN roles r ON ta.assigned_as_role = r.role_id
                 WHERE ta.assigned_to = ?
-                ORDER BY 
-                    CASE ta.status 
+                ORDER BY
+                    CASE ta.status
                         WHEN 'pending' THEN 1
                         WHEN 'accepted' THEN 2
                         WHEN 'in_progress' THEN 3
                         WHEN 'completed' THEN 4
+                        WHEN 'cancelled' THEN 5
+                        ELSE 6
                     END,
                     ta.due_date ASC";
 
@@ -86,10 +88,15 @@ $tasks_stmt->bind_param('i', $user_id);
 $tasks_stmt->execute();
 $tasks_result = $tasks_stmt->get_result();
 
-// Fetch all tasks into array for use in both list and calendar views
+// Split into active tasks and cancelled tasks
 $all_tasks = [];
+$cancelled_tasks = [];
 while ($task = $tasks_result->fetch_assoc()) {
-    $all_tasks[] = $task;
+    if ($task['status'] === 'cancelled') {
+        $cancelled_tasks[] = $task;
+    } else {
+        $all_tasks[] = $task;
+    }
 }
 
 // Get internal jobs assigned to current user (active only)
@@ -737,6 +744,12 @@ include 'admin-layout/topbar.php';
             <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold"><?= count($my_internal_jobs) ?></span>
             <?php endif; ?>
         </button>
+        <button class="tab-button flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold" onclick="switchTab('cancelled-view', this)">
+            <i class="fas fa-ban"></i> ยกเลิกแล้ว
+            <?php if (!empty($cancelled_tasks)): ?>
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-400 text-white text-[10px] font-bold"><?= count($cancelled_tasks) ?></span>
+            <?php endif; ?>
+        </button>
     </div>
 
     <!-- ── LIST VIEW ──────────────────────────────────────────── -->
@@ -957,9 +970,10 @@ include 'admin-layout/topbar.php';
                         <?php endif; ?>
                     </div>
                     <div class="flex gap-2">
-                        <a href="create_job.php" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                        <a href="internal_job_detail.php?id=<?= $job['job_id'] ?>" target="_blank"
+                           class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
                            style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>; border:1.5px solid <?= $sc['color'] ?>40;">
-                            <i class="fas fa-external-link-alt text-xs"></i>
+                            <i class="fas fa-eye text-xs"></i>
                             <span>ดูรายละเอียด</span>
                         </a>
                         <?php if ($job['status'] === 'scheduled'): ?>
@@ -992,6 +1006,69 @@ include 'admin-layout/topbar.php';
         </div>
         <?php endif; ?>
         </div>
+
+        <!-- ── Cancelled Tasks Tab ──────────────────────────────── -->
+        <div id="cancelled-view" class="tab-content">
+        <?php if (!empty($cancelled_tasks)): ?>
+        <div class="p-3 space-y-2.5">
+        <?php foreach ($cancelled_tasks as $task):
+            $sic = $svc_icons[$task['service_code'] ?? ''] ?? 'fa-concierge-bell';
+            $search_str = strtolower($task['request_code'].' '.$task['service_name'].' '.$task['requester_name']);
+        ?>
+        <div class="rounded-2xl overflow-hidden shadow-sm ring-1 ring-gray-100 bg-white opacity-75">
+            <div class="flex">
+                <div class="w-1.5 flex-shrink-0 bg-gray-400"></div>
+                <div class="flex-1 p-4 min-w-0">
+                    <div class="flex items-start gap-2.5 mb-2">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 bg-gray-100 text-gray-400">
+                            <i class="fas <?= $sic ?> text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-gray-500 text-[15px] leading-snug truncate">
+                                <?= htmlspecialchars($task['service_name']) ?>
+                            </p>
+                            <p class="text-xs font-mono text-gray-400 mt-0.5"><?= htmlspecialchars($task['request_code']) ?></p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 bg-gray-100 text-gray-500">
+                            <i class="fas fa-ban text-[10px]"></i> ยกเลิกการมอบหมาย
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-400">
+                        <span class="flex items-center gap-1 truncate">
+                            <i class="fas fa-user-circle"></i>
+                            <?= htmlspecialchars($task['requester_name']) ?>
+                        </span>
+                        <?php if ($task['due_date']): ?>
+                        <span class="flex items-center gap-1 flex-shrink-0 ml-2">
+                            <i class="fas fa-calendar-alt text-[10px]"></i>
+                            <?= thdate('d/m/Y', strtotime($task['due_date'])) ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!empty($task['task_notes'])): ?>
+                    <p class="text-xs text-gray-400 mt-2 italic">📝 <?= htmlspecialchars($task['task_notes']) ?></p>
+                    <?php endif; ?>
+                    <div class="mt-3">
+                        <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>"
+                           class="inline-flex items-center gap-2 py-2 px-4 rounded-xl text-sm font-semibold bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                            <i class="fas fa-eye text-xs"></i> ดูรายละเอียด
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+        <?php else: ?>
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-ban text-4xl text-gray-300"></i>
+            </div>
+            <p class="font-semibold text-gray-500">ไม่มีงานที่ถูกยกเลิก</p>
+        </div>
+        <?php endif; ?>
+        </div>
+
     </div>
 
 <script>
@@ -1199,6 +1276,10 @@ include 'admin-layout/topbar.php';
                                 </div>
                                 <span class="status-badge" style="background:#fed7aa;color:#9a3412;">${statusLabels[task.status] || task.status}</span>
                             </div>
+                            <a href="internal_job_detail.php?id=${task.job_id}" target="_blank"
+                               style="display:inline-flex;align-items:center;gap:6px;padding:0.5rem 1rem;margin-top:0.75rem;background:#fff7ed;color:#9a3412;border:1.5px solid #fed7aa;border-radius:10px;font-weight:700;font-size:0.8rem;text-decoration:none;">
+                                <i class="fas fa-eye"></i> ดูรายละเอียด
+                            </a>
                         </div>
                     `;
                 } else {
