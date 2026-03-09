@@ -91,11 +91,13 @@ $ta_query = $conn->prepare("
     WHERE ta.request_id = ? AND ta.status != 'cancelled'
     ORDER BY ta.created_at DESC
 ");
-$ta_query->bind_param('i', $request_id);
-$ta_query->execute();
-$ta_result = $ta_query->get_result();
-while ($row = $ta_result->fetch_assoc()) {
-    $task_assignments[] = $row;
+if ($ta_query) {
+    $ta_query->bind_param('i', $request_id);
+    $ta_query->execute();
+    $ta_result = $ta_query->get_result();
+    while ($row = $ta_result->fetch_assoc()) {
+        $task_assignments[] = $row;
+    }
 }
 
 // Build tracking timeline data from task assignments
