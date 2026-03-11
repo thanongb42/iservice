@@ -35,22 +35,13 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             เวลาเริ่ม <span class="text-red-500">*</span>
         </label>
-        <div class="flex items-center space-x-2">
-            <select name="event_time_start_h" required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">ชั่วโมง</option>
-                <?php for ($h = 0; $h <= 23; $h++): ?>
-                <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
-                <?php endfor; ?>
-            </select>
-            <span class="text-gray-500 font-bold">:</span>
-            <select name="event_time_start_m" required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">นาที</option>
-                <?php for ($m = 0; $m <= 55; $m += 5): ?>
-                <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
-                <?php endfor; ?>
-            </select>
+        <div class="relative">
+            <input type="text" id="photo_time_start" name="event_time_start" required
+                   placeholder="00:00" readonly
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer bg-white">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <i class="fas fa-clock"></i>
+            </span>
         </div>
     </div>
 
@@ -58,22 +49,13 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             เวลาสิ้นสุด (โดยประมาณ)
         </label>
-        <div class="flex items-center space-x-2">
-            <select name="event_time_end_h"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">ชั่วโมง</option>
-                <?php for ($h = 0; $h <= 23; $h++): ?>
-                <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
-                <?php endfor; ?>
-            </select>
-            <span class="text-gray-500 font-bold">:</span>
-            <select name="event_time_end_m"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">นาที</option>
-                <?php for ($m = 0; $m <= 55; $m += 5): ?>
-                <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
-                <?php endfor; ?>
-            </select>
+        <div class="relative">
+            <input type="text" id="photo_time_end" name="event_time_end"
+                   placeholder="00:00" readonly
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer bg-white">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <i class="fas fa-clock"></i>
+            </span>
         </div>
     </div>
 
@@ -139,12 +121,14 @@ flatpickr("#event_date_display", {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day   = String(d.getDate()).padStart(2, '0');
-            // store CE date for DB
             document.getElementById('event_date_hidden').value = `${year}-${month}-${day}`;
-            // display BE year
             const yearBE = year + 543;
             instance.input.value = `${day}/${month}/${yearBE}`;
         }
     }
 });
+
+const _timeCfg = { enableTime: true, noCalendar: true, time_24hr: true, dateFormat: "H:i" };
+flatpickr("#photo_time_start", _timeCfg);
+flatpickr("#photo_time_end",   _timeCfg);
 </script>

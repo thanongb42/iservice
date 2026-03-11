@@ -1105,13 +1105,15 @@ include __DIR__ . '/admin-layout/topbar.php';
                     <?php endif; ?>
 
                     <!-- New Assignment Form -->
-                    <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                    <div class="bg-gray-50 rounded-lg p-4 mt-4" id="newAssignSection">
                         <h4 class="text-sm font-bold text-gray-700 mb-3">
                             <i class="fas fa-plus-circle text-teal-600 mr-1"></i> มอบหมายงานใหม่
                         </h4>
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
+                                <!-- Assignee chips -->
+                                <div id="newAssignChips" class="flex flex-wrap gap-1 mb-1.5"></div>
                                 <select id="newAssignUser" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
                                     <option value="">-- กำลังโหลด --</option>
                                 </select>
@@ -1182,6 +1184,43 @@ include __DIR__ . '/admin-layout/topbar.php';
 const REQUEST_ID = <?= $request_id ?>;
 const SERVICE_CODE = '<?= htmlspecialchars($request['service_code']) ?>';
 
+// ── Multi-assignee state ───────────────────────────────────────────────────
+let _newAssignees = []; // [{id, name}]
+let _availableUsers = [];
+
+function _renderNewAssignChips() {
+    const container = document.getElementById('newAssignChips');
+    container.innerHTML = _newAssignees.map(a =>
+        `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-medium ring-1 ring-teal-200">
+            ${a.name}
+            <button type="button" onclick="removeNewAssignee(${a.id})" class="hover:text-red-600 ml-0.5">&times;</button>
+        </span>`
+    ).join('');
+    // Rebuild hidden inputs
+    const picker = document.getElementById('newAssignUser');
+    // Remove existing assignee options already added
+    _rebuildPickerOptions();
+}
+
+function _rebuildPickerOptions() {
+    const sel = document.getElementById('newAssignUser');
+    const selectedIds = _newAssignees.map(a => a.id);
+    sel.innerHTML = '<option value="">+ เพิ่มผู้รับผิดชอบ...</option>';
+    _availableUsers.forEach(u => {
+        if (!selectedIds.includes(u.user_id)) {
+            const opt = document.createElement('option');
+            opt.value = u.user_id;
+            opt.textContent = `${u.first_name} ${u.last_name} [@${u.username}]`;
+            sel.appendChild(opt);
+        }
+    });
+}
+
+function removeNewAssignee(userId) {
+    _newAssignees = _newAssignees.filter(a => a.id !== userId);
+    _renderNewAssignChips();
+}
+
 // Load available users on page load
 document.addEventListener('DOMContentLoaded', loadAvailableUsers);
 
@@ -1190,7 +1229,7 @@ async function loadAvailableUsers() {
     try {
         const response = await fetch(`api/task_assignment_api.php?action=get_available_users&service_code=${SERVICE_CODE}&request_id=${REQUEST_ID}`);
         const responseText = await response.text();
-        
+
         let data;
         try {
             data = JSON.parse(responseText);
@@ -1199,17 +1238,12 @@ async function loadAvailableUsers() {
             select.innerHTML = '<option value="">❌ API Error - ดู Console</option>';
             return;
         }
-        
-        select.innerHTML = '<option value="">-- เลือกผู้รับผิดชอบ --</option>';
+
         if (data.success && data.users.length > 0) {
-            data.users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.user_id;
-                option.textContent = `${user.first_name} ${user.last_name} [@${user.username}] (${user.roles})`;
-                select.appendChild(option);
-            });
+            _availableUsers = data.users;
+            _rebuildPickerOptions();
         } else {
-            select.innerHTML += `<option disabled>${data.message || 'ไม่มีผู้ใช้ที่เหมาะสม'}</option>`;
+            select.innerHTML = `<option value="">-- ${data.message || 'ไม่มีผู้ใช้ที่เหมาะสม'} --</option>`;
         }
     } catch (error) {
         console.error('loadAvailableUsers error:', error);
@@ -1217,44 +1251,51 @@ async function loadAvailableUsers() {
     }
 }
 
+// When user picks from dropdown, add chip
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('newAssignUser').addEventListener('change', function() {
+        const uid = parseInt(this.value);
+        if (!uid) return;
+        const user = _availableUsers.find(u => u.user_id == uid);
+        if (!user) return;
+        if (_newAssignees.find(a => a.id === uid)) { this.value = ''; return; }
+        _newAssignees.push({ id: uid, name: `${user.first_name} ${user.last_name}` });
+        _renderNewAssignChips();
+    });
+});
+
 async function submitNewAssignment() {
-    const userId = document.getElementById('newAssignUser').value;
+    if (_newAssignees.length === 0) {
+        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกผู้รับผิดชอบอย่างน้อย 1 คน', 'warning');
+        return;
+    }
+
     const priority = document.getElementById('newAssignPriority').value;
     const dueDate = document.getElementById('newAssignDueDate').value;
     const notes = document.getElementById('newAssignNotes').value;
-
-    if (!userId) {
-        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกผู้รับผิดชอบ', 'warning');
-        return;
-    }
 
     try {
         const formData = new FormData();
         formData.append('action', 'assign_task');
         formData.append('request_id', REQUEST_ID);
-        formData.append('assigned_to', userId);
+        _newAssignees.forEach(a => formData.append('assignees[]', a.id));
         formData.append('priority', priority);
         formData.append('due_date', dueDate);
         formData.append('notes', notes);
 
         const response = await fetch('api/task_assignment_api.php', { method: 'POST', body: formData });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers.get('content-type'));
-        
         const responseText = await response.text();
-        console.log('Response body:', responseText);
-        
+
         if (!responseText || responseText.trim() === '') {
-            Swal.fire('ผิดพลาด', 'Server ตอบกลับว่างเปล่า (Empty Response)<br>Status: ' + response.status + '<br>URL: api/task_assignment_api.php', 'error');
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับว่างเปล่า (Status: ' + response.status + ')', 'error');
             return;
         }
-        
+
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (parseErr) {
-            Swal.fire('ผิดพลาด', 'Server ตอบกลับไม่ใช่ JSON (Status ' + response.status + '):<br><code style="word-break:break-all;font-size:12px;">' + responseText.substring(0, 800) + '</code>', 'error');
+            Swal.fire('ผิดพลาด', 'Server ตอบกลับไม่ใช่ JSON:<br><code style="word-break:break-all;font-size:12px;">' + responseText.substring(0, 800) + '</code>', 'error');
             return;
         }
 

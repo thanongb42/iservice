@@ -231,217 +231,160 @@ if ($action === 'get_service_info') {
 }
 
 // ========================================
-// POST: สร้าง task assignment
+// POST: สร้าง task assignment (single หรือ multi-assignee)
 // ========================================
 if ($action === 'assign_task') {
     $request_id = intval($_POST['request_id'] ?? 0);
-    $assigned_to = intval($_POST['assigned_to'] ?? 0);
+    // Support both assignees[] (multi) and legacy single assigned_to
+    $assignees_raw = isset($_POST['assignees']) && is_array($_POST['assignees'])
+        ? $_POST['assignees']
+        : (isset($_POST['assigned_to']) ? [$_POST['assigned_to']] : []);
+    $assignee_ids = array_values(array_unique(array_filter(array_map('intval', $assignees_raw))));
     $assigned_as_role = !empty($_POST['assigned_as_role']) ? intval($_POST['assigned_as_role']) : null;
     $priority = $_POST['priority'] ?? 'normal';
     $due_date = !empty($_POST['due_date']) ? $_POST['due_date'] : null;
     $notes = $_POST['notes'] ?? '';
-    
-    if (!$request_id || !$assigned_to) {
+
+    if (!$request_id || empty($assignee_ids)) {
         echo json_encode(['success' => false, 'message' => 'Missing required parameters']);
         exit();
     }
-    
-    // Get service code and fetch service-specific times
-    $service_query = "SELECT service_code FROM service_requests WHERE request_id = ?";
-    $service_stmt = $conn->prepare($service_query);
+
+    // Lookup service code once (shared across all assignees)
+    $service_stmt = $conn->prepare("SELECT service_code FROM service_requests WHERE request_id = ?");
     $service_stmt->bind_param('i', $request_id);
     $service_stmt->execute();
     $service_result = $service_stmt->get_result()->fetch_assoc();
-    
     if (!$service_result) {
         echo json_encode(['success' => false, 'message' => 'Request not found']);
         exit();
     }
-    
     $service_code = $service_result['service_code'];
-    
-    // Fetch start_time and end_time from service-specific details if available
+
+    // Fetch event times from service-specific detail table (once)
     $start_time = null;
     $end_time = null;
-
     try {
-        if ($service_code === 'PHOTOGRAPHY') {
-            $detail_stmt = $conn->prepare("SELECT event_date, event_time_start, event_time_end FROM request_photography_details WHERE request_id = ?");
+        $time_table = null;
+        if ($service_code === 'PHOTOGRAPHY') $time_table = 'request_photography_details';
+        elseif ($service_code === 'MC')          $time_table = 'request_mc_details';
+        if ($time_table) {
+            $detail_stmt = $conn->prepare("SELECT event_date, event_time_start, event_time_end FROM `$time_table` WHERE request_id = ?");
             if ($detail_stmt) {
                 $detail_stmt->bind_param('i', $request_id);
                 $detail_stmt->execute();
                 $detail_result = $detail_stmt->get_result()->fetch_assoc();
-
                 if ($detail_result) {
-                    if ($detail_result['event_date'] && $detail_result['event_time_start']) {
+                    if ($detail_result['event_date'] && $detail_result['event_time_start'])
                         $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
-                    }
-                    if ($detail_result['event_date'] && $detail_result['event_time_end']) {
+                    if ($detail_result['event_date'] && $detail_result['event_time_end'])
                         $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
-                    }
-                }
-            }
-        } elseif ($service_code === 'MC') {
-            $detail_stmt = $conn->prepare("SELECT event_date, event_time_start, event_time_end FROM request_mc_details WHERE request_id = ?");
-            if ($detail_stmt) {
-                $detail_stmt->bind_param('i', $request_id);
-                $detail_stmt->execute();
-                $detail_result = $detail_stmt->get_result()->fetch_assoc();
-
-                if ($detail_result) {
-                    if ($detail_result['event_date'] && $detail_result['event_time_start']) {
-                        $start_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_start'];
-                    }
-                    if ($detail_result['event_date'] && $detail_result['event_time_end']) {
-                        $end_time = $detail_result['event_date'] . ' ' . $detail_result['event_time_end'];
-                    }
                 }
             }
         }
-    } catch (Exception $e) {
-        // Detail tables may not exist on production - continue without time data
-    }
-    
+    } catch (Exception $e) { /* table may not exist */ }
+
     $required_roles = $SERVICE_ROLE_MAPPING[$service_code] ?? ['manager', 'all'];
+    if (!in_array('all', $required_roles)) $required_roles[] = 'all';
 
-    // Always include 'all' role (can do everything)
-    if (!in_array('all', $required_roles)) {
-        $required_roles[] = 'all';
-    }
-
-    // Verify user has one of the required roles
-    $check_stmt = $conn->prepare("
-        SELECT COUNT(*) as cnt FROM user_roles ur
-        JOIN roles r ON ur.role_id = r.role_id
-        WHERE ur.user_id = ? AND r.role_code IN (" . implode(',', array_fill(0, count($required_roles), '?')) . ")
-        AND ur.is_active = 1 AND r.is_active = 1
-    ");
-
-    $params = array_merge([$assigned_to], $required_roles);
-    $types = 'i' . str_repeat('s', count($required_roles));
-    $check_stmt->bind_param($types, ...$params);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result()->fetch_assoc();
-
-    if ($check_result['cnt'] == 0) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'ผู้ใช้นี้ไม่มีบทบาท: ' . implode(', ', $required_roles),
-            'required_roles' => $required_roles
-        ]);
-        exit();
-    }
-    
-    // Create task assignment - dynamically build query based on available columns
     $admin_id = $_SESSION['user_id'];
-    
-    // Check if start_time/end_time columns exist (may not exist on Production)
     $has_time_columns = column_exists($conn, 'task_assignments', 'start_time');
-    
-    // Build dynamic INSERT based on what columns exist
-    $columns = ['request_id', 'assigned_to', 'assigned_by', 'status', 'created_at'];
-    $placeholders = ['?', '?', '?', "'pending'", 'NOW()'];
-    $params = [$request_id, $assigned_to, $admin_id];
-    $types = 'iii';
 
-    if (column_exists($conn, 'task_assignments', 'priority')) {
-        $columns[] = 'priority';
-        $placeholders[] = '?';
-        $params[] = $priority;
-        $types .= 's';
-    }
-    if (column_exists($conn, 'task_assignments', 'due_date')) {
-        $columns[] = 'due_date';
-        $placeholders[] = '?';
-        $params[] = $due_date;
-        $types .= 's';
-    }
-    if (column_exists($conn, 'task_assignments', 'notes')) {
-        $columns[] = 'notes';
-        $placeholders[] = '?';
-        $params[] = $notes;
-        $types .= 's';
-    }
-    
-    // Only include assigned_as_role if it has a valid value and column exists
-    if (!empty($assigned_as_role) && column_exists($conn, 'task_assignments', 'assigned_as_role')) {
-        $columns[] = 'assigned_as_role';
-        $placeholders[] = '?';
-        $params[] = $assigned_as_role;
-        $types .= 'i';
-    }
-    
-    // Add time columns if they exist and have values
-    if ($has_time_columns && ($start_time || $end_time)) {
-        $columns[] = 'start_time';
-        $placeholders[] = '?';
-        $params[] = $start_time;
-        $types .= 's';
-        
-        $columns[] = 'end_time';
-        $placeholders[] = '?';
-        $params[] = $end_time;
-        $types .= 's';
-    }
-    
-    $insert_query = "INSERT INTO task_assignments (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
-    
-    $insert_stmt = $conn->prepare($insert_query);
-    if (!$insert_stmt) {
-        echo json_encode(['success' => false, 'message' => 'SQL Prepare Error: ' . $conn->error, 'query' => $insert_query]);
-        exit();
-    }
-    
-    $insert_stmt->bind_param($types, ...$params);
-    
-    if ($insert_stmt->execute()) {
-        $assignment_id = $insert_stmt->insert_id;
+    $assignment_ids = [];
+    $errors = [];
 
-        // ── LINE push notification to assigned staff ──────────────────────
-        try {
-            require_once '../../includes/line_helper.php';
-            $notif_stmt = $conn->prepare("
-                SELECT u.line_user_id,
-                       sr.request_code, sr.service_name, sr.department_name
-                FROM users u
-                JOIN service_requests sr ON sr.request_id = ?
-                WHERE u.user_id = ?
-            ");
-            if ($notif_stmt) {
-                $notif_stmt->bind_param('ii', $request_id, $assigned_to);
-                $notif_stmt->execute();
-                $notif = $notif_stmt->get_result()->fetch_assoc();
-
-                if ($notif && !empty($notif['line_user_id'])) {
-                    $protocol   = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-                    $admin_dir  = dirname(dirname($_SERVER['SCRIPT_NAME'])); // api/ -> admin/
-                    $task_url   = $protocol . '://' . $_SERVER['HTTP_HOST'] . $admin_dir . '/my_tasks.php';
-                    $dept_label = !empty($notif['department_name']) ? $notif['department_name'] : '-';
-                    $msg  = "📋 มอบหมายงานใหม่\n";
-                    $msg .= "────────────────\n";
-                    $msg .= "รหัสคำขอ: {$notif['request_code']}\n";
-                    $msg .= "บริการ: {$notif['service_name']}\n";
-                    $msg .= "หน่วยงาน: {$dept_label}\n";
-                    $msg .= "────────────────\n";
-                    $msg .= "ดูงานของคุณ: {$task_url}";
-                    send_line_push_to_user($notif['line_user_id'], $msg, $conn);
-                }
-            }
-        } catch (Exception $e) {
-            // LINE notification is best-effort — do not fail assignment on error
-            error_log('task_assignment LINE notify error: ' . $e->getMessage());
+    foreach ($assignee_ids as $assigned_to) {
+        // Verify this user has a required role
+        $check_stmt = $conn->prepare("
+            SELECT COUNT(*) as cnt FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE ur.user_id = ? AND r.role_code IN (" . implode(',', array_fill(0, count($required_roles), '?')) . ")
+            AND ur.is_active = 1 AND r.is_active = 1
+        ");
+        $chk_params = array_merge([$assigned_to], $required_roles);
+        $chk_types  = 'i' . str_repeat('s', count($required_roles));
+        $check_stmt->bind_param($chk_types, ...$chk_params);
+        $check_stmt->execute();
+        $chk = $check_stmt->get_result()->fetch_assoc();
+        if ($chk['cnt'] == 0) {
+            $errors[] = "user_id={$assigned_to}: ไม่มีบทบาทที่กำหนด";
+            continue;
         }
-        // ─────────────────────────────────────────────────────────────────
 
+        // Build dynamic INSERT
+        $columns      = ['request_id', 'assigned_to', 'assigned_by', 'status', 'created_at'];
+        $placeholders = ['?', '?', '?', "'pending'", 'NOW()'];
+        $params       = [$request_id, $assigned_to, $admin_id];
+        $types        = 'iii';
+
+        if (column_exists($conn, 'task_assignments', 'priority')) {
+            $columns[] = 'priority'; $placeholders[] = '?'; $params[] = $priority; $types .= 's';
+        }
+        if (column_exists($conn, 'task_assignments', 'due_date')) {
+            $columns[] = 'due_date'; $placeholders[] = '?'; $params[] = $due_date; $types .= 's';
+        }
+        if (column_exists($conn, 'task_assignments', 'notes')) {
+            $columns[] = 'notes'; $placeholders[] = '?'; $params[] = $notes; $types .= 's';
+        }
+        if (!empty($assigned_as_role) && column_exists($conn, 'task_assignments', 'assigned_as_role')) {
+            $columns[] = 'assigned_as_role'; $placeholders[] = '?'; $params[] = $assigned_as_role; $types .= 'i';
+        }
+        if ($has_time_columns && ($start_time || $end_time)) {
+            $columns[] = 'start_time'; $placeholders[] = '?'; $params[] = $start_time; $types .= 's';
+            $columns[] = 'end_time';   $placeholders[] = '?'; $params[] = $end_time;   $types .= 's';
+        }
+
+        $insert_query = "INSERT INTO task_assignments (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $insert_stmt  = $conn->prepare($insert_query);
+        if (!$insert_stmt) { $errors[] = "SQL Prepare Error: " . $conn->error; continue; }
+        $insert_stmt->bind_param($types, ...$params);
+
+        if ($insert_stmt->execute()) {
+            $assignment_ids[] = $insert_stmt->insert_id;
+
+            // LINE push notification to assigned staff
+            try {
+                require_once '../../includes/line_helper.php';
+                $notif_stmt = $conn->prepare("
+                    SELECT u.line_user_id, sr.request_code, sr.service_name, sr.department_name
+                    FROM users u JOIN service_requests sr ON sr.request_id = ?
+                    WHERE u.user_id = ?
+                ");
+                if ($notif_stmt) {
+                    $notif_stmt->bind_param('ii', $request_id, $assigned_to);
+                    $notif_stmt->execute();
+                    $notif = $notif_stmt->get_result()->fetch_assoc();
+                    if ($notif && !empty($notif['line_user_id'])) {
+                        $protocol  = detectProtocol();
+                        $admin_dir = dirname(dirname($_SERVER['SCRIPT_NAME']));
+                        $task_url  = $protocol . '://' . $_SERVER['HTTP_HOST'] . $admin_dir . '/my_tasks.php';
+                        $msg  = "📋 มอบหมายงานใหม่\n────────────────\n";
+                        $msg .= "รหัสคำขอ: {$notif['request_code']}\n";
+                        $msg .= "บริการ: {$notif['service_name']}\n";
+                        $msg .= "หน่วยงาน: " . (!empty($notif['department_name']) ? $notif['department_name'] : '-') . "\n";
+                        $msg .= "────────────────\nดูงานของคุณ: {$task_url}";
+                        send_line_push_to_user($notif['line_user_id'], $msg, $conn);
+                    }
+                }
+            } catch (Exception $e) {
+                error_log('task_assignment LINE notify error: ' . $e->getMessage());
+            }
+        } else {
+            $errors[] = "user_id={$assigned_to}: " . $conn->error;
+        }
+    } // end foreach assignee
+
+    if (!empty($assignment_ids)) {
+        $count = count($assignment_ids);
         echo json_encode([
             'success' => true,
-            'message' => 'มอบหมายงานสำเร็จ',
-            'assignment_id' => $assignment_id
+            'message' => "มอบหมายงานสำเร็จ ({$count} คน)",
+            'assignment_ids' => $assignment_ids,
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to create assignment: ' . $conn->error
+            'message' => 'ไม่สามารถมอบหมายงานได้: ' . implode('; ', $errors),
         ]);
     }
     exit();

@@ -43,42 +43,24 @@
     <div class="grid grid-cols-2 gap-2">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">เวลาเริ่ม <span class="text-red-500">*</span></label>
-            <div class="flex items-center space-x-1">
-                <select name="event_time_start_h" required
-                        class="w-full px-2 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">ชม.</option>
-                    <?php for ($h = 0; $h <= 23; $h++): ?>
-                    <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
-                    <?php endfor; ?>
-                </select>
-                <span class="text-gray-500 font-bold">:</span>
-                <select name="event_time_start_m" required
-                        class="w-full px-2 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">นาที</option>
-                    <?php for ($m = 0; $m <= 55; $m += 5): ?>
-                    <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
-                    <?php endfor; ?>
-                </select>
+            <div class="relative">
+                <input type="text" id="mc_time_start" name="event_time_start" required
+                       placeholder="00:00" readonly
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer bg-white">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <i class="fas fa-clock"></i>
+                </span>
             </div>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">เวลาสิ้นสุด</label>
-            <div class="flex items-center space-x-1">
-                <select name="event_time_end_h"
-                        class="w-full px-2 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">ชม.</option>
-                    <?php for ($h = 0; $h <= 23; $h++): ?>
-                    <option value="<?= sprintf('%02d', $h) ?>"><?= sprintf('%02d', $h) ?></option>
-                    <?php endfor; ?>
-                </select>
-                <span class="text-gray-500 font-bold">:</span>
-                <select name="event_time_end_m"
-                        class="w-full px-2 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                    <option value="">นาที</option>
-                    <?php for ($m = 0; $m <= 55; $m += 5): ?>
-                    <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
-                    <?php endfor; ?>
-                </select>
+            <div class="relative">
+                <input type="text" id="mc_time_end" name="event_time_end"
+                       placeholder="00:00" readonly
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer bg-white">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <i class="fas fa-clock"></i>
+                </span>
             </div>
         </div>
     </div>
@@ -136,4 +118,8 @@ flatpickr("#mc_event_date_display", {
         }
     }
 });
+
+const _mcTimeCfg = { enableTime: true, noCalendar: true, time_24hr: true, dateFormat: "H:i" };
+flatpickr("#mc_time_start", _mcTimeCfg);
+flatpickr("#mc_time_end",   _mcTimeCfg);
 </script>

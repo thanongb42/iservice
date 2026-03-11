@@ -266,12 +266,18 @@ try {
             $event_name = clean_input($_POST['event_name']);
             $event_type = clean_input($_POST['event_type']);
             $event_date = clean_input($_POST['event_date']);
-            $time_start_h = clean_input($_POST['event_time_start_h'] ?? '00');
-            $time_start_m = clean_input($_POST['event_time_start_m'] ?? '00');
-            $time_start = $time_start_h . ':' . $time_start_m;
-            $time_end_h = clean_input($_POST['event_time_end_h'] ?? '');
-            $time_end_m = clean_input($_POST['event_time_end_m'] ?? '');
-            $time_end = ($time_end_h !== '') ? $time_end_h . ':' . $time_end_m : '';
+            // Accept new single-field time picker OR legacy h+m selects
+            if (!empty($_POST['event_time_start'])) {
+                $time_start = clean_input($_POST['event_time_start']);
+            } else {
+                $time_start = clean_input($_POST['event_time_start_h'] ?? '00') . ':' . clean_input($_POST['event_time_start_m'] ?? '00');
+            }
+            if (!empty($_POST['event_time_end'])) {
+                $time_end = clean_input($_POST['event_time_end']);
+            } else {
+                $time_end_h = clean_input($_POST['event_time_end_h'] ?? '');
+                $time_end = ($time_end_h !== '') ? $time_end_h . ':' . clean_input($_POST['event_time_end_m'] ?? '00') : '';
+            }
             $event_loc = clean_input($_POST['event_location']);
             $photographers = intval($_POST['number_of_photographers']);
             $photo_types = $_POST['photo_type'] ?? [];
@@ -320,12 +326,18 @@ try {
             $event_name = clean_input($_POST['event_name']);
             $event_type = clean_input($_POST['event_type']);
             $event_date = clean_input($_POST['event_date']);
-            $start_h = clean_input($_POST['event_time_start_h'] ?? '00');
-            $start_m = clean_input($_POST['event_time_start_m'] ?? '00');
-            $start = $start_h . ':' . $start_m;
-            $end_h = clean_input($_POST['event_time_end_h'] ?? '');
-            $end_m = clean_input($_POST['event_time_end_m'] ?? '');
-            $end = ($end_h !== '') ? $end_h . ':' . $end_m : '';
+            // Accept new single-field time picker OR legacy h+m selects
+            if (!empty($_POST['event_time_start'])) {
+                $start = clean_input($_POST['event_time_start']);
+            } else {
+                $start = clean_input($_POST['event_time_start_h'] ?? '00') . ':' . clean_input($_POST['event_time_start_m'] ?? '00');
+            }
+            if (!empty($_POST['event_time_end'])) {
+                $end = clean_input($_POST['event_time_end']);
+            } else {
+                $end_h = clean_input($_POST['event_time_end_h'] ?? '');
+                $end = ($end_h !== '') ? $end_h . ':' . clean_input($_POST['event_time_end_m'] ?? '00') : '';
+            }
             $loc = clean_input($_POST['location']);
             $count = intval($_POST['mc_count']);
             $lang = clean_input($_POST['language']);

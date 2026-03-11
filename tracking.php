@@ -27,19 +27,23 @@ if (!empty($request_code)) {
     $request = $result->fetch_assoc();
 
     if ($request) {
-        // Get task assignments for this request
+        // Get all task assignments for this request
         $ta_stmt = $conn->prepare("
             SELECT ta.status, ta.assigned_to, ta.created_at, ta.accepted_at, ta.started_at, ta.completed_at,
                    CONCAT(u.first_name, ' ', u.last_name) as assignee_name
             FROM task_assignments ta
             JOIN users u ON ta.assigned_to = u.user_id
             WHERE ta.request_id = ? AND ta.status != 'cancelled'
-            ORDER BY ta.created_at DESC
-            LIMIT 1
+            ORDER BY FIELD(ta.status,'completed','in_progress','accepted','assigned') ASC, ta.created_at DESC
         ");
         $ta_stmt->bind_param('i', $request['request_id']);
         $ta_stmt->execute();
-        $task = $ta_stmt->get_result()->fetch_assoc();
+        $ta_result = $ta_stmt->get_result();
+        $all_tasks = $ta_result->fetch_all(MYSQLI_ASSOC);
+        // Most-progressed task for status logic
+        $task = !empty($all_tasks) ? $all_tasks[0] : null;
+        // All assignee names
+        $assignee_names = array_map(fn($t) => $t['assignee_name'], $all_tasks);
 
         // Determine actual progress from task assignment data
         $task_status = $task['status'] ?? null;
@@ -60,10 +64,11 @@ if (!empty($request_code)) {
         ];
 
         // Step 2: มอบหมายงาน
+        $assignee_list = $is_assigned ? 'มอบหมายให้ ' . implode(', ', array_map('htmlspecialchars', $assignee_names)) : 'รอมอบหมาย';
         $timeline[] = [
             'status' => 'assigned',
             'label' => 'มอบหมายงาน',
-            'desc' => $is_assigned ? 'มอบหมายให้ ' . htmlspecialchars($task['assignee_name']) : 'รอมอบหมาย',
+            'desc' => $assignee_list,
             'time' => $is_assigned ? $task['created_at'] : null,
             'completed' => $is_assigned
         ];
@@ -267,9 +272,10 @@ $nav_html = render_nav_menu($nav_menus);
                 <a href="index.php" class="text-gray-500 hover:text-teal-600 text-sm">
                     <i class="fas fa-arrow-left mr-1"></i> กลับหน้าหลัก
                 </a>
-                <button onclick="window.print()" class="text-teal-600 hover:text-teal-800 text-sm font-semibold">
+                <a href="tracking_print.php?req=<?= urlencode($request['request_code']) ?>" target="_blank"
+                   class="text-teal-600 hover:text-teal-800 text-sm font-semibold">
                     <i class="fas fa-print mr-1"></i> พิมพ์ใบคำขอ
-                </button>
+                </a>
             </div>
         </div>
         
