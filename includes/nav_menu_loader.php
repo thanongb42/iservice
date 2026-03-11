@@ -10,6 +10,13 @@ if (!isset($conn)) {
 }
 
 /**
+ * Get current site language from cookie (th or en)
+ */
+function get_site_lang() {
+    return (isset($_COOKIE['site_lang']) && $_COOKIE['site_lang'] === 'en') ? 'en' : 'th';
+}
+
+/**
  * Get menu structure from database
  * @return array Hierarchical menu array
  */
@@ -47,20 +54,24 @@ function get_menu_structure() {
 
 /**
  * Render navigation menu HTML
- * @param array $menus Menu structure
+ * @param array  $menus Menu structure
+ * @param string $lang  'th' or 'en' (null = auto-detect from cookie)
  * @return string HTML output
  */
-function render_nav_menu($menus) {
+function render_nav_menu($menus, $lang = null) {
+    if ($lang === null) $lang = get_site_lang();
     $html = '';
 
     foreach ($menus as $menu) {
+        $label = ($lang === 'en' && !empty($menu['menu_name_en']))
+            ? $menu['menu_name_en'] : $menu['menu_name'];
         $has_children = !empty($menu['children']);
 
         if ($has_children) {
             // Parent menu with dropdown
             $html .= '<div class="relative group">';
             $html .= '<button class="px-4 py-2 text-gray-900 font-semibold hover:bg-teal-50 rounded-lg transition flex items-center">';
-            $html .= htmlspecialchars($menu['menu_name']);
+            $html .= htmlspecialchars($label);
             $html .= ' <i class="fas fa-chevron-down ml-2 text-xs text-gray-400 group-hover:text-teal-700"></i>';
             $html .= '</button>';
 
@@ -68,13 +79,15 @@ function render_nav_menu($menus) {
             $html .= '<div class="absolute top-full right-0 w-64 bg-white shadow-xl rounded-xl mt-2 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right border border-gray-100">';
 
             foreach ($menu['children'] as $index => $child) {
+                $child_label = ($lang === 'en' && !empty($child['menu_name_en']))
+                    ? $child['menu_name_en'] : $child['menu_name'];
                 $border_class = ($index < count($menu['children']) - 1) ? 'border-b border-gray-50' : '';
                 $icon = $child['menu_icon'] ? '<i class="' . htmlspecialchars($child['menu_icon']) . ' w-6 text-center mr-2 text-gray-400"></i>' : '';
 
                 $html .= '<a href="' . htmlspecialchars($child['menu_url']) . '" ';
                 $html .= 'target="' . htmlspecialchars($child['target']) . '" ';
                 $html .= 'class="block px-6 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-700 ' . $border_class . '">';
-                $html .= $icon . htmlspecialchars($child['menu_name']);
+                $html .= $icon . htmlspecialchars($child_label);
                 $html .= '</a>';
             }
 
@@ -86,7 +99,7 @@ function render_nav_menu($menus) {
             $html .= '<a href="' . htmlspecialchars($menu['menu_url']) . '" ';
             $html .= 'target="' . htmlspecialchars($menu['target']) . '" ';
             $html .= 'class="px-4 py-2 text-gray-900 font-semibold hover:bg-teal-50 rounded-lg transition">';
-            $html .= htmlspecialchars($menu['menu_name']);
+            $html .= htmlspecialchars($label);
             $html .= '</a>';
         }
     }

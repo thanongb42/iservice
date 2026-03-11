@@ -3,6 +3,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// ── Language toggle ────────────────────────────────────────────────────────
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['th', 'en'])) {
+    setcookie('site_lang', $_GET['lang'], time() + 60 * 60 * 24 * 365, '/');
+    // Redirect back without the lang param
+    $back = $_SERVER['REQUEST_URI'] ?? '/';
+    $back = preg_replace('/([?&])lang=[^&]*/u', '$1', $back);
+    $back = rtrim(preg_replace('/[?&]+$/u', '', $back), '?&');
+    header('Location: ' . $back);
+    exit;
+}
+$site_lang = (isset($_COOKIE['site_lang']) && $_COOKIE['site_lang'] === 'en') ? 'en' : 'th';
+// ──────────────────────────────────────────────────────────────────────────
+
 // Ensure database connection
 require_once __DIR__ . '/../config/database.php';
 
@@ -36,7 +49,7 @@ if (function_exists('table_exists') && table_exists('visitor_stats')) {
 if (!isset($nav_html)) {
     require_once __DIR__ . '/nav_menu_loader.php';
     $nav_menus = get_menu_structure();
-    $nav_html = render_nav_menu($nav_menus);
+    $nav_html = render_nav_menu($nav_menus, $site_lang);
 }
 
 // Fetch system settings if not already fetched
@@ -71,7 +84,7 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= $site_lang === 'en' ? 'en' : 'th' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -257,7 +270,22 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
                             <i class="fas fa-search"></i>
                         </button>
                     </form>
-                    <button class="text-sm">TH | EN</button>
+                    <div class="flex items-center text-sm font-semibold bg-white/10 rounded-full overflow-hidden border border-white/30">
+                        <?php
+                        $cur = $_SERVER['REQUEST_URI'] ?? '/';
+                        $cur_clean = preg_replace('/([?&])lang=[^&]*/u', '$1', $cur);
+                        $cur_clean = rtrim(preg_replace('/[?&]+$/u', '', $cur_clean), '?&');
+                        $sep = (strpos($cur_clean, '?') !== false) ? '&' : '?';
+                        ?>
+                        <a href="<?= htmlspecialchars($cur_clean . $sep . 'lang=th') ?>"
+                           class="px-3 py-1 transition <?= $site_lang === 'th' ? 'bg-white text-teal-800' : 'text-white hover:bg-white/20' ?>">
+                            TH
+                        </a>
+                        <a href="<?= htmlspecialchars($cur_clean . $sep . 'lang=en') ?>"
+                           class="px-3 py-1 transition <?= $site_lang === 'en' ? 'bg-white text-teal-800' : 'text-white hover:bg-white/20' ?>">
+                            EN
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -273,15 +301,20 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
                     </div>
                     <div>
                         <h1 class="text-xl md:text-2xl font-display font-bold text-gray-900 leading-tight"><?php echo htmlspecialchars($org_name); ?></h1>
-                        <p class="text-sm md:text-base text-gray-600 font-medium">ฝ่ายบริการและเผยแพร่วิชาการ <span class="text-teal-700">กองยุทธศาสตร์และงบประมาณ</span></p>
+                        <p class="text-sm md:text-base text-gray-600 font-medium">
+                            <?= $site_lang === 'en'
+                                ? 'Service and Academic Affairs Division · <span class="text-teal-700">Strategy and Budget Division</span>'
+                                : 'ฝ่ายบริการและเผยแพร่วิชาการ <span class="text-teal-700">กองยุทธศาสตร์และงบประมาณ</span>'
+                            ?>
+                        </p>
                     </div>
                 </div>
 
                 <nav class="hidden lg:flex space-x-1 items-center">
                     <?php echo $nav_html; ?>
                     <a href="track.php" class="ml-2 flex items-center text-teal-700 hover:text-teal-900 font-medium px-3 py-2 rounded-md transition-colors border-b-2 border-transparent hover:border-teal-700">
-                        <i class="fas fa-tracking mr-2"></i>
-                        <span>ติดตามงาน</span>
+                        <i class="fas fa-search mr-2"></i>
+                        <span><?= $site_lang === 'en' ? 'Track Request' : 'ติดตามงาน' ?></span>
                     </a>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
@@ -311,11 +344,14 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
             <!-- Mobile Menu (Hidden by default) -->
             <nav id="mobileMenu" class="hidden lg:hidden bg-white border-t border-gray-200 py-4 absolute top-full left-0 right-0 shadow-lg px-4 z-50">
                 <div class="flex flex-col space-y-2">
-                    <?php echo str_replace('flex items-center text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors', 'block text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100', $nav_html); ?>
+                    <?php
+                    $nav_html_mobile = render_nav_menu($nav_menus, $site_lang);
+                    echo str_replace('flex items-center text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors', 'block text-gray-700 hover:text-teal-700 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100', $nav_html_mobile);
+                    ?>
                     
                     <a href="track.php" class="block text-teal-700 hover:text-teal-900 font-medium px-3 py-2 rounded-md transition-colors border-b border-gray-100">
-                        <i class="fas fa-tracking mr-2"></i>
-                        <span>ติดตามงาน</span>
+                        <i class="fas fa-search mr-2"></i>
+                        <span><?= $site_lang === 'en' ? 'Track Request' : 'ติดตามงาน' ?></span>
                     </a>
 
                     <?php if (isset($_SESSION['user_id'])): ?>

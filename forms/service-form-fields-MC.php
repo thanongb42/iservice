@@ -97,6 +97,31 @@
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
     </div>
 
+    <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-paperclip mr-1 text-teal-600"></i>
+            แนบเอกสารอ้างอิง <span class="text-red-500">*</span>
+        </label>
+        <p class="text-xs text-gray-500 mb-2">
+            เช่น หนังสือสั่งการ, หนังสืออ้างอิง, บันทึกข้อความ, หนังสือขอเข้าศึกษาดูงาน
+            — เพื่อให้พิธีกรเตรียมตัวและผู้จัดการมอบหมายได้เหมาะสม<br>
+            รองรับ PDF, DOCX, JPG, PNG (ขนาดสูงสุด 10MB)
+        </p>
+        <label id="mc-doc-label"
+               class="flex flex-col items-center justify-center w-full border-2 border-dashed border-teal-400 rounded-lg p-5 cursor-pointer bg-teal-50 hover:bg-teal-100 transition"
+               for="mc_doc_input">
+            <i class="fas fa-file-upload text-3xl text-teal-500 mb-2"></i>
+            <span id="mc-doc-text" class="text-sm font-semibold text-teal-700">คลิกหรือลากไฟล์มาวางที่นี่</span>
+            <span class="text-xs text-gray-400 mt-1">เลือกได้หลายไฟล์</span>
+        </label>
+        <input type="file" id="mc_doc_input" name="attachments[]" multiple
+               accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+               required
+               class="sr-only"
+               onchange="mcDocChanged(this)">
+        <div id="mc-doc-list" class="mt-2 space-y-1 text-sm text-gray-600"></div>
+    </div>
+
 </div>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -122,4 +147,21 @@ flatpickr("#mc_event_date_display", {
 const _mcTimeCfg = { enableTime: true, noCalendar: true, time_24hr: true, dateFormat: "H:i" };
 flatpickr("#mc_time_start", _mcTimeCfg);
 flatpickr("#mc_time_end",   _mcTimeCfg);
+
+function mcDocChanged(input) {
+    const list = document.getElementById('mc-doc-list');
+    const text = document.getElementById('mc-doc-text');
+    list.innerHTML = '';
+    if (input.files.length === 0) {
+        text.textContent = 'คลิกหรือลากไฟล์มาวางที่นี่';
+        return;
+    }
+    text.textContent = `เลือกแล้ว ${input.files.length} ไฟล์`;
+    Array.from(input.files).forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded';
+        div.innerHTML = `<i class="fas fa-file-alt text-teal-500"></i> <span>${f.name}</span> <span class="text-gray-400 text-xs">(${(f.size/1024).toFixed(0)} KB)</span>`;
+        list.appendChild(div);
+    });
+}
 </script>

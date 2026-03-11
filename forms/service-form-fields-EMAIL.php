@@ -33,7 +33,7 @@
         <select name="is_new_account" required onchange="toggleExistingEmail(this)"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
             <option value="1">สร้างบัญชีใหม่</option>
-            <option value="0">ขอเพิ่ม Quota / Reset Password</option>
+            <option value="0">Reset Password</option>
         </select>
     </div>
 
