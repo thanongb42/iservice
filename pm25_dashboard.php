@@ -243,6 +243,26 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
     </div>
 </div>
 
+<!-- ─── AQI Legend Bar ─── -->
+<div class="bg-white border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <span class="text-slate-400 font-medium shrink-0">เกณฑ์ PM2.5:</span>
+        <?php foreach ([
+            ['#16a34a','0–25','ดีมาก'],
+            ['#84cc16','26–37','ดี'],
+            ['#eab308','38–50','ปานกลาง'],
+            ['#f97316','51–90','เริ่มมีผลกระทบ'],
+            ['#ef4444','≥91','มีผลกระทบ'],
+        ] as [$c,$r,$l]): ?>
+        <div class="flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<?= $c ?>"></span>
+            <span style="color:<?= $c ?>" class="font-semibold"><?= $r ?></span>
+            <span class="text-slate-400"><?= $l ?></span>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
 <!-- ─── Main ─── -->
 <div class="max-w-7xl mx-auto px-4 py-6">
 
