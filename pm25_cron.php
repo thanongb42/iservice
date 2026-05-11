@@ -1,8 +1,8 @@
 <?php
 # pm25_cron.php - ดึงข้อมูล PM2.5 จาก Freshnergy API บันทึกลง DB
-# รันทุก 1 ชั่วโมง (Windows Task Scheduler / cPanel Cron)
+# รันทุก 15 นาที (Windows Task Scheduler / cPanel Cron)
 # Windows : "C:\xampp\php\php.exe" "C:\xampp\htdocs\iservice\pm25_cron.php"
-# cPanel  : 0 * * * * /usr/local/bin/php /home/.../iservice.rangsitcity.go.th/pm25_cron.php
+# cPanel  : */15 * * * * /usr/local/bin/php /home/.../iservice.rangsitcity.go.th/pm25_cron.php
 
 define('LOG_FILE', __DIR__ . '/storage/pm25_cron.log');
 
