@@ -309,20 +309,39 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 
     <!-- ─── Line Chart ─── -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-chart-line text-teal-600"></i>
-                <h2 class="text-base font-semibold text-slate-700">กราฟ PM2.5 ย้อนหลัง 24 ชั่วโมง</h2>
-            </div>
-            <div class="flex flex-wrap gap-2" id="legendToggles"></div>
+        <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-chart-line text-teal-600"></i>
+            <h2 class="text-base font-semibold text-slate-700">กราฟ PM2.5 ย้อนหลัง 24 ชั่วโมง</h2>
         </div>
+
         <?php if (empty($chartLabels)): ?>
         <div class="text-center py-10 text-slate-300 text-sm">
             <i class="fas fa-chart-line text-3xl mb-2 block"></i>
             ยังไม่มีข้อมูลกราฟ
         </div>
         <?php else: ?>
-        <div class="relative" style="height:300px">
+
+        <!-- Station Selector -->
+        <div class="flex flex-wrap gap-2 mb-4" id="stationBtns">
+            <?php foreach ($sensors as $idx => $s):
+                $color = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'][$idx % 8];
+            ?>
+            <button onclick="selectStation(<?= $idx ?>)"
+                    id="stationBtn<?= $idx ?>"
+                    class="station-btn px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                    style="border-color:<?= $color ?>;color:<?= $color ?>">
+                <?= htmlspecialchars($s['location_name']) ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Chart title -->
+        <div class="mb-3">
+            <span id="chartStationName" class="text-sm font-semibold text-slate-700"></span>
+            <span id="chartCurrentPM" class="ml-2 text-sm font-bold"></span>
+        </div>
+
+        <div class="relative" style="height:280px">
             <canvas id="pm25Chart"></canvas>
         </div>
         <?php endif; ?>
@@ -375,16 +394,68 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 </footer>
 
 <script>
-// ─── Line Chart ──────────────────────────────────────────────────────────────
+// ─── Line Chart (แสดงทีละสถานี) ─────────────────────────────────────────────
 <?php if (!empty($chartLabels)): ?>
-(function () {
-    const labels   = <?= json_encode($chartLabels) ?>;
-    const datasets = <?= json_encode($chartDatasets) ?>;
+const chartLabels   = <?= json_encode($chartLabels) ?>;
+const chartDatasets = <?= json_encode($chartDatasets) ?>;
+const chartColors   = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
 
+let pm25Chart = null;
+let activeIdx = 0;
+
+function selectStation(idx) {
+    activeIdx = idx;
+    const ds    = chartDatasets[idx];
+    const color = chartColors[idx % chartColors.length];
+
+    // อัปเดต title
+    document.getElementById('chartStationName').textContent = ds.label;
+    const latestVal = [...ds.data].reverse().find(v => v !== null);
+    const pmEl = document.getElementById('chartCurrentPM');
+    pmEl.textContent = latestVal !== undefined ? latestVal + ' µg/m³' : '';
+    pmEl.style.color = color;
+
+    // อัปเดตปุ่ม
+    document.querySelectorAll('.station-btn').forEach((btn, i) => {
+        if (i === idx) {
+            btn.style.background = color;
+            btn.style.color      = '#fff';
+            btn.style.borderColor = color;
+        } else {
+            btn.style.background  = color + '00';
+            btn.style.color       = chartColors[i % chartColors.length];
+            btn.style.borderColor = chartColors[i % chartColors.length];
+        }
+    });
+
+    // อัปเดตกราฟ
+    if (pm25Chart) {
+        pm25Chart.data.datasets[0].data        = ds.data;
+        pm25Chart.data.datasets[0].borderColor = color;
+        pm25Chart.data.datasets[0].backgroundColor = color + '20';
+        pm25Chart.data.datasets[0].label       = ds.label;
+        pm25Chart.update('none');
+    }
+}
+
+(function () {
     const ctx = document.getElementById('pm25Chart').getContext('2d');
-    const chart = new Chart(ctx, {
+    pm25Chart = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets },
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label:           '',
+                data:            [],
+                borderColor:     '#3b82f6',
+                backgroundColor: '#3b82f620',
+                borderWidth:     2,
+                pointRadius:     3,
+                fill:            true,
+                tension:         0.3,
+                spanGaps:        true,
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -393,7 +464,7 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + ' µg/m³' : '-'}`
+                        label: c => ` ${c.dataset.label}: ${c.parsed.y !== null ? c.parsed.y + ' µg/m³' : '-'}`
                     }
                 }
             },
@@ -412,21 +483,8 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
         }
     });
 
-    // Legend toggles
-    const box = document.getElementById('legendToggles');
-    datasets.forEach((ds, i) => {
-        const btn = document.createElement('button');
-        btn.style.cssText = `border:1.5px solid ${ds.borderColor};color:${ds.borderColor};background:${ds.borderColor}18;
-            padding:2px 10px;border-radius:9999px;font-size:11px;font-family:Kanit,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;`;
-        btn.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${ds.borderColor};display:inline-block"></span>${ds.label}`;
-        btn.addEventListener('click', () => {
-            const meta = chart.getDatasetMeta(i);
-            meta.hidden = !meta.hidden;
-            btn.style.opacity = meta.hidden ? '0.3' : '1';
-            chart.update();
-        });
-        box.appendChild(btn);
-    });
+    // แสดง default สถานีแรก
+    selectStation(0);
 })();
 <?php endif; ?>
 
