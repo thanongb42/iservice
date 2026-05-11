@@ -60,27 +60,21 @@ UNLOCK TABLES;
 -- Dump completed on 2026-05-11 17:40:22
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Step 1: ลบ duplicate rows ใน pm25_data (เก็บไว้แค่ id ต่ำสุดต่อ cid+timestamp)
+-- ลบตาราง pm25_data แล้วสร้างใหม่พร้อม UNIQUE KEY
+-- (cron จะเติมข้อมูลใหม่อัตโนมัติทุกชั่วโมง)
 -- ─────────────────────────────────────────────────────────────────────────────
-DELETE d FROM pm25_data d
-INNER JOIN pm25_data d2
-    ON d.cid = d2.cid
-   AND d.sensor_timestamp = d2.sensor_timestamp
-   AND d.id > d2.id;
+DROP TABLE IF EXISTS `pm25_data`;
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Step 2: เพิ่ม UNIQUE KEY บน pm25_data (ถ้ามีอยู่แล้วจะข้ามโดยไม่ error)
--- ─────────────────────────────────────────────────────────────────────────────
-SET @exist := (
-    SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE()
-      AND table_name   = 'pm25_data'
-      AND index_name   = 'uq_cid_ts'
-);
-SET @sql := IF(@exist = 0,
-    'ALTER TABLE pm25_data ADD UNIQUE KEY uq_cid_ts (cid, sensor_timestamp)',
-    'SELECT ''uq_cid_ts already exists, skipped'''
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+CREATE TABLE `pm25_data` (
+  `id`               int(11)      NOT NULL AUTO_INCREMENT,
+  `cid`              varchar(32)  NOT NULL,
+  `pm25`             float        DEFAULT NULL,
+  `co2`              float        DEFAULT NULL,
+  `pm1`              float        DEFAULT NULL,
+  `pm10`             float        DEFAULT NULL,
+  `pm4`              float        DEFAULT NULL,
+  `sensor_timestamp` int(11)      NOT NULL,
+  `created_at`       timestamp    NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cid_ts` (`cid`, `sensor_timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
