@@ -115,8 +115,8 @@ foreach ($sensors as $idx => $s) {
 function pmLevel($v): array {
     if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
     $v = (float)$v;
-    if ($v <= 25)  return ['hex' => '#3b82f6', 'label' => 'ดีมาก'];
-    if ($v <= 37)  return ['hex' => '#22c55e', 'label' => 'ดี'];
+    if ($v <= 25)  return ['hex' => '#16a34a', 'label' => 'ดีมาก'];
+    if ($v <= 37)  return ['hex' => '#84cc16', 'label' => 'ดี'];
     if ($v <= 50)  return ['hex' => '#eab308', 'label' => 'ปานกลาง'];
     if ($v <= 90)  return ['hex' => '#f97316', 'label' => 'เริ่มมีผลกระทบ'];
     return             ['hex' => '#ef4444', 'label' => 'มีผลกระทบต่อสุขภาพ'];
@@ -291,8 +291,8 @@ include 'admin-layout/topbar.php';
         <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">เกณฑ์คุณภาพอากาศ PM2.5 (µg/m³)</h3>
         <div class="flex flex-wrap gap-2 text-[12px]">
             <?php foreach ([
-                ['#3b82f6', '0 – 25',  'ดีมาก'],
-                ['#22c55e', '26 – 37', 'ดี'],
+                ['#16a34a', '0 – 25',  'ดีมาก'],
+                ['#84cc16', '26 – 37', 'ดี'],
                 ['#eab308', '38 – 50', 'ปานกลาง'],
                 ['#f97316', '51 – 90', 'เริ่มมีผลกระทบต่อสุขภาพ'],
                 ['#ef4444', '≥ 91',    'มีผลกระทบต่อสุขภาพ'],
@@ -392,8 +392,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 function pmColor(v) {
     if (v === null) return '#94a3b8';
-    if (v <= 25) return '#3b82f6';
-    if (v <= 37) return '#22c55e';
+    if (v <= 25) return '#16a34a';
+    if (v <= 37) return '#84cc16';
     if (v <= 50) return '#eab308';
     if (v <= 90) return '#f97316';
     return '#ef4444';
