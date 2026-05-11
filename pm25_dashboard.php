@@ -28,9 +28,9 @@ try {
     }
 } catch (Exception $e) {}
 
-// ── Step 3: รวมข้อมูล ────────────────────────────────────────────────────────
-// ถ้ามี pm25_sensors → แสดงตามลำดับ sensors + enrich ด้วย pm25_data
-// ถ้าไม่มี → fallback แสดง CID จาก pm25_data โดยตรง
+// ── Step 3: รวมข้อมูลทุก metric ─────────────────────────────────────────────
+function nullFloat($v): ?float { return $v !== null && $v !== '' ? (float)$v : null; }
+
 $sensors = [];
 if (!empty($sensorRecords)) {
     foreach ($sensorRecords as $cid => $s) {
@@ -39,14 +39,15 @@ if (!empty($sensorRecords)) {
             'id'            => $s['id'],
             'location_name' => $s['location_name'],
             'cid'           => $cid,
-            'serial_number' => $s['serial_number'],
-            'sim_number'    => $s['sim_number'],
             'lat'           => $s['lat'],
             'lng'           => $s['lng'],
-            'pm25_val'  => $d ? (float)$d['pm25']             : null,
-            'temp'      => $d && $d['temperature'] !== null ? (float)$d['temperature'] : null,
-            'humi'      => $d && $d['humidity']    !== null ? (float)$d['humidity']    : null,
-            'last_ts'   => $d ? (int)$d['sensor_timestamp']  : null,
+            'pm25'  => $d ? nullFloat($d['pm25'])        : null,
+            'pm1'   => $d ? nullFloat($d['pm1'])         : null,
+            'pm10'  => $d ? nullFloat($d['pm10'])        : null,
+            'temp'  => $d ? nullFloat($d['temperature']) : null,
+            'humi'  => $d ? nullFloat($d['humidity'])    : null,
+            'co2'   => $d ? nullFloat($d['co2'])         : null,
+            'last_ts' => $d ? (int)$d['sensor_timestamp'] : null,
         ];
     }
 } else {
@@ -56,31 +57,25 @@ if (!empty($sensorRecords)) {
             'id'            => $i++,
             'location_name' => 'CID: ' . $cid,
             'cid'           => $cid,
-            'serial_number' => null,
-            'sim_number'    => null,
-            'lat'           => null,
-            'lng'           => null,
-            'pm25_val'  => (float)$d['pm25'],
-            'temp'      => isset($d['temperature']) ? (float)$d['temperature'] : null,
-            'humi'      => isset($d['humidity'])    ? (float)$d['humidity']    : null,
-            'last_ts'   => (int)$d['sensor_timestamp'],
+            'lat'           => null, 'lng' => null,
+            'pm25'  => nullFloat($d['pm25']),
+            'pm1'   => nullFloat($d['pm1']   ?? null),
+            'pm10'  => nullFloat($d['pm10']  ?? null),
+            'temp'  => nullFloat($d['temperature'] ?? null),
+            'humi'  => nullFloat($d['humidity']    ?? null),
+            'co2'   => nullFloat($d['co2']   ?? null),
+            'last_ts' => (int)$d['sensor_timestamp'],
         ];
     }
 }
 
-$now       = time();
+$now = time();
 $onlineCnt = 0;
 $pmValues  = [];
-
 foreach ($sensors as $s) {
-    if ($s['last_ts'] && ($now - $s['last_ts']) < 1800) {
-        $onlineCnt++;
-    }
-    if ($s['pm25_val'] !== null) {
-        $pmValues[] = $s['pm25_val'];
-    }
+    if ($s['last_ts'] && ($now - $s['last_ts']) < 1800) $onlineCnt++;
+    if ($s['pm25'] !== null) $pmValues[] = $s['pm25'];
 }
-
 $avgPM = $pmValues ? round(array_sum($pmValues) / count($pmValues), 1) : null;
 $maxPM = $pmValues ? max($pmValues) : null;
 
@@ -91,14 +86,17 @@ try {
     $lastFetchTs = $r['t'] ? (int)$r['t'] : null;
 } catch (Exception $e) {}
 
-// ── กราฟเส้น 24 ชั่วโมง ─────────────────────────────────────────────────────
-$chartRaw = [];
+// ── กราฟเส้น 24 ชั่วโมง (ทุก metric) ────────────────────────────────────────
+$chartRawByCid = []; // [cid] => [[ts, pm25, pm1, pm10, temp, humi, co2], ...]
+$allTs = [];
 try {
     $cids = array_column($sensors, 'cid');
     if (!empty($cids)) {
         $in   = implode(',', array_fill(0, count($cids), '?'));
         $stmt = $pdo->prepare("
-            SELECT cid, pm25, sensor_timestamp
+            SELECT cid, pm25, pm1, pm10,
+                   temperature AS temp, humidity AS humi, co2,
+                   sensor_timestamp AS ts
             FROM pm25_data
             WHERE cid IN ($in)
               AND sensor_timestamp >= UNIX_TIMESTAMP(NOW()) - 86400
@@ -106,37 +104,24 @@ try {
         ");
         $stmt->execute($cids);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-            $chartRaw[$r['cid']][] = ['ts' => (int)$r['sensor_timestamp'], 'pm25' => (float)$r['pm25']];
+            $ts = (int)$r['ts'];
+            $allTs[$ts] = date('H:i', $ts);
+            $chartRawByCid[$r['cid']][$ts] = [
+                'pm25' => nullFloat($r['pm25']),
+                'pm1'  => nullFloat($r['pm1']),
+                'pm10' => nullFloat($r['pm10']),
+                'temp' => nullFloat($r['temp']),
+                'humi' => nullFloat($r['humi']),
+                'co2'  => nullFloat($r['co2']),
+            ];
         }
     }
 } catch (Exception $e) {}
 
-$allTs = [];
-foreach ($chartRaw as $points) {
-    foreach ($points as $p) $allTs[$p['ts']] = date('H:i', $p['ts']);
-}
 ksort($allTs);
 $chartLabels = array_values($allTs);
 $chartTsKeys = array_keys($allTs);
-
-$chartColors  = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
-$chartDatasets = [];
-foreach ($sensors as $idx => $s) {
-    $tsMap = [];
-    foreach ($chartRaw[$s['cid']] ?? [] as $p) $tsMap[$p['ts']] = $p['pm25'];
-    $color = $chartColors[$idx % count($chartColors)];
-    $chartDatasets[] = [
-        'label'           => $s['location_name'],
-        'data'            => array_map(fn($ts) => $tsMap[$ts] ?? null, $chartTsKeys),
-        'borderColor'     => $color,
-        'backgroundColor' => $color . '20',
-        'borderWidth'     => 2,
-        'pointRadius'     => 2,
-        'fill'            => false,
-        'tension'         => 0.3,
-        'spanGaps'        => true,
-    ];
-}
+$hasChart    = !empty($chartLabels);
 
 function pmLevel($v): array {
     if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
@@ -153,9 +138,9 @@ $sensorMapData = array_map(function ($s) use ($now) {
         'id'     => (int)$s['id'],
         'name'   => $s['location_name'],
         'cid'    => $s['cid'],
-        'lat'    => $s['lat']       ? (float)$s['lat']   : null,
-        'lng'    => $s['lng']       ? (float)$s['lng']   : null,
-        'pm25'   => $s['pm25_val'],
+        'lat'    => $s['lat'] ? (float)$s['lat'] : null,
+        'lng'    => $s['lng'] ? (float)$s['lng'] : null,
+        'pm25'   => $s['pm25'],
         'ts'     => $s['last_ts'],
         'online' => $s['last_ts'] && ($now - $s['last_ts']) < 1800,
     ];
@@ -280,7 +265,7 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
     <!-- ─── Sensor Cards ─── -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <?php foreach ($sensors as $s):
-            $pm       = $s['pm25_val'];
+            $pm       = $s['pm25'];
             $level    = pmLevel($pm);
             $isOnline = $s['last_ts'] && ($now - $s['last_ts']) < 1800;
             $lastTs   = $s['last_ts'] ?? 0;
@@ -308,33 +293,44 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
             <div class="text-center mb-2">
                 <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
                       style="background:<?= $level['hex'] ?>1a; color:<?= $level['hex'] ?>">
-                    <?= $level['label'] ?>
+                    PM2.5 · <?= $level['label'] ?>
                 </span>
             </div>
 
             <!-- Location name -->
             <h3 class="text-center text-sm font-semibold text-slate-700 leading-snug
-                        min-h-[2.6rem] flex items-center justify-center mb-3">
+                        min-h-[2.4rem] flex items-center justify-center mb-3">
                 <?= htmlspecialchars($s['location_name']) ?>
             </h3>
 
-            <!-- Temp / Humidity -->
-            <?php if ($s['temp'] !== null || $s['humi'] !== null): ?>
-            <div class="flex justify-center gap-4 mt-2 mb-1">
-                <?php if ($s['temp'] !== null): ?>
-                <span class="text-xs text-slate-500 flex items-center gap-1">
-                    <i class="fas fa-thermometer-half text-orange-400"></i>
-                    <?= number_format($s['temp'], 1) ?>°C
-                </span>
-                <?php endif; ?>
-                <?php if ($s['humi'] !== null): ?>
-                <span class="text-xs text-slate-500 flex items-center gap-1">
-                    <i class="fas fa-tint text-blue-400"></i>
-                    <?= number_format($s['humi'], 1) ?>%
-                </span>
-                <?php endif; ?>
+            <!-- All metrics grid -->
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs mb-3">
+                <div class="flex items-center gap-1.5 text-slate-600">
+                    <i class="fas fa-thermometer-half text-orange-400 w-3"></i>
+                    <span class="text-slate-400">อุณหภูมิ</span>
+                    <span class="ml-auto font-medium"><?= $s['temp'] !== null ? number_format($s['temp'],1).'°C' : '--' ?></span>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-600">
+                    <i class="fas fa-tint text-blue-400 w-3"></i>
+                    <span class="text-slate-400">ความชื้น</span>
+                    <span class="ml-auto font-medium"><?= $s['humi'] !== null ? number_format($s['humi'],1).'%' : '--' ?></span>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-600">
+                    <i class="fas fa-wind text-slate-400 w-3"></i>
+                    <span class="text-slate-400">PM1</span>
+                    <span class="ml-auto font-medium"><?= $s['pm1'] !== null ? number_format($s['pm1'],0) : '--' ?> <span class="text-slate-300">µg</span></span>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-600">
+                    <i class="fas fa-smog text-slate-400 w-3"></i>
+                    <span class="text-slate-400">PM10</span>
+                    <span class="ml-auto font-medium"><?= $s['pm10'] !== null ? number_format($s['pm10'],0) : '--' ?> <span class="text-slate-300">µg</span></span>
+                </div>
+                <div class="col-span-2 flex items-center gap-1.5 text-slate-600">
+                    <i class="fas fa-cloud text-green-400 w-3"></i>
+                    <span class="text-slate-400">CO2</span>
+                    <span class="ml-auto font-medium"><?= $s['co2'] !== null ? number_format($s['co2'],0).' ppm' : '--' ?></span>
+                </div>
             </div>
-            <?php endif; ?>
 
             <!-- Last update -->
             <div class="mt-auto border-t border-slate-100 pt-2 text-center">
@@ -352,20 +348,34 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
         <div class="flex items-center gap-2 mb-4">
             <i class="fas fa-chart-line text-teal-600"></i>
-            <h2 class="text-base font-semibold text-slate-700">กราฟ PM2.5 ย้อนหลัง 24 ชั่วโมง</h2>
+            <h2 class="text-base font-semibold text-slate-700">กราฟย้อนหลัง 24 ชั่วโมง</h2>
         </div>
 
-        <?php if (empty($chartLabels)): ?>
+        <?php if (!$hasChart): ?>
         <div class="text-center py-10 text-slate-300 text-sm">
             <i class="fas fa-chart-line text-3xl mb-2 block"></i>
             ยังไม่มีข้อมูลกราฟ
         </div>
         <?php else: ?>
 
+        <!-- Metric Tabs -->
+        <div class="flex flex-wrap gap-1.5 mb-4">
+            <?php foreach ([
+                ['pm25','PM2.5','#16a34a'],['pm10','PM10','#0ea5e9'],['pm1','PM1','#8b5cf6'],
+                ['temp','อุณหภูมิ','#f97316'],['humi','ความชื้น','#3b82f6'],['co2','CO2','#84cc16'],
+            ] as [$mk,$ml,$mc]): ?>
+            <button onclick="selectMetric('<?= $mk ?>')" id="metricBtn<?= $mk ?>"
+                    class="metric-btn px-3 py-1 rounded-lg text-xs font-medium border transition-all"
+                    style="border-color:<?= $mc ?>;color:<?= $mc ?>">
+                <?= $ml ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
         <!-- Station Selector -->
         <div class="flex flex-wrap gap-2 mb-4" id="stationBtns">
             <?php foreach ($sensors as $idx => $s):
-                $color = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'][$idx % 8];
+                $color = ['#16a34a','#84cc16','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'][$idx % 8];
             ?>
             <button onclick="selectStation(<?= $idx ?>)"
                     id="stationBtn<?= $idx ?>"
@@ -376,10 +386,11 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
             <?php endforeach; ?>
         </div>
 
-        <!-- Chart title -->
-        <div class="mb-3">
+        <!-- Chart info -->
+        <div class="flex items-baseline gap-2 mb-2">
             <span id="chartStationName" class="text-sm font-semibold text-slate-700"></span>
-            <span id="chartCurrentPM" class="ml-2 text-sm font-bold"></span>
+            <span id="chartMetricLabel" class="text-xs text-slate-400"></span>
+            <span id="chartCurrentVal" class="ml-auto text-sm font-bold"></span>
         </div>
 
         <div class="relative" style="height:280px">
@@ -435,48 +446,76 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 </footer>
 
 <script>
-// ─── Line Chart (แสดงทีละสถานี) ─────────────────────────────────────────────
-<?php if (!empty($chartLabels)): ?>
-const chartLabels   = <?= json_encode($chartLabels) ?>;
-const chartDatasets = <?= json_encode($chartDatasets) ?>;
-const chartColors   = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
+// ─── Chart (metric × station) ────────────────────────────────────────────────
+<?php if ($hasChart): ?>
+const chartLabels  = <?= json_encode($chartLabels) ?>;
+const chartTsKeys  = <?= json_encode($chartTsKeys) ?>;
+const chartRawData = <?= json_encode($chartRawByCid) ?>; // {cid: {ts: {pm25,pm1,...}}}
+const sensorList   = <?= json_encode(array_map(fn($s) => ['cid'=>$s['cid'],'name'=>$s['location_name']], $sensors)) ?>;
+const stationColors= ['#16a34a','#84cc16','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
+const metricConfig = {
+    pm25: { label:'PM2.5', unit:'µg/m³', color:'#16a34a' },
+    pm10: { label:'PM10',  unit:'µg/m³', color:'#0ea5e9' },
+    pm1:  { label:'PM1',   unit:'µg/m³', color:'#8b5cf6' },
+    temp: { label:'อุณหภูมิ', unit:'°C',color:'#f97316' },
+    humi: { label:'ความชื้น', unit:'%', color:'#3b82f6' },
+    co2:  { label:'CO2',   unit:'ppm',   color:'#84cc16' },
+};
 
-let pm25Chart = null;
-let activeIdx = 0;
+let pm25Chart = null, activeStation = 0, activeMetric = 'pm25';
 
-function selectStation(idx) {
-    activeIdx = idx;
-    const ds    = chartDatasets[idx];
-    const color = chartColors[idx % chartColors.length];
-
-    // อัปเดต title
-    document.getElementById('chartStationName').textContent = ds.label;
-    const latestVal = [...ds.data].reverse().find(v => v !== null);
-    const pmEl = document.getElementById('chartCurrentPM');
-    pmEl.textContent = latestVal !== undefined ? latestVal + ' µg/m³' : '';
-    pmEl.style.color = color;
-
-    // อัปเดตปุ่ม
-    document.querySelectorAll('.station-btn').forEach((btn, i) => {
-        if (i === idx) {
-            btn.style.background = color;
-            btn.style.color      = '#fff';
-            btn.style.borderColor = color;
-        } else {
-            btn.style.background  = color + '00';
-            btn.style.color       = chartColors[i % chartColors.length];
-            btn.style.borderColor = chartColors[i % chartColors.length];
-        }
+function getChartData(cidIdx, metricKey) {
+    const cid  = sensorList[cidIdx].cid;
+    const raw  = chartRawData[cid] || {};
+    return chartTsKeys.map(ts => {
+        const row = raw[ts];
+        return row ? (row[metricKey] ?? null) : null;
     });
+}
 
-    // อัปเดตกราฟ
+function updateChart() {
+    const color = stationColors[activeStation % stationColors.length];
+    const mc    = metricConfig[activeMetric];
+    const data  = getChartData(activeStation, activeMetric);
+    const latestVal = [...data].reverse().find(v => v !== null);
+
+    document.getElementById('chartStationName').textContent = sensorList[activeStation].name;
+    document.getElementById('chartMetricLabel').textContent = mc.label;
+    const valEl = document.getElementById('chartCurrentVal');
+    valEl.textContent = latestVal != null ? latestVal + ' ' + mc.unit : '--';
+    valEl.style.color = color;
+
     if (pm25Chart) {
-        pm25Chart.data.datasets[0].data        = ds.data;
-        pm25Chart.data.datasets[0].borderColor = color;
+        pm25Chart.data.datasets[0].data            = data;
+        pm25Chart.data.datasets[0].borderColor     = color;
         pm25Chart.data.datasets[0].backgroundColor = color + '20';
-        pm25Chart.data.datasets[0].label       = ds.label;
+        pm25Chart.options.scales.y.title.text      = mc.label + ' (' + mc.unit + ')';
         pm25Chart.update('none');
     }
+}
+
+function selectStation(idx) {
+    activeStation = idx;
+    document.querySelectorAll('.station-btn').forEach((btn, i) => {
+        const c = stationColors[i % stationColors.length];
+        btn.style.background  = i === idx ? c       : 'transparent';
+        btn.style.color       = i === idx ? '#fff'  : c;
+        btn.style.borderColor = c;
+    });
+    updateChart();
+}
+
+function selectMetric(key) {
+    activeMetric = key;
+    document.querySelectorAll('.metric-btn').forEach(btn => {
+        const mk = btn.id.replace('metricBtn','');
+        const c  = metricConfig[mk].color;
+        const on = mk === key;
+        btn.style.background  = on ? c : 'transparent';
+        btn.style.color       = on ? '#fff' : c;
+        btn.style.borderColor = c;
+    });
+    updateChart();
 }
 
 (function () {
@@ -486,45 +525,25 @@ function selectStation(idx) {
         data: {
             labels: chartLabels,
             datasets: [{
-                label:           '',
-                data:            [],
-                borderColor:     '#3b82f6',
-                backgroundColor: '#3b82f620',
-                borderWidth:     2,
-                pointRadius:     3,
-                fill:            true,
-                tension:         0.3,
-                spanGaps:        true,
+                data: [], borderColor: '#16a34a', backgroundColor: '#16a34a20',
+                borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3, spanGaps: true,
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: c => ` ${c.dataset.label}: ${c.parsed.y !== null ? c.parsed.y + ' µg/m³' : '-'}`
-                    }
-                }
+                tooltip: { callbacks: { label: c => ` ${c.parsed.y !== null ? c.parsed.y : '-'}` } }
             },
             scales: {
-                x: {
-                    ticks: { maxTicksLimit: 12, font: { family: 'Kanit', size: 11 }, maxRotation: 0 },
-                    grid: { color: '#f1f5f9' }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'PM2.5 (µg/m³)', font: { family: 'Kanit', size: 11 } },
-                    grid: { color: '#f1f5f9' }
-                }
+                x: { ticks: { maxTicksLimit: 12, font: { family:'Kanit',size:11 }, maxRotation: 0 }, grid: { color:'#f1f5f9' } },
+                y: { beginAtZero: true, title: { display: true, text:'', font:{ family:'Kanit',size:11 } }, grid: { color:'#f1f5f9' } }
             },
             animation: false,
         }
     });
-
-    // แสดง default สถานีแรก
+    selectMetric('pm25');
     selectStation(0);
 })();
 <?php endif; ?>
