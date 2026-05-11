@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/config/database.php';
 $pdo = getPDO();
 

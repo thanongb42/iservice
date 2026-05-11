@@ -5,6 +5,7 @@
 # cPanel  : */15 * * * * /usr/local/bin/php /home/.../iservice.rangsitcity.go.th/pm25_cron.php
 
 define('LOG_FILE', __DIR__ . '/storage/pm25_cron.log');
+date_default_timezone_set('Asia/Bangkok');
 
 function log_msg(string $msg): void {
     file_put_contents(LOG_FILE, '[' . date('Y-m-d H:i:s') . '] ' . $msg . PHP_EOL, FILE_APPEND | LOCK_EX);

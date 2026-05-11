@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $page_title   = 'Dashboard PM2.5';
 $current_page = 'pm25_dashboard';
+date_default_timezone_set('Asia/Bangkok');
 require_once '../config/database.php';
 $pdo = getPDO();
 
@@ -86,7 +87,7 @@ try {
 // รวม timestamps ทั้งหมด
 $allTs = [];
 foreach ($chartRaw as $points) {
-    foreach ($points as $p) $allTs[$p['ts']] = date('d/m H:i', $p['ts']);
+    foreach ($points as $p) $allTs[$p['ts']] = date('d/m H:i', $p['ts']); // Asia/Bangkok ตั้งไว้แล้ว
 }
 ksort($allTs);
 $chartLabels = array_values($allTs);
