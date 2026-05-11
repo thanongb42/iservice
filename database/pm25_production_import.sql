@@ -60,8 +60,16 @@ UNLOCK TABLES;
 -- Dump completed on 2026-05-11 17:40:22
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- เพิ่ม UNIQUE KEY บน pm25_data (ป้องกัน duplicate)
--- ถ้ามี key นี้อยู่แล้วจะข้ามโดยไม่ error
+-- Step 1: ลบ duplicate rows ใน pm25_data (เก็บไว้แค่ id ต่ำสุดต่อ cid+timestamp)
+-- ─────────────────────────────────────────────────────────────────────────────
+DELETE d FROM pm25_data d
+INNER JOIN pm25_data d2
+    ON d.cid = d2.cid
+   AND d.sensor_timestamp = d2.sensor_timestamp
+   AND d.id > d2.id;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Step 2: เพิ่ม UNIQUE KEY บน pm25_data (ถ้ามีอยู่แล้วจะข้ามโดยไม่ error)
 -- ─────────────────────────────────────────────────────────────────────────────
 SET @exist := (
     SELECT COUNT(*) FROM information_schema.statistics
