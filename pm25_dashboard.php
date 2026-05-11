@@ -81,6 +81,56 @@ foreach ($sensors as $s) {
 $avgPM = $pmValues ? round(array_sum($pmValues) / count($pmValues), 1) : null;
 $maxPM = $pmValues ? max($pmValues) : null;
 
+// เวลาอัปเดตล่าสุด (sensor ที่ใหม่ที่สุด)
+$latestTs = max(array_filter(array_column($sensors, 'last_ts'))) ?: null;
+
+// ── กราฟเส้น 24 ชั่วโมง ─────────────────────────────────────────────────────
+$chartRaw = [];
+try {
+    $cids = array_column($sensors, 'cid');
+    if (!empty($cids)) {
+        $in   = implode(',', array_fill(0, count($cids), '?'));
+        $stmt = $pdo->prepare("
+            SELECT cid, pm25, sensor_timestamp
+            FROM pm25_data
+            WHERE cid IN ($in)
+              AND sensor_timestamp >= UNIX_TIMESTAMP(NOW()) - 86400
+            ORDER BY sensor_timestamp ASC
+        ");
+        $stmt->execute($cids);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $chartRaw[$r['cid']][] = ['ts' => (int)$r['sensor_timestamp'], 'pm25' => (float)$r['pm25']];
+        }
+    }
+} catch (Exception $e) {}
+
+$allTs = [];
+foreach ($chartRaw as $points) {
+    foreach ($points as $p) $allTs[$p['ts']] = date('H:i', $p['ts']);
+}
+ksort($allTs);
+$chartLabels = array_values($allTs);
+$chartTsKeys = array_keys($allTs);
+
+$chartColors  = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
+$chartDatasets = [];
+foreach ($sensors as $idx => $s) {
+    $tsMap = [];
+    foreach ($chartRaw[$s['cid']] ?? [] as $p) $tsMap[$p['ts']] = $p['pm25'];
+    $color = $chartColors[$idx % count($chartColors)];
+    $chartDatasets[] = [
+        'label'           => $s['location_name'],
+        'data'            => array_map(fn($ts) => $tsMap[$ts] ?? null, $chartTsKeys),
+        'borderColor'     => $color,
+        'backgroundColor' => $color . '20',
+        'borderWidth'     => 2,
+        'pointRadius'     => 2,
+        'fill'            => false,
+        'tension'         => 0.3,
+        'spanGaps'        => true,
+    ];
+}
+
 function pmLevel($v): array {
     if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
     $v = (float)$v;
@@ -116,6 +166,7 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
     <title>ระบบติดตามคุณภาพอากาศ PM2.5 - เทศบาลนครรังสิต</title>
     <meta http-equiv="refresh" content="60">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -174,6 +225,13 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
             <span class="text-slate-500">สูงสุด</span>
             <span class="font-bold text-slate-800"><?= $maxPM !== null ? $maxPM . ' µg/m³' : '--' ?></span>
         </div>
+        <?php if ($latestTs): ?>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-clock text-teal-500 text-xs"></i>
+            <span class="text-slate-500">อัปเดตล่าสุด</span>
+            <span class="font-semibold text-slate-700"><?= date('d/m/Y H:i', $latestTs) ?> น.</span>
+        </div>
+        <?php endif; ?>
         <div class="ml-auto flex items-center gap-1 text-slate-400 text-xs">
             <i class="fas fa-sync-alt"></i>
             <span>รีเฟรชใน <span id="countdown">60</span>s</span>
@@ -245,6 +303,27 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
         <?php endforeach; ?>
     </div>
 
+    <!-- ─── Line Chart ─── -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-chart-line text-teal-600"></i>
+                <h2 class="text-base font-semibold text-slate-700">กราฟ PM2.5 ย้อนหลัง 24 ชั่วโมง</h2>
+            </div>
+            <div class="flex flex-wrap gap-2" id="legendToggles"></div>
+        </div>
+        <?php if (empty($chartLabels)): ?>
+        <div class="text-center py-10 text-slate-300 text-sm">
+            <i class="fas fa-chart-line text-3xl mb-2 block"></i>
+            ยังไม่มีข้อมูลกราฟ
+        </div>
+        <?php else: ?>
+        <div class="relative" style="height:300px">
+            <canvas id="pm25Chart"></canvas>
+        </div>
+        <?php endif; ?>
+    </div>
+
     <!-- ─── Map ─── -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
         <div class="flex items-center gap-2 mb-4">
@@ -292,6 +371,61 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 </footer>
 
 <script>
+// ─── Line Chart ──────────────────────────────────────────────────────────────
+<?php if (!empty($chartLabels)): ?>
+(function () {
+    const labels   = <?= json_encode($chartLabels) ?>;
+    const datasets = <?= json_encode($chartDatasets) ?>;
+
+    const ctx = document.getElementById('pm25Chart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + ' µg/m³' : '-'}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { maxTicksLimit: 12, font: { family: 'Kanit', size: 11 }, maxRotation: 0 },
+                    grid: { color: '#f1f5f9' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'PM2.5 (µg/m³)', font: { family: 'Kanit', size: 11 } },
+                    grid: { color: '#f1f5f9' }
+                }
+            },
+            animation: false,
+        }
+    });
+
+    // Legend toggles
+    const box = document.getElementById('legendToggles');
+    datasets.forEach((ds, i) => {
+        const btn = document.createElement('button');
+        btn.style.cssText = `border:1.5px solid ${ds.borderColor};color:${ds.borderColor};background:${ds.borderColor}18;
+            padding:2px 10px;border-radius:9999px;font-size:11px;font-family:Kanit,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;`;
+        btn.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${ds.borderColor};display:inline-block"></span>${ds.label}`;
+        btn.addEventListener('click', () => {
+            const meta = chart.getDatasetMeta(i);
+            meta.hidden = !meta.hidden;
+            btn.style.opacity = meta.hidden ? '0.3' : '1';
+            chart.update();
+        });
+        box.appendChild(btn);
+    });
+})();
+<?php endif; ?>
+
 // ─── Map ───────────────────────────────────────────────
 const sensors = <?= json_encode($sensorMapData) ?>;
 
