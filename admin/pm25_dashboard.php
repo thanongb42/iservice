@@ -48,8 +48,10 @@ try {
             'sim_number'    => $s['sim_number'],
             'lat'           => $s['lat'],
             'lng'           => $s['lng'],
-            'pm25_val'      => $d ? (float)$d['pm25']            : null,
-            'last_ts'       => $d ? (int)$d['sensor_timestamp']  : null,
+            'pm25_val'  => $d ? (float)$d['pm25']             : null,
+            'temp'      => $d && $d['temperature'] !== null ? (float)$d['temperature'] : null,
+            'humi'      => $d && $d['humidity']    !== null ? (float)$d['humidity']    : null,
+            'last_ts'   => $d ? (int)$d['sensor_timestamp']  : null,
         ];
     }
 } catch (Exception $e) {}
@@ -229,6 +231,24 @@ include 'admin-layout/topbar.php';
                     min-h-[2.4rem] flex items-center justify-center mb-3">
             <?= htmlspecialchars($s['location_name']) ?>
         </h3>
+
+        <!-- Temp / Humidity -->
+        <?php if ($s['temp'] !== null || $s['humi'] !== null): ?>
+        <div class="flex justify-center gap-4 mt-2 mb-1">
+            <?php if ($s['temp'] !== null): ?>
+            <span class="text-xs text-gray-500 flex items-center gap-1">
+                <i class="fas fa-thermometer-half text-orange-400"></i>
+                <?= number_format($s['temp'], 1) ?>°C
+            </span>
+            <?php endif; ?>
+            <?php if ($s['humi'] !== null): ?>
+            <span class="text-xs text-gray-500 flex items-center gap-1">
+                <i class="fas fa-tint text-blue-400"></i>
+                <?= number_format($s['humi'], 1) ?>%
+            </span>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
 
         <!-- Hardware info (admin only) -->
         <div class="mt-auto border-t border-gray-100 pt-3 space-y-1">

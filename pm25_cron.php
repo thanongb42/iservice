@@ -69,8 +69,8 @@ if (empty($cids)) {
 
 # ── 2. เตรียม prepared statement ─────────────────────────────────────────────
 $stmt = $pdo->prepare("
-    INSERT IGNORE INTO pm25_data (cid, pm25, co2, pm1, pm10, pm4, sensor_timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT IGNORE INTO pm25_data (cid, pm25, temperature, humidity, co2, pm1, pm10, sensor_timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $apiUrl  = 'https://app.freshnergy.com/api/v2/device';
@@ -91,6 +91,8 @@ foreach ($cids as $cid) {
     foreach ($items as $item) {
         $sensor = $item['sensor'] ?? [];
         $pm25   = $sensor['pm2_5'] ?? null;
+        $temp   = $sensor['temp']  ?? null;
+        $humi   = $sensor['humi']  ?? null;
         $co2    = $sensor['co2']   ?? null;
         $pm1    = $sensor['pm1']   ?? null;
         $pm10   = $sensor['pm10']  ?? null;
@@ -102,7 +104,7 @@ foreach ($cids as $cid) {
             continue;
         }
 
-        $stmt->execute([$cid, $pm25, $co2, $pm1, $pm10, null, $ts]);
+        $stmt->execute([$cid, $pm25, $temp, $humi, $co2, $pm1, $pm10, $ts]);
         $stmt->rowCount() > 0 ? $inserted++ : $skipped++;
     }
 }

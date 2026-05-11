@@ -43,12 +43,13 @@ if (!empty($sensorRecords)) {
             'sim_number'    => $s['sim_number'],
             'lat'           => $s['lat'],
             'lng'           => $s['lng'],
-            'pm25_val'      => $d ? (float)$d['pm25'] : null,
-            'last_ts'       => $d ? (int)$d['sensor_timestamp'] : null,
+            'pm25_val'  => $d ? (float)$d['pm25']             : null,
+            'temp'      => $d && $d['temperature'] !== null ? (float)$d['temperature'] : null,
+            'humi'      => $d && $d['humidity']    !== null ? (float)$d['humidity']    : null,
+            'last_ts'   => $d ? (int)$d['sensor_timestamp']  : null,
         ];
     }
 } else {
-    // Fallback: สร้าง card จาก pm25_data โดยตรง (ก่อน import pm25_sensors.sql)
     $i = 1;
     foreach ($allLatest as $cid => $d) {
         $sensors[] = [
@@ -59,8 +60,10 @@ if (!empty($sensorRecords)) {
             'sim_number'    => null,
             'lat'           => null,
             'lng'           => null,
-            'pm25_val'      => (float)$d['pm25'],
-            'last_ts'       => (int)$d['sensor_timestamp'],
+            'pm25_val'  => (float)$d['pm25'],
+            'temp'      => isset($d['temperature']) ? (float)$d['temperature'] : null,
+            'humi'      => isset($d['humidity'])    ? (float)$d['humidity']    : null,
+            'last_ts'   => (int)$d['sensor_timestamp'],
         ];
     }
 }
@@ -314,6 +317,24 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
                         min-h-[2.6rem] flex items-center justify-center mb-3">
                 <?= htmlspecialchars($s['location_name']) ?>
             </h3>
+
+            <!-- Temp / Humidity -->
+            <?php if ($s['temp'] !== null || $s['humi'] !== null): ?>
+            <div class="flex justify-center gap-4 mt-2 mb-1">
+                <?php if ($s['temp'] !== null): ?>
+                <span class="text-xs text-slate-500 flex items-center gap-1">
+                    <i class="fas fa-thermometer-half text-orange-400"></i>
+                    <?= number_format($s['temp'], 1) ?>°C
+                </span>
+                <?php endif; ?>
+                <?php if ($s['humi'] !== null): ?>
+                <span class="text-xs text-slate-500 flex items-center gap-1">
+                    <i class="fas fa-tint text-blue-400"></i>
+                    <?= number_format($s['humi'], 1) ?>%
+                </span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
 
             <!-- Last update -->
             <div class="mt-auto border-t border-slate-100 pt-2 text-center">
