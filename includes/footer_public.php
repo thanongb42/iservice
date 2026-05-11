@@ -26,60 +26,116 @@ if (!isset($footer_org_name) || !isset($footer_logo)) {
 }
 ?>
     <!-- Footer -->
-    <footer class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-300 py-12 md:py-16">
+    <footer class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-300 pt-12 pb-6 md:pt-16 md:pb-8">
         <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-10">
-                <div class="space-y-4">
-                    <h3 class="text-2xl font-display font-bold text-white mb-4 flex items-center">
-                        <img src="<?php echo htmlspecialchars($footer_logo); ?>" alt="Logo" class="w-10 h-10 object-contain rounded-lg mr-3">
-                        <?php echo htmlspecialchars($footer_org_name); ?>
-                    </h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
-                        มุ่งมั่นพัฒนาระบบบริการสาธารณะด้วยเทคโนโลยีทันสมัย เพื่อคุณภาพชีวิตที่ดีของประชาชน และการบริหารจัดการที่มีประสิทธิภาพ
+
+            <!-- Top grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-10">
+
+                <!-- Col 1: Brand + social -->
+                <div class="space-y-5">
+                    <div class="flex items-center gap-3">
+                        <img src="<?php echo htmlspecialchars($footer_logo); ?>" alt="Logo" class="w-12 h-12 object-contain rounded-lg flex-shrink-0">
+                        <div>
+                            <div class="text-white font-bold text-base leading-tight"><?php echo htmlspecialchars($footer_org_name); ?></div>
+                            <div class="text-gray-400 text-xs mt-0.5">ติดตามข่าวสารเทศบาลนครรังสิต</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        มุ่งมั่นพัฒนาระบบบริการสาธารณะด้วยเทคโนโลยีทันสมัย เพื่อคุณภาพชีวิตที่ดีของประชาชน
                     </p>
-                    <div class="flex space-x-4">
-                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors">
-                            <i class="fab fa-facebook-f text-white"></i>
+                    <!-- Social icons -->
+                    <div class="flex flex-wrap gap-3">
+                        <a href="https://www.rangsitcity.go.th" target="_blank" rel="noopener"
+                           title="เว็บไซต์เทศบาลนครรังสิต"
+                           class="w-10 h-10 bg-teal-700 hover:bg-teal-500 rounded-full flex items-center justify-center transition-colors" >
+                            <i class="fas fa-globe text-white text-sm"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-sky-500 rounded-full flex items-center justify-center transition-colors">
-                            <i class="fab fa-twitter text-white"></i>
+                        <a href="https://lin.ee/mNAHC1Z" target="_blank" rel="noopener"
+                           title="Line Official @rangsitcity"
+                           class="w-10 h-10 bg-green-700 hover:bg-green-500 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-line text-white text-sm"></i>
                         </a>
-                        <a href="line-add-friend.php" title="เพิ่มเพื่อน LINE Bot" class="w-10 h-10 bg-gray-700 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors">
-                            <i class="fab fa-line text-white"></i>
+                        <a href="https://www.facebook.com/rangsitcity2016" target="_blank" rel="noopener"
+                           title="Facebook Page เทศบาลนครรังสิต"
+                           class="w-10 h-10 bg-blue-700 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-facebook-f text-white text-sm"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
-                            <i class="fab fa-youtube text-white"></i>
+                        <a href="https://youtube.com/@rangsitcity2016/" target="_blank" rel="noopener"
+                           title="YouTube เทศบาลนครรังสิต"
+                           class="w-10 h-10 bg-red-700 hover:bg-red-500 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-youtube text-white text-sm"></i>
+                        </a>
+                        <a href="https://www.tiktok.com/@rangsitcity_official" target="_blank" rel="noopener"
+                           title="TikTok @rangsitcity_official"
+                           class="w-10 h-10 bg-gray-700 hover:bg-gray-500 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-tiktok text-white text-sm"></i>
                         </a>
                     </div>
                 </div>
+
+                <!-- Col 2: Contact info -->
                 <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">บริการ</h5>
-                    <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการตู้น้ำดื่มอัจฉริยะ</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการป้ายรถเมล์อัจฉริยะ</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">โครงการรังสิตซิตี้แอพ</a></li>
+                    <h5 class="font-bold mb-4 text-white text-sm uppercase tracking-wide">ติดต่อเรา</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-map-marker-alt text-teal-400 mt-0.5 w-4 text-center flex-shrink-0"></i>
+                            <span class="text-gray-400">เลขที่ 151 ถนนรังสิต-ปทุมธานี ต.ประชาธิปัตย์ อ.ธัญบุรี จ.ปทุมธานี 12130</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-phone-alt text-teal-400 w-4 text-center flex-shrink-0"></i>
+                            <a href="tel:025676000" class="text-gray-400 hover:text-white transition-colors">0 2567 6000</a>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-envelope text-teal-400 w-4 text-center flex-shrink-0"></i>
+                            <a href="mailto:saraban@rangsitcity.go.th" class="text-gray-400 hover:text-white transition-colors">saraban@rangsitcity.go.th</a>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fab fa-line text-green-400 w-4 text-center flex-shrink-0"></i>
+                            <a href="https://lin.ee/mNAHC1Z" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">@rangsitcity</a>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-globe text-teal-400 w-4 text-center flex-shrink-0"></i>
+                            <a href="https://www.rangsitcity.go.th" target="_blank" rel="noopener" class="text-gray-400 hover:text-white transition-colors">www.rangsitcity.go.th</a>
+                        </li>
                     </ul>
                 </div>
+
+                <!-- Col 3: Rangsit City App -->
                 <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ข้อมูล</h5>
-                    <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-white transition-colors">ศูนย์ข้อมูลข่าวสาร</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">คำถามที่พบบ่อย</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">ดาวน์โหลด</a></li>
-                        <li><a href="login.php" class="hover:text-yellow-400 transition-colors flex items-center">
-                            <i class="fas fa-user-shield mr-2"></i>Admin Panel
-                        </a></li>
-                    </ul>
+                    <h5 class="font-bold mb-4 text-white text-sm uppercase tracking-wide">Rangsit City App</h5>
+                    <p class="text-gray-400 text-sm mb-4">แจ้งเรื่องร้องเรียน หรือขอรับบริการสาธารณะ ได้ที่แอปพลิเคชัน</p>
+                    <div class="flex flex-col gap-3">
+                        <a href="https://apps.apple.com/app/rangsit-city-app/id6472018970" target="_blank" rel="noopener"
+                           class="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-400 rounded-xl px-4 py-2.5 transition-colors">
+                            <i class="fab fa-apple text-white text-2xl flex-shrink-0"></i>
+                            <div>
+                                <div class="text-gray-400 text-xs">Download on the</div>
+                                <div class="text-white text-sm font-semibold leading-tight">App Store</div>
+                            </div>
+                        </a>
+                        <a href="https://play.google.com/store/apps/details?id=th.go.rangsitcity.app" target="_blank" rel="noopener"
+                           class="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-400 rounded-xl px-4 py-2.5 transition-colors">
+                            <i class="fab fa-google-play text-white text-2xl flex-shrink-0"></i>
+                            <div>
+                                <div class="text-gray-400 text-xs">Get it on</div>
+                                <div class="text-white text-sm font-semibold leading-tight">Google Play</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-700">
+                        <a href="login.php" class="flex items-center gap-2 text-gray-500 hover:text-yellow-400 text-xs transition-colors">
+                            <i class="fas fa-user-shield"></i> Admin Panel
+                        </a>
+                    </div>
                 </div>
-                <div>
-                    <h5 class="font-bold mb-3 text-white text-sm md:text-base">ติดต่อเรา</h5>
-                    <p class="text-xs md:text-sm mb-2">ที่อยู่ เลขที่ 151 ถนนรังสิต-ปทุมธานี </p>
-                    <p class="text-xs md:text-sm mb-2">ตำบลประชาธิปัตย์ อำเภอธัญบุรี </p>
-                    <p class="text-xs md:text-sm">จังหวัดปทุมธานี 12130</p>
-                </div>
+
             </div>
-            <div class="border-t border-gray-700 pt-6 text-center text-xs md:text-sm">
-                <p>&copy; 2569 Rangsit City Municipality . All rights reserved.</p>
+
+            <!-- Bottom bar -->
+            <div class="border-t border-gray-700 pt-6 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+                <p>&copy; 2569 เทศบาลนครรังสิต (Rangsit City Municipality). All rights reserved.</p>
+                <p>iService — ระบบรับบริการดิจิทัล</p>
             </div>
         </div>
     </footer>

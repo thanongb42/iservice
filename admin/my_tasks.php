@@ -99,10 +99,21 @@ while ($task = $tasks_result->fetch_assoc()) {
     }
 }
 
-// Get internal jobs assigned to current user (active only)
+// Get internal jobs assigned to current user (active only) — via job_assignments for multi-assignee
 $my_internal_jobs = [];
 $_ij_err = '';
-$_ij_stmt = $conn->prepare("SELECT * FROM internal_jobs WHERE assigned_to = ? AND status NOT IN ('cancelled','completed') ORDER BY scheduled_date ASC");
+$_ja_tbl = $conn->query("SHOW TABLES LIKE 'job_assignments'");
+if ($_ja_tbl && $_ja_tbl->num_rows > 0) {
+    $_ij_stmt = $conn->prepare("
+        SELECT ij.*
+        FROM internal_jobs ij
+        JOIN job_assignments ja ON ij.job_id = ja.job_id
+        WHERE ja.user_id = ? AND ij.status NOT IN ('cancelled','completed')
+        ORDER BY ij.scheduled_date ASC
+    ");
+} else {
+    $_ij_stmt = $conn->prepare("SELECT * FROM internal_jobs WHERE assigned_to = ? AND status NOT IN ('cancelled','completed') ORDER BY scheduled_date ASC");
+}
 if ($_ij_stmt) {
     $_ij_stmt->bind_param('i', $user_id);
     $_ij_stmt->execute();

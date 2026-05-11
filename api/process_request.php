@@ -243,7 +243,10 @@ try {
             $building   = clean_input($_POST['building'] ?? '');
             $room       = clean_input($_POST['room_number'] ?? '');
             $issue      = clean_input($_POST['current_issue'] ?? '');
-            $citizen_id = !empty($_POST['citizen_id']) ? clean_input($_POST['citizen_id']) : null;
+            
+            // If logged in, use session username as fallback for citizen_id
+            $citizen_id = !empty($_POST['citizen_id']) ? clean_input($_POST['citizen_id']) : ($_SESSION['username'] ?? null);
+            
             $stmt->bind_param("issssss", $request_id, $req_type, $location, $building, $room, $issue, $citizen_id);
             break;
 

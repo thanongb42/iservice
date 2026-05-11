@@ -19,15 +19,45 @@ Thumbs.db
 # Logs
 *.log
 storage/logs/*
+storage/email_log.txt
 !storage/logs/.gitkeep
 
 # Cache
 storage/cache/*
 !storage/cache/.gitkeep
 
-# Uploads (optional - uncomment if you don't want to track uploads)
-# uploads/
-# public/uploads/
+# Uploads (user-generated files)
+uploads/
+public/uploads/
+storage/uploads/
+storage/backups/
+
+# Screenshots / screen captures
+Screenshot*.png
+Screenshot*.jpg
+screencapture-*.png
+screencapture-*.jpg
+Domain_01.jpg
+
+# Temp / debug files
+check_*.php
+debug_*.php
+test_*.php
+line_auth_debug.php
+nul
+
+# Sensitive credentials
+api_token.txt
+*.token.txt
+
+# Binary / media attachments
+*.pdf
+*.jpg
+*.jpeg
+*.png
+!public/assets/**
+messageImage_*.jpg
+cron_job_cpanel.png
 
 # Temp files
 tmpclaude-*

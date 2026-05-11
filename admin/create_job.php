@@ -23,7 +23,7 @@ $depts   = $depts_q ? $depts_q->fetch_all(MYSQLI_ASSOC) : [];
 $staff_q = $conn->query("
     SELECT u.user_id,
            CONCAT(IFNULL(p.prefix_name,''), u.first_name, ' ', u.last_name) AS full_name,
-           u.position, d.department_name, u.profile_image
+           u.position, d.department_name, u.profile_image, u.line_user_id
     FROM users u
     LEFT JOIN prefixes    p ON u.prefix_id     = p.prefix_id
     LEFT JOIN departments d ON u.department_id  = d.department_id
@@ -59,7 +59,11 @@ include 'admin-layout/sidebar.php';
 include 'admin-layout/topbar.php';
 ?>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+    /* ── Flatpickr Thai overrides ── */
+    .flatpickr-calendar { font-family: 'Sarabun', sans-serif; }
+    .flatpickr-input[readonly] { background: white; cursor: pointer; }
     /* ── Stat Cards (same as user-manager) ── */
     .stat-card {
         background: white;
@@ -381,20 +385,24 @@ include 'admin-layout/topbar.php';
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="form-group col-span-2">
                 <label>วันที่กำหนด</label>
-                <input type="date" id="fSchedDate" name="scheduled_date">
+                <input type="text" id="fSchedDate" name="scheduled_date" placeholder="เลือกวันที่" readonly>
             </div>
             <div class="form-group">
                 <label>เริ่ม</label>
-                <input type="time" id="fStartTime" name="start_time">
+                <input type="text" id="fStartTime" name="start_time" placeholder="--:--" readonly>
             </div>
             <div class="form-group">
                 <label>สิ้นสุด</label>
-                <input type="time" id="fEndTime" name="end_time">
+                <input type="text" id="fEndTime" name="end_time" placeholder="--:--" readonly>
             </div>
         </div>
 
-        <!-- Priority + Deadline -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Location (2col) + Priority (1col) -->
+        <div class="grid grid-cols-3 gap-3">
+            <div class="form-group col-span-2">
+                <label>สถานที่</label>
+                <input type="text" id="fLocation" name="location" placeholder="ห้อง/อาคาร">
+            </div>
             <div class="form-group">
                 <label>ลำดับความสำคัญ</label>
                 <select id="fPriority" name="priority">
@@ -404,45 +412,35 @@ include 'admin-layout/topbar.php';
                     <option value="urgent">🔴 เร่งด่วน</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Deadline</label>
-                <input type="datetime-local" id="fDueDate" name="due_date">
-            </div>
         </div>
 
-        <!-- Location + Dept -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="form-group">
-                <label>สถานที่</label>
-                <input type="text" id="fLocation" name="location" placeholder="ห้อง/อาคาร">
-            </div>
-            <div class="form-group">
-                <label>หน่วยงาน</label>
-                <select id="fDept" name="department_id">
-                    <option value="">— ไม่ระบุ —</option>
-                    <?php foreach ($depts as $d): ?>
-                    <option value="<?= $d['department_id'] ?>"><?= htmlspecialchars($d['department_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+        <!-- Dept cascading -->
+        <div class="form-group">
+            <label>หน่วยงาน</label>
+            <input type="hidden" id="fDept" name="department_id">
+            <div id="deptCascade" class="space-y-1.5"></div>
         </div>
 
-        <!-- Assign -->
+        <!-- Assign (multi) -->
         <div class="form-group">
             <label>
                 มอบหมายให้
-                <span class="text-gray-400 font-normal text-xs ml-1">(ไม่บังคับ — มอบหมายภายหลังได้)</span>
+                <span class="text-gray-400 font-normal text-xs ml-1">(เพิ่มได้หลายคน)</span>
             </label>
-            <select id="fAssignTo" name="assigned_to">
-                <option value="">— ยังไม่มอบหมาย —</option>
+            <div id="assigneeChips" class="flex flex-wrap gap-1.5 mb-1.5"></div>
+            <div id="assigneeInputs"></div>
+            <select id="fAssignPicker">
+                <option value="">+ เพิ่มผู้รับผิดชอบ...</option>
                 <?php foreach ($staff as $s): ?>
-                <option value="<?= $s['user_id'] ?>">
+                <option value="<?= $s['user_id'] ?>"
+                        data-name="<?= htmlspecialchars($s['full_name']) ?>"
+                        data-line="<?= !empty($s['line_user_id']) ? '1' : '0' ?>">
                     <?= htmlspecialchars($s['full_name']) ?><?= $s['department_name'] ? ' — '.htmlspecialchars($s['department_name']) : '' ?>
                 </option>
                 <?php endforeach; ?>
             </select>
             <p id="lineHint" class="mt-1 text-xs text-green-600 hidden">
-                <i class="fab fa-line mr-1"></i>เจ้าหน้าที่มี LINE — จะรับแจ้งเตือนอัตโนมัติ
+                <i class="fab fa-line mr-1"></i>มีผู้รับผิดชอบที่ใช้ LINE — จะรับแจ้งเตือนอัตโนมัติ
             </p>
         </div>
 
@@ -450,6 +448,28 @@ include 'admin-layout/topbar.php';
         <div class="form-group">
             <label>รายละเอียด</label>
             <textarea id="fDesc" name="description" rows="3" placeholder="รายละเอียด ขั้นตอน หมายเหตุ..."></textarea>
+        </div>
+
+        <!-- Attachments -->
+        <div class="form-group">
+            <label>ไฟล์แนบ / ลิงก์แชร์</label>
+            <!-- File upload -->
+            <label class="flex items-center gap-2 cursor-pointer px-3 py-2.5 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 hover:bg-green-50 transition">
+                <i class="fas fa-paperclip text-gray-400"></i>
+                <span class="text-sm text-gray-400">คลิกเพื่อเลือกไฟล์ (JPG, PNG, PDF, DOC, XLS) สูงสุด 20 MB/ไฟล์</span>
+                <input type="file" name="attachments[]" id="fAttachFiles" multiple
+                       accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx"
+                       class="hidden" onchange="previewFiles(this)">
+            </label>
+            <div id="filePreviewList" class="mt-1.5 space-y-1"></div>
+            <!-- URL links -->
+            <div id="urlLinkContainer" class="mt-2 space-y-1.5"></div>
+            <button type="button" onclick="addUrlRow()"
+                    class="mt-1.5 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                <i class="fas fa-link"></i> เพิ่ม URL / Google Drive Link
+            </button>
+            <!-- Existing attachments (edit mode) -->
+            <div id="existingAttachments" class="hidden mt-2 border-t border-gray-100 pt-2"></div>
         </div>
 
         <!-- Footer -->
@@ -495,16 +515,22 @@ include 'admin-layout/topbar.php';
     <!-- Assign sub-form -->
     <div id="assignSub" class="hidden mt-3">
         <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <p class="text-xs font-semibold text-gray-600 mb-2">เลือกเจ้าหน้าที่</p>
+            <p class="text-xs font-semibold text-gray-600 mb-2">มอบหมายเจ้าหน้าที่ <span class="font-normal text-gray-400">(เพิ่มได้หลายคน)</span></p>
+            <div id="dtAssignChips" class="flex flex-wrap gap-1.5 mb-2 min-h-[1.5rem]"></div>
             <div class="form-group mb-2">
                 <select id="dtAssignSel">
-                    <option value="">— ยกเลิกการมอบหมาย —</option>
+                    <option value="">+ เพิ่มผู้รับผิดชอบ...</option>
                     <?php foreach ($staff as $s): ?>
-                    <option value="<?= $s['user_id'] ?>"><?= htmlspecialchars($s['full_name']) ?></option>
+                    <option value="<?= $s['user_id'] ?>" data-name="<?= htmlspecialchars($s['full_name']) ?>">
+                        <?= htmlspecialchars($s['full_name']) ?>
+                    </option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <button onclick="submitAssign()" class="btn btn-teal w-full text-xs py-2">บันทึกการมอบหมาย</button>
+            <div class="flex gap-2">
+                <button onclick="submitAssign()" class="btn btn-teal flex-1 text-xs py-2">บันทึกการมอบหมาย</button>
+                <button type="button" onclick="clearDtAssignees()" class="btn text-xs py-2 px-3" style="background:#fee2e2;color:#dc2626;" title="ล้างทั้งหมด">ล้าง</button>
+            </div>
         </div>
     </div>
   </div>
@@ -598,9 +624,9 @@ function renderDayList(ds) {
                     ${j.location?`<span class="text-xs text-gray-400"><i class="fas fa-map-marker-alt mr-1"></i>${j.location}</span>`:''}
                 </div>
             </div>
-            <div class="text-right flex-shrink-0">
-                ${j.assigned_to_name
-                    ?`<div class="text-xs text-gray-500">${j.assigned_to_name}</div>`
+            <div class="text-right flex-shrink-0 max-w-[120px]">
+                ${(j.assignees_names||j.assigned_to_name)
+                    ?`<div class="text-xs text-gray-500 leading-snug">${j.assignees_names||j.assigned_to_name}</div>`
                     :`<div class="text-xs text-amber-500 italic">ยังไม่มอบหมาย</div>`}
             </div>
         </div>
@@ -625,7 +651,7 @@ async function loadUpcoming() {
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-800 truncate">${TYPE_ICON[j.job_type]||''} ${j.title}</p>
-                <p class="text-xs text-gray-400">${j.start_time?j.start_time.slice(0,5)+' น. ':''}${j.assigned_to_name||'<span class="text-amber-500">ยังไม่มอบหมาย</span>'}</p>
+                <p class="text-xs text-gray-400">${j.start_time?j.start_time.slice(0,5)+' น. ':''}${(j.assignees_names||j.assigned_to_name)||'<span class="text-amber-500">ยังไม่มอบหมาย</span>'}</p>
             </div>
             <span class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded p-${j.priority}">${P_LABELS[j.priority]}</span>
         </div>`;
@@ -651,7 +677,6 @@ function openEditModal(job) {
     document.getElementById('fServiceType').value=job.service_type??'';
     document.getElementById('fPriority').value=job.priority; document.getElementById('fSchedDate').value=job.scheduled_date??'';
     document.getElementById('fStartTime').value=(job.start_time??'').slice(0,5); document.getElementById('fEndTime').value=(job.end_time??'').slice(0,5);
-    document.getElementById('fDueDate').value=job.due_date?job.due_date.replace(' ','T').slice(0,16):'';
     document.getElementById('fLocation').value=job.location??''; document.getElementById('fDept').value=job.department_id??'';
     document.getElementById('fAssignTo').value=job.assigned_to??''; document.getElementById('fDesc').value=job.description??'';
     document.getElementById('modalTitle').textContent='แก้ไขงาน'; document.getElementById('saveBtnTxt').textContent='บันทึกการแก้ไข';
@@ -660,9 +685,60 @@ function openEditModal(job) {
 
 function closeJobModal(){ document.getElementById('jobModal').classList.remove('active'); }
 
-document.getElementById('fAssignTo').addEventListener('change', function(){
-    const opt=this.options[this.selectedIndex];
-    document.getElementById('lineHint').classList.toggle('hidden', opt.dataset.line!=='1');
+// ── Multi-Assignee (create/edit form) ────────────────────────
+let _selectedAssignees = [];
+function _renderAssigneeChips() {
+    const chips = document.getElementById('assigneeChips');
+    const inputs = document.getElementById('assigneeInputs');
+    chips.innerHTML = '';
+    inputs.innerHTML = '';
+    _selectedAssignees.forEach(a => {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-800';
+        chip.innerHTML = `<i class="fas fa-user text-[9px]"></i>${a.name} <button type="button" onclick="removeAssignee(${a.id})" class="ml-0.5 text-teal-600 hover:text-red-600 font-bold leading-none">&times;</button>`;
+        chips.appendChild(chip);
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = 'assignees[]'; inp.value = a.id;
+        inputs.appendChild(inp);
+    });
+    document.getElementById('lineHint').classList.toggle('hidden', !_selectedAssignees.some(a => a.line));
+}
+function removeAssignee(id) { _selectedAssignees = _selectedAssignees.filter(a => a.id !== id); _renderAssigneeChips(); }
+function clearAssignees() { _selectedAssignees = []; _renderAssigneeChips(); }
+function setAssignees(list) {
+    _selectedAssignees = (list||[]).map(a => ({id: parseInt(a.user_id), name: a.full_name, line: !!(a.line_user_id)}));
+    _renderAssigneeChips();
+}
+document.getElementById('fAssignPicker').addEventListener('change', function() {
+    const val = this.value; if (!val) return;
+    const opt = this.options[this.selectedIndex];
+    if (_selectedAssignees.some(a => a.id == val)) { this.value = ''; return; }
+    _selectedAssignees.push({ id: parseInt(val), name: opt.dataset.name, line: opt.dataset.line === '1' });
+    _renderAssigneeChips();
+    this.value = '';
+});
+
+// ── Multi-Assignee (detail modal) ────────────────────────────
+let _dtAssignees = [];
+function _renderDtChips() {
+    const chips = document.getElementById('dtAssignChips');
+    chips.innerHTML = '';
+    _dtAssignees.forEach(a => {
+        const c = document.createElement('span');
+        c.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800';
+        c.innerHTML = `${a.name} <button type="button" onclick="removeDtAssignee(${a.id})" class="ml-0.5 hover:text-red-600 font-bold leading-none">&times;</button>`;
+        chips.appendChild(c);
+    });
+}
+function removeDtAssignee(id) { _dtAssignees = _dtAssignees.filter(a => a.id !== id); _renderDtChips(); }
+function clearDtAssignees() { _dtAssignees = []; _renderDtChips(); }
+document.getElementById('dtAssignSel').addEventListener('change', function() {
+    const val = this.value; if (!val) return;
+    const opt = this.options[this.selectedIndex];
+    if (_dtAssignees.some(a => a.id == val)) { this.value = ''; return; }
+    _dtAssignees.push({ id: parseInt(val), name: opt.dataset.name });
+    _renderDtChips();
+    this.value = '';
 });
 
 document.getElementById('jobForm').addEventListener('submit', async function(e){
@@ -705,9 +781,16 @@ async function showDetail(id){
             <div><span class="text-gray-500">สถานที่:</span> ${j.location||'—'}</div>
             <div><span class="text-gray-500">หน่วยงาน:</span> ${j.department_name||'—'}</div>
             <div><span class="text-gray-500">สร้างโดย:</span> ${j.assigned_by_name||'—'}</div>
-            <div class="col-span-2"><span class="text-gray-500">มอบหมายให้:</span> ${j.assigned_to_name?`<strong>${j.assigned_to_name}</strong>`:'<em class="text-amber-500">ยังไม่มอบหมาย</em>'}</div>
+            <div class="col-span-2"><span class="text-gray-500">มอบหมายให้:</span> ${(j.assignees&&j.assignees.length)?j.assignees.map(a=>`<strong>${a.full_name}</strong>`).join(', '):'<em class="text-amber-500">ยังไม่มอบหมาย</em>'}</div>
         </div>
         ${j.description?`<div class="bg-gray-50 rounded-lg p-3 text-sm mt-1">${j.description.replace(/\n/g,'<br>')}</div>`:''}
+        ${(j.attachments&&j.attachments.length)?`<div class="mt-2 pt-2 border-t border-gray-100">
+            <p class="text-xs font-medium text-gray-500 mb-1"><i class="fas fa-paperclip mr-1"></i>ไฟล์แนบ (${j.attachments.length})</p>
+            <div class="space-y-1">${j.attachments.map(a=>a.attach_type==='url'
+                ?`<a href="${a.url}" target="_blank" class="flex items-center gap-1.5 text-xs text-blue-600 hover:underline"><i class="fas fa-link"></i>${a.label||a.url}</a>`
+                :`<a href="/iservice/${a.file_path}" target="_blank" class="flex items-center gap-1.5 text-xs text-gray-700 hover:underline"><i class="fas fa-paperclip text-gray-400"></i>${a.label}</a>`
+            ).join('')}</div>
+        </div>`:''}
     `;
     const sbtnColors={scheduled:'background:#eff6ff;color:#1d4ed8',in_progress:'background:#fffbeb;color:#92400e',completed:'background:#f0fdf4;color:#15803d',cancelled:'background:#fef2f2;color:#dc2626'};
     const sbtnLabels={scheduled:'📅 กำหนดการ',in_progress:'⚙️ กำลังทำ',completed:'✅ เสร็จสิ้น',cancelled:'❌ ยกเลิก'};
@@ -718,7 +801,8 @@ async function showDetail(id){
     document.getElementById('dtEditBtn').onclick=()=>openEditModal(j);
     document.getElementById('dtDeleteBtn').onclick=()=>deleteJob(j.job_id);
     document.getElementById('assignSub').classList.add('hidden');
-    document.getElementById('dtAssignSel').value=j.assigned_to??'';
+    _dtAssignees = (j.assignees||[]).map(a=>({id:parseInt(a.user_id),name:a.full_name}));
+    _renderDtChips();
     document.getElementById('detailModal').classList.add('active');
 }
 
@@ -726,7 +810,8 @@ function closeDetailModal(){ document.getElementById('detailModal').classList.re
 document.getElementById('dtAssignBtn').addEventListener('click',()=>document.getElementById('assignSub').classList.toggle('hidden'));
 
 async function submitAssign(){
-    const fd=new FormData(); fd.append('action','assign'); fd.append('job_id',currentJobId); fd.append('assigned_to',document.getElementById('dtAssignSel').value);
+    const fd=new FormData(); fd.append('action','assign'); fd.append('job_id',currentJobId);
+    _dtAssignees.forEach(a=>fd.append('assignees[]',a.id));
     const res=await fetch('api/internal_jobs_api.php',{method:'POST',body:fd}); const d=await res.json();
     Swal.fire({icon:d.success?'success':'error',title:d.success?'สำเร็จ':'ผิดพลาด',text:d.message,timer:1500,showConfirmButton:false});
     if(d.success){ closeDetailModal(); await loadMonth(); loadUpcoming(); }
@@ -755,6 +840,254 @@ if (_detailModal) _detailModal.addEventListener('click', e=>{ if(e.target.id==='
 
 loadMonth();
 loadUpcoming();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+// ── Flatpickr: Thai Buddhist Era + 24hr time ───────────────
+const FP_LOCALE = {
+    months: {
+        shorthand: ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
+        longhand:  ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']
+    },
+    weekdays: {
+        shorthand: ['อา','จ','อ','พ','พฤ','ศ','ส'],
+        longhand:  ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์']
+    },
+    firstDayOfWeek: 0
+};
+
+function setThaiAlt(fp) {
+    if (!fp.selectedDates.length || !fp.altInput) return;
+    const d = fp.selectedDates[0];
+    fp.altInput.value = `${d.getDate()} ${FP_LOCALE.months.longhand[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+function setThaiAltDT(fp) {
+    if (!fp.selectedDates.length || !fp.altInput) return;
+    const d = fp.selectedDates[0];
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    fp.altInput.value = `${d.getDate()} ${FP_LOCALE.months.longhand[d.getMonth()]} ${d.getFullYear()+543}  ${h}:${m}`;
+}
+
+const fpSchedDate = flatpickr('#fSchedDate', {
+    dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y',
+    locale: FP_LOCALE,
+    onReady(_,__,fp){ setThaiAlt(fp); },
+    onChange(_,__,fp){ setThaiAlt(fp); }
+});
+const fpStartTime = flatpickr('#fStartTime', {
+    enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true
+});
+const fpEndTime = flatpickr('#fEndTime', {
+    enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true
+});
+// ── Attachments ───────────────────────────────────────────
+function previewFiles(input) {
+    const list = document.getElementById('filePreviewList');
+    list.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const icon = f.type.startsWith('image/') ? 'fa-image text-green-500' :
+                     f.type === 'application/pdf' ? 'fa-file-pdf text-red-500' :
+                     f.name.match(/\.xlsx?$/i) ? 'fa-file-excel text-emerald-600' :
+                     f.name.match(/\.docx?$/i) ? 'fa-file-word text-blue-600' : 'fa-file text-gray-400';
+        const size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1)+' MB' : Math.round(f.size/1024)+' KB';
+        list.innerHTML += `<div class="flex items-center gap-2 text-sm bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+            <i class="fas ${icon}"></i>
+            <span class="flex-1 truncate text-gray-700">${f.name}</span>
+            <span class="text-xs text-gray-400 flex-shrink-0">${size}</span>
+        </div>`;
+    });
+}
+
+let _urlCount = 0;
+function addUrlRow() {
+    _urlCount++;
+    const id = 'urlRow'+_urlCount;
+    const div = document.createElement('div');
+    div.id = id; div.className = 'flex gap-1.5 items-center';
+    div.innerHTML = `
+        <i class="fas fa-link text-gray-300 text-xs flex-shrink-0"></i>
+        <input type="text" name="url_labels[]" placeholder="ชื่อลิงก์ (ไม่บังคับ)"
+               class="w-1/3 px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-green-400">
+        <input type="text" name="url_links[]" placeholder="https://drive.google.com/..."
+               class="flex-1 px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-green-400">
+        <button type="button" onclick="document.getElementById('${id}').remove()"
+                class="text-gray-300 hover:text-red-400 text-sm flex-shrink-0">
+            <i class="fas fa-times-circle"></i>
+        </button>`;
+    document.getElementById('urlLinkContainer').appendChild(div);
+}
+
+function clearAttachmentUI() {
+    document.getElementById('filePreviewList').innerHTML = '';
+    document.getElementById('urlLinkContainer').innerHTML = '';
+    const ea = document.getElementById('existingAttachments');
+    ea.innerHTML = ''; ea.classList.add('hidden');
+    document.getElementById('fAttachFiles').value = '';
+}
+
+function showExistingAttachments(attachments) {
+    const div = document.getElementById('existingAttachments');
+    if (!attachments || !attachments.length) { div.classList.add('hidden'); return; }
+    div.classList.remove('hidden');
+    div.innerHTML = '<p class="text-xs font-medium text-gray-500 mb-1.5">ไฟล์แนบที่มีอยู่:</p>' +
+        attachments.map(a => {
+            if (a.attach_type === 'url') {
+                return `<div class="flex items-center gap-2 text-sm py-1 border-b border-gray-50" id="att-${a.id}">
+                    <i class="fas fa-link text-blue-400 flex-shrink-0"></i>
+                    <a href="${a.url}" target="_blank" class="flex-1 text-blue-600 hover:underline truncate text-xs">${a.label||a.url}</a>
+                    <button type="button" onclick="deleteAttachment(${a.id})" class="text-gray-300 hover:text-red-400 text-xs flex-shrink-0"><i class="fas fa-trash"></i></button>
+                </div>`;
+            }
+            const icon = a.mime_type && a.mime_type.startsWith('image/') ? 'fa-image text-green-500' :
+                         a.label && /\.pdf$/i.test(a.label) ? 'fa-file-pdf text-red-500' :
+                         a.label && /\.xlsx?$/i.test(a.label) ? 'fa-file-excel text-emerald-600' :
+                         a.label && /\.docx?$/i.test(a.label) ? 'fa-file-word text-blue-600' : 'fa-file text-gray-400';
+            return `<div class="flex items-center gap-2 text-sm py-1 border-b border-gray-50" id="att-${a.id}">
+                <i class="fas ${icon} flex-shrink-0"></i>
+                <a href="/iservice/${a.file_path}" target="_blank" class="flex-1 text-gray-700 hover:underline truncate text-xs">${a.label}</a>
+                <button type="button" onclick="deleteAttachment(${a.id})" class="text-gray-300 hover:text-red-400 text-xs flex-shrink-0"><i class="fas fa-trash"></i></button>
+            </div>`;
+        }).join('');
+}
+
+async function deleteAttachment(id) {
+    const fd = new FormData();
+    fd.append('action','delete_attachment'); fd.append('att_id', id);
+    const res = await fetch('api/internal_jobs_api.php',{method:'POST',body:fd});
+    const d = await res.json();
+    if (d.success) { const el = document.getElementById('att-'+id); if(el) el.remove(); }
+    else Swal.fire({icon:'error',text:d.message,timer:1500,showConfirmButton:false});
+}
+
+// ── Cascading Department Selector ────────────────────────
+let _allDepts = [], _deptTree = {};
+
+async function _loadAllDepts() {
+    if (_allDepts.length) return;
+    try {
+        const res = await fetch('../api/get_departments.php?level=0');
+        const d = await res.json();
+        _allDepts = d.data ?? [];
+        _deptTree = {};
+        _allDepts.forEach(dept => {
+            const pid = dept.parent_department_id ?? 0;
+            (_deptTree[pid] = _deptTree[pid] || []).push(dept);
+        });
+    } catch(e) { _allDepts = []; }
+}
+
+function _findDeptPath(deptId) {
+    const id = parseInt(deptId);
+    const dept = _allDepts.find(d => parseInt(d.department_id) === id);
+    if (!dept) return [];
+    const path = [id];
+    let cur = dept;
+    while (cur.parent_department_id) {
+        const pid = parseInt(cur.parent_department_id);
+        path.unshift(pid);
+        cur = _allDepts.find(d => parseInt(d.department_id) === pid);
+        if (!cur) break;
+    }
+    return path;
+}
+
+function _renderDeptLevel(parentId, levelNum, selectedId = '') {
+    const children = _deptTree[parentId] ?? [];
+    const container = document.getElementById('deptCascade');
+    container.querySelectorAll('[data-dlevel]').forEach(el => {
+        if (parseInt(el.dataset.dlevel) >= levelNum) el.remove();
+    });
+    if (!children.length) return;
+
+    const levelLabels = {1:'สำนัก/กอง', 2:'ส่วน', 3:'ฝ่าย/กลุ่มงาน', 4:'งาน'};
+    const sel = document.createElement('select');
+    sel.dataset.dlevel = levelNum;
+    sel.className = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-green-400 bg-white';
+    sel.innerHTML = `<option value="">— เลือก${levelLabels[levelNum] || 'หน่วยงาน'} —</option>`;
+    children.forEach(dept => {
+        const opt = document.createElement('option');
+        opt.value = dept.department_id;
+        opt.textContent = dept.department_name;
+        if (String(dept.department_id) === String(selectedId)) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function() {
+        const val = this.value;
+        document.getElementById('fDept').value = val;
+        container.querySelectorAll('[data-dlevel]').forEach(el => {
+            if (parseInt(el.dataset.dlevel) > levelNum) el.remove();
+        });
+        if (val) _renderDeptLevel(parseInt(val), levelNum + 1);
+    });
+    container.appendChild(sel);
+}
+
+async function initDeptCascade(selectedDeptId = '') {
+    await _loadAllDepts();
+    const container = document.getElementById('deptCascade');
+    container.innerHTML = '';
+    document.getElementById('fDept').value = '';
+
+    if (!selectedDeptId) {
+        _renderDeptLevel(0, 1);
+        return;
+    }
+    const path = _findDeptPath(selectedDeptId);
+    let parentId = 0;
+    for (let i = 0; i < path.length; i++) {
+        _renderDeptLevel(parentId, i + 1, path[i]);
+        parentId = path[i];
+    }
+    if (_deptTree[parseInt(path[path.length - 1])]) {
+        _renderDeptLevel(parseInt(path[path.length - 1]), path.length + 1);
+    }
+    document.getElementById('fDept').value = selectedDeptId;
+}
+
+// Preload on page ready
+_loadAllDepts();
+
+// ── Override openCreateModal to use Flatpickr ─────────────
+openCreateModal = async function(prefill='') {
+    document.getElementById('jobForm').reset();
+    document.getElementById('fAction').value='create';
+    document.getElementById('fJobId').value='';
+    document.getElementById('modalTitle').textContent='สร้างงานใหม่';
+    document.getElementById('saveBtnTxt').textContent='บันทึก';
+    document.getElementById('lineHint').classList.add('hidden');
+    fpSchedDate.clear(); fpStartTime.clear(); fpEndTime.clear();
+    clearAttachmentUI();
+    clearAssignees();
+    await initDeptCascade('');
+    if (prefill) fpSchedDate.setDate(prefill, true);
+    document.getElementById('jobModal').classList.add('active');
+};
+
+// ── Override openEditModal to use Flatpickr ───────────────
+openEditModal = async function(job) {
+    document.getElementById('fAction').value='update';
+    document.getElementById('fJobId').value=job.job_id;
+    document.getElementById('fTitle').value=job.title;
+    document.getElementById('fJobType').value=job.job_type;
+    document.getElementById('fServiceType').value=job.service_type??'';
+    document.getElementById('fPriority').value=job.priority;
+    document.getElementById('fLocation').value=job.location??'';
+    document.getElementById('fDept').value=job.department_id??'';
+    document.getElementById('fDesc').value=job.description??'';
+    document.getElementById('modalTitle').textContent='แก้ไขงาน';
+    document.getElementById('saveBtnTxt').textContent='บันทึกการแก้ไข';
+    fpSchedDate.setDate(job.scheduled_date??'', true);
+    fpStartTime.setDate((job.start_time??'').slice(0,5), true);
+    fpEndTime.setDate((job.end_time??'').slice(0,5), true);
+    await initDeptCascade(job.department_id ?? '');
+    setAssignees(job.assignees??[]);
+    clearAttachmentUI();
+    showExistingAttachments(job.attachments??[]);
+    document.getElementById('jobModal').classList.add('active');
+    closeDetailModal();
+};
 </script>
 
 <?php include 'admin-layout/footer.php'; ?>

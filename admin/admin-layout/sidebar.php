@@ -16,9 +16,10 @@ if (isset($conn)) {
     }
 }
 
-// Count my active tasks (pending + accepted + in_progress) for current user
+// Count my active tasks (task_assignments + internal_jobs) for current user
 $my_tasks_count = 0;
 if (isset($conn) && isset($_SESSION['user_id'])) {
+    // task_assignments: งานตามคำร้อง
     $mt_stmt = $conn->prepare("
         SELECT COUNT(*) as cnt FROM task_assignments
         WHERE assigned_to = ? AND status IN ('pending', 'accepted', 'in_progress')
@@ -26,7 +27,36 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     if ($mt_stmt) {
         $mt_stmt->bind_param('i', $_SESSION['user_id']);
         $mt_stmt->execute();
-        $my_tasks_count = intval($mt_stmt->get_result()->fetch_assoc()['cnt']);
+        $my_tasks_count += intval($mt_stmt->get_result()->fetch_assoc()['cnt']);
+    }
+    // internal_jobs: งานตามแผนงาน (via job_assignments for multi-assignee support)
+    $ij_tbl = $conn->query("SHOW TABLES LIKE 'job_assignments'");
+    if ($ij_tbl && $ij_tbl->num_rows > 0) {
+        $ij_stmt = $conn->prepare("
+            SELECT COUNT(DISTINCT ja.job_id) as cnt
+            FROM job_assignments ja
+            JOIN internal_jobs ij ON ja.job_id = ij.job_id
+            WHERE ja.user_id = ? AND ij.status IN ('scheduled', 'in_progress')
+        ");
+        if ($ij_stmt) {
+            $ij_stmt->bind_param('i', $_SESSION['user_id']);
+            $ij_stmt->execute();
+            $my_tasks_count += intval($ij_stmt->get_result()->fetch_assoc()['cnt']);
+        }
+    } else {
+        // Fallback: use legacy assigned_to if job_assignments not yet created
+        $ij_tbl2 = $conn->query("SHOW TABLES LIKE 'internal_jobs'");
+        if ($ij_tbl2 && $ij_tbl2->num_rows > 0) {
+            $ij_stmt2 = $conn->prepare("
+                SELECT COUNT(*) as cnt FROM internal_jobs
+                WHERE assigned_to = ? AND status IN ('scheduled', 'in_progress')
+            ");
+            if ($ij_stmt2) {
+                $ij_stmt2->bind_param('i', $_SESSION['user_id']);
+                $ij_stmt2->execute();
+                $my_tasks_count += intval($ij_stmt2->get_result()->fetch_assoc()['cnt']);
+            }
+        }
     }
 }
 

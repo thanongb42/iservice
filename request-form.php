@@ -283,7 +283,7 @@ include __DIR__ . '/includes/header_public.php';
                     <!-- Include service-specific form fields based on service_code -->
                     <?php include "forms/service-form-fields-{$service_code}.php"; ?>
 
-                    <?php if ($service_code !== 'QR_CODE' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC'): ?>
+                    <?php if ($service_code !== 'QR_CODE' && $service_code !== 'PHOTOGRAPHY' && $service_code !== 'MC' && $service_code !== 'WEB_DESIGN'): ?>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุเพิ่มเติม</label>
                         <textarea name="notes" rows="4"

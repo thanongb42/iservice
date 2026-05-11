@@ -30,10 +30,47 @@ $job = $stmt->get_result()->fetch_assoc();
 
 if (!$job) { header('Location: my_tasks.php'); exit; }
 
-// Only the assigned user or admin/manager can view
+// Fetch all assignees from job_assignments
+$assignees = [];
+$ja_tbl = $conn->query("SHOW TABLES LIKE 'job_assignments'");
+if ($ja_tbl && $ja_tbl->num_rows > 0) {
+    $ja_stmt = $conn->prepare("
+        SELECT ja.user_id,
+               CONCAT(IFNULL(p.prefix_name,''), u.first_name,' ', u.last_name) AS full_name,
+               u.profile_image
+        FROM job_assignments ja
+        JOIN users u ON ja.user_id = u.user_id
+        LEFT JOIN prefixes p ON u.prefix_id = p.prefix_id
+        WHERE ja.job_id = ?
+        ORDER BY ja.assigned_at
+    ");
+    $ja_stmt->bind_param('i', $job_id);
+    $ja_stmt->execute();
+    $assignees = $ja_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+// Fallback: use legacy assigned_to if job_assignments empty
+if (empty($assignees) && $job['assigned_to']) {
+    $assignees = [['user_id' => $job['assigned_to'], 'full_name' => trim($job['to_first'].' '.$job['to_last']) ?: ($job['to_username'] ?? '?'), 'profile_image' => null]];
+}
+$assignee_ids = array_column($assignees, 'user_id');
+
+// Fetch attachments (safe: table may not exist on older installs)
+$attachments = [];
+$att_tbl = $conn->query("SHOW TABLES LIKE 'job_attachments'");
+if ($att_tbl && $att_tbl->num_rows > 0) {
+    $att_stmt = $conn->prepare("SELECT * FROM job_attachments WHERE job_id=? ORDER BY created_at");
+    $att_stmt->bind_param('i', $job_id);
+    $att_stmt->execute();
+    $attachments = $att_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+// Only assignees or admin/manager can view
 $is_admin = ($_SESSION['role'] ?? '') === 'admin';
-if (!$is_admin && $job['assigned_to'] != $_SESSION['user_id']) {
-    header('Location: my_tasks.php'); exit;
+if (!$is_admin && !in_array($_SESSION['user_id'], $assignee_ids)) {
+    // Also allow legacy assigned_to
+    if ($job['assigned_to'] != $_SESSION['user_id']) {
+        header('Location: my_tasks.php'); exit;
+    }
 }
 
 // ── Labels ──────────────────────────────────────────────────
@@ -195,9 +232,17 @@ include 'admin-layout/topbar.php';
 
       <div>
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">ผู้รับผิดชอบ</p>
-        <p class="font-semibold text-gray-800">
-          <?= htmlspecialchars(trim($job['to_first'].' '.$job['to_last']) ?: ($job['to_username'] ?? '-')) ?>
-        </p>
+        <?php if (!empty($assignees)): ?>
+          <div class="flex flex-wrap gap-1.5">
+            <?php foreach ($assignees as $a): ?>
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 ring-1 ring-teal-200">
+                <i class="fas fa-user text-[9px]"></i><?= htmlspecialchars($a['full_name']) ?>
+              </span>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <p class="font-semibold text-gray-400 italic">ยังไม่มอบหมาย</p>
+        <?php endif; ?>
       </div>
 
     </div>
@@ -220,6 +265,42 @@ include 'admin-layout/topbar.php';
       <i class="fas fa-sticky-note"></i> หมายเหตุ
     </h2>
     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap"><?= htmlspecialchars($job['notes']) ?></p>
+  </div>
+  <?php endif; ?>
+
+  <!-- ── Attachments ──────────────────────────────────────────── -->
+  <?php if (!empty($attachments)): ?>
+  <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6 mb-4">
+    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+      <i class="fas fa-paperclip text-indigo-500"></i> ไฟล์แนบ / ลิงก์ (<?= count($attachments) ?>)
+    </h2>
+    <div class="space-y-2">
+      <?php foreach ($attachments as $att): ?>
+        <?php if ($att['attach_type'] === 'url'): ?>
+          <a href="<?= htmlspecialchars($att['url']) ?>" target="_blank"
+             class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition">
+            <i class="fas fa-link text-blue-500"></i>
+            <span class="flex-1 text-sm text-blue-700 truncate"><?= htmlspecialchars($att['label'] ?: $att['url']) ?></span>
+            <i class="fas fa-external-link-alt text-blue-400 text-xs"></i>
+          </a>
+        <?php else:
+            $ext  = strtolower(pathinfo($att['label'] ?? '', PATHINFO_EXTENSION));
+            $icon = in_array($ext,['jpg','jpeg','png','gif']) ? 'fa-image text-green-500' :
+                    ($ext==='pdf' ? 'fa-file-pdf text-red-500' :
+                    (in_array($ext,['xls','xlsx']) ? 'fa-file-excel text-emerald-600' :
+                    (in_array($ext,['doc','docx']) ? 'fa-file-word text-blue-600' : 'fa-file text-gray-400')));
+            $size = $att['file_size'] ? ($att['file_size']>1048576 ? round($att['file_size']/1048576,1).' MB' : round($att['file_size']/1024).' KB') : '';
+        ?>
+          <a href="/iservice/<?= htmlspecialchars($att['file_path']) ?>" target="_blank"
+             class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition">
+            <i class="fas <?= $icon ?>"></i>
+            <span class="flex-1 text-sm text-gray-700 truncate"><?= htmlspecialchars($att['label']) ?></span>
+            <?php if ($size): ?><span class="text-xs text-gray-400 flex-shrink-0"><?= $size ?></span><?php endif; ?>
+            <i class="fas fa-download text-gray-400 text-xs"></i>
+          </a>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
   </div>
   <?php endif; ?>
 
@@ -284,7 +365,7 @@ include 'admin-layout/topbar.php';
   <?php endif; ?>
 
   <!-- ── Action buttons ────────────────────────────────────── -->
-  <?php if ($job['assigned_to'] == $_SESSION['user_id']): ?>
+  <?php if (in_array($_SESSION['user_id'], $assignee_ids) || $job['assigned_to'] == $_SESSION['user_id']): ?>
   <div class="flex gap-3 flex-wrap">
     <?php if ($job['status'] === 'scheduled'): ?>
     <button onclick="updateStatus('in_progress')"

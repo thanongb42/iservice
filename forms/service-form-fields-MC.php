@@ -117,8 +117,7 @@
         <input type="file" id="mc_doc_input" name="attachments[]" multiple
                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
                required
-               class="sr-only"
-               onchange="mcDocChanged(this)">
+               class="sr-only">
         <div id="mc-doc-list" class="mt-2 space-y-1 text-sm text-gray-600"></div>
     </div>
 
@@ -148,20 +147,69 @@ const _mcTimeCfg = { enableTime: true, noCalendar: true, time_24hr: true, dateFo
 flatpickr("#mc_time_start", _mcTimeCfg);
 flatpickr("#mc_time_end",   _mcTimeCfg);
 
-function mcDocChanged(input) {
-    const list = document.getElementById('mc-doc-list');
-    const text = document.getElementById('mc-doc-text');
-    list.innerHTML = '';
-    if (input.files.length === 0) {
-        text.textContent = 'คลิกหรือลากไฟล์มาวางที่นี่';
-        return;
+// MC file uploader — supports add-multiple-times + individual X removal
+(function() {
+    var mcFiles = [];
+
+    function mcRender() {
+        var input = document.getElementById('mc_doc_input');
+        var list  = document.getElementById('mc-doc-list');
+        var text  = document.getElementById('mc-doc-text');
+        list.innerHTML = '';
+        if (mcFiles.length === 0) {
+            text.textContent = 'คลิกหรือลากไฟล์มาวางที่นี่';
+            var dt0 = new DataTransfer();
+            input.files = dt0.files;
+            return;
+        }
+        text.textContent = 'เลือกแล้ว ' + mcFiles.length + ' ไฟล์';
+        mcFiles.forEach(function(f, i) {
+            var div = document.createElement('div');
+            div.className = 'flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded';
+            div.innerHTML = '<i class="fas fa-file-alt text-teal-500 flex-shrink-0"></i>'
+                + '<span class="flex-1 truncate text-gray-700">' + f.name + '</span>'
+                + '<span class="text-gray-400 text-xs flex-shrink-0">(' + (f.size / 1024).toFixed(0) + ' KB)</span>'
+                + '<button type="button" title="ลบไฟล์" class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 hover:text-red-700 text-xs font-bold leading-none" data-i="' + i + '">&times;</button>';
+            list.appendChild(div);
+        });
+        // Rebuild DataTransfer so input.files reflects current list
+        var dt = new DataTransfer();
+        mcFiles.forEach(function(f) { dt.items.add(f); });
+        input.files = dt.files;
+        // Attach remove handlers
+        list.querySelectorAll('button[data-i]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                mcFiles.splice(parseInt(btn.getAttribute('data-i')), 1);
+                mcRender();
+            });
+        });
     }
-    text.textContent = `เลือกแล้ว ${input.files.length} ไฟล์`;
-    Array.from(input.files).forEach(f => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded';
-        div.innerHTML = `<i class="fas fa-file-alt text-teal-500"></i> <span>${f.name}</span> <span class="text-gray-400 text-xs">(${(f.size/1024).toFixed(0)} KB)</span>`;
-        list.appendChild(div);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('mc_doc_input');
+        var label = document.getElementById('mc-doc-label');
+        if (!input) return;
+
+        input.addEventListener('change', function() {
+            Array.from(input.files).forEach(function(f) { mcFiles.push(f); });
+            mcRender();
+            // Reset input so same file can be re-added after removal
+            input.value = '';
+        });
+
+        label.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            label.classList.add('border-teal-600', 'bg-teal-100');
+        });
+        label.addEventListener('dragleave', function() {
+            label.classList.remove('border-teal-600', 'bg-teal-100');
+        });
+        label.addEventListener('drop', function(e) {
+            e.preventDefault();
+            label.classList.remove('border-teal-600', 'bg-teal-100');
+            Array.from(e.dataTransfer.files).forEach(function(f) { mcFiles.push(f); });
+            mcRender();
+        });
     });
-}
+})();
 </script>

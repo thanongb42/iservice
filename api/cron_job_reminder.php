@@ -31,13 +31,15 @@ $nowTotal = $nowH * 60 + $nowMin; // minutes since midnight
 
 $sent = 0; $failed = 0;
 
-// ── Fetch active jobs that have an assigned user with LINE ────
+// ── Fetch active jobs with assignees (via job_assignments) ───
+// Each row = one job × one assignee so we send to all assigned staff
 $jobs_stmt = $conn->prepare("
     SELECT ij.job_id, ij.job_code, ij.title, ij.scheduled_date,
            ij.start_time, ij.end_time, ij.location, ij.status,
            u.line_user_id, u.first_name, u.last_name
     FROM internal_jobs ij
-    JOIN users u ON ij.assigned_to = u.user_id
+    JOIN job_assignments ja ON ij.job_id = ja.job_id
+    JOIN users u ON ja.user_id = u.user_id
     WHERE ij.status IN ('scheduled', 'in_progress')
       AND ij.scheduled_date IN (?, ?)
       AND u.line_user_id IS NOT NULL
@@ -48,10 +50,15 @@ $jobs_stmt->execute();
 $jobs = $jobs_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 foreach ($jobs as $job) {
-    $job_id     = $job['job_id'];
-    $sched_date = $job['scheduled_date'];
-    $is_today   = ($sched_date === $today);
-    $is_tomorrow= ($sched_date === $tomorrow);
+    $job_id      = $job['job_id'];
+    $line_uid    = $job['line_user_id'];
+    $sched_date  = $job['scheduled_date'];
+    $is_today    = ($sched_date === $today);
+    $is_tomorrow = ($sched_date === $tomorrow);
+
+    // Resolve numeric user_id for dedup (look up by line_user_id)
+    $uid_row = $conn->query("SELECT user_id FROM users WHERE line_user_id = '" . $conn->real_escape_string($line_uid) . "' LIMIT 1")->fetch_assoc();
+    $uid = $uid_row ? (int)$uid_row['user_id'] : 0;
 
     // Parse start_time → minutes since midnight
     $start_min = null;
@@ -62,19 +69,19 @@ foreach ($jobs as $job) {
 
     $name = trim($job['first_name'] . ' ' . $job['last_name']) ?: 'คุณ';
 
-    // ── Helper: check already sent ───────────────────────────
-    $already_sent = function(string $type) use ($conn, $job_id): bool {
-        $chk = $conn->prepare("SELECT id FROM job_notification_log WHERE job_id = ? AND notify_type = ?");
-        $chk->bind_param('is', $job_id, $type);
+    // ── Helper: check already sent (per job + user + type) ──
+    $already_sent = function(string $type) use ($conn, $job_id, $uid): bool {
+        $chk = $conn->prepare("SELECT id FROM job_notification_log WHERE job_id = ? AND user_id = ? AND notify_type = ?");
+        $chk->bind_param('iis', $job_id, $uid, $type);
         $chk->execute();
         return $chk->get_result()->num_rows > 0;
     };
 
     // ── Helper: record send ──────────────────────────────────
-    $record = function(string $type, bool $ok, string $err = '') use ($conn, $job_id): void {
-        $ins = $conn->prepare("INSERT IGNORE INTO job_notification_log (job_id, notify_type, success, error_msg) VALUES (?, ?, ?, ?)");
+    $record = function(string $type, bool $ok, string $err = '') use ($conn, $job_id, $uid): void {
+        $ins = $conn->prepare("INSERT IGNORE INTO job_notification_log (job_id, user_id, notify_type, success, error_msg) VALUES (?, ?, ?, ?, ?)");
         $s = $ok ? 1 : 0;
-        $ins->bind_param('isis', $job_id, $type, $s, $err);
+        $ins->bind_param('iiisi', $job_id, $uid, $type, $s, $err);
         $ins->execute();
     };
 
@@ -95,6 +102,8 @@ foreach ($jobs as $job) {
     }
     $loc_str = !empty($job['location']) ? "\n📍 " . $job['location'] : '';
 
+    $detail_url = "https://iservice.rangsitcity.go.th/admin/internal_job_detail.php?id={$job_id}";
+
     // ══════════════════════════════════════════════════════════
     // 1. DAY_BEFORE — ส่งวันก่อน เวลา 08:00–08:14
     // ══════════════════════════════════════════════════════════
@@ -106,6 +115,7 @@ foreach ($jobs as $job) {
                  . "📅 {$date_thai}"
                  . ($time_str ? " เวลา {$time_str}" : '')
                  . $loc_str . "\n\n"
+                 . "ดูรายละเอียด:\n{$detail_url}\n\n"
                  . "— iService เทศบาลนครรังสิต";
             $ok = send_line_push_to_user($job['line_user_id'], $msg, $conn);
             $record('day_before', $ok);
@@ -133,6 +143,7 @@ foreach ($jobs as $job) {
                   . "📅 {$date_thai}"
                   . ($time_str ? " เวลา {$time_str}" : '')
                   . $loc_str . "\n\n"
+                  . "ดูรายละเอียด:\n{$detail_url}\n\n"
                   . "— iService เทศบาลนครรังสิต";
             $ok = send_line_push_to_user($job['line_user_id'], $msg, $conn);
             $record('one_hour', $ok);
@@ -151,6 +162,7 @@ foreach ($jobs as $job) {
                  . "🔑 {$job['job_code']}\n"
                  . "🕐 เวลา {$time_str}"
                  . $loc_str . "\n\n"
+                 . "ดูรายละเอียด:\n{$detail_url}\n\n"
                  . "— iService เทศบาลนครรังสิต";
             $ok = send_line_push_to_user($job['line_user_id'], $msg, $conn);
             $record('on_start', $ok);

@@ -162,6 +162,9 @@ $extra_styles = '
                 background-color: white;
             }
         }
+
+        /* Prevent container size overrides from squeezing the sticky navbar */
+        header .container { max-width: unset !important; }
 ';
 
 include __DIR__ . '/includes/header_public.php';
@@ -866,7 +869,7 @@ include __DIR__ . '/includes/header_public.php';
                 <div class="text-center card-hover transition-all bg-gray-700 p-4 md:p-6 rounded-lg">
                     <div class="text-3xl md:text-4xl mb-4"><i class="fas fa-envelope text-blue-400"></i></div>
                     <h4 class="font-bold mb-2 text-base md:text-lg">Email</h4>
-                    <p class="text-xs md:text-sm">rssc@rangsit.go.th</p>
+                    <p class="text-xs md:text-sm">rssc@rangsitcity.go.th</p>
                 </div>
             </div>
         </div>

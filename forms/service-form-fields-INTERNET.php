@@ -55,9 +55,16 @@ if (empty($internet_request_types)) {
         <label class="block text-sm font-medium text-gray-700 mb-2">
             หมายเลขบัตรประชาชน
         </label>
+        <?php
+        $default_citizen_id = '';
+        if (isset($_SESSION['username']) && preg_match('/^[0-9]{13}$/', $_SESSION['username'])) {
+            $default_citizen_id = $_SESSION['username'];
+        }
+        ?>
         <input type="text" name="citizen_id"
                maxlength="13" pattern="[0-9]{13}"
                inputmode="numeric"
+               value="<?= htmlspecialchars($default_citizen_id) ?>"
                placeholder="เลขบัตรประชาชน 13 หลัก"
                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
         <p class="text-xs text-gray-400 mt-1">หมายเลขบัตรประชาชน 13 หลัก</p>

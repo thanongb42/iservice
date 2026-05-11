@@ -54,41 +54,13 @@ $service_detail_table = $service_detail_tables[$request['service_code']] ?? null
 
 // Get service-specific details if exists
 $service_details = [];
-switch ($request['service_code']) {
-    case 'EMAIL':
-        $detail_stmt = $conn->prepare("SELECT * FROM request_email_details WHERE request_id = ?");
+if ($service_detail_table) {
+    $detail_stmt = $conn->prepare("SELECT * FROM `{$service_detail_table}` WHERE request_id = ?");
+    if ($detail_stmt) {
         $detail_stmt->bind_param("i", $request_id);
         $detail_stmt->execute();
         $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
-        break;
-
-    case 'NAS':
-        $detail_stmt = $conn->prepare("SELECT * FROM request_nas_details WHERE request_id = ?");
-        $detail_stmt->bind_param("i", $request_id);
-        $detail_stmt->execute();
-        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
-        break;
-
-    case 'IT_SUPPORT':
-        $detail_stmt = $conn->prepare("SELECT * FROM request_it_support_details WHERE request_id = ?");
-        $detail_stmt->bind_param("i", $request_id);
-        $detail_stmt->execute();
-        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
-        break;
-
-    case 'PHOTOGRAPHY':
-        $detail_stmt = $conn->prepare("SELECT * FROM request_photography_details WHERE request_id = ?");
-        $detail_stmt->bind_param("i", $request_id);
-        $detail_stmt->execute();
-        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
-        break;
-
-    case 'MC':
-        $detail_stmt = $conn->prepare("SELECT * FROM request_mc_details WHERE request_id = ?");
-        $detail_stmt->bind_param("i", $request_id);
-        $detail_stmt->execute();
-        $service_details = $detail_stmt->get_result()->fetch_assoc() ?: [];
-        break;
+    }
 }
 
 // Get task assignments for this request
@@ -198,21 +170,43 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Reject request
     $rejection_reason = clean_input($_POST['rejection_reason']);
-    
+
     $reject_stmt = $conn->prepare("
-        UPDATE service_requests 
+        UPDATE service_requests
         SET status = 'rejected', rejection_reason = ?
         WHERE request_id = ?
     ");
-    
+
     $reject_stmt->bind_param("si", $rejection_reason, $request_id);
-    
+
     if ($reject_stmt->execute()) {
         send_status_update_notification($request_id, $conn, 'rejected', $rejection_reason);
         $_SESSION['success_msg'] = 'ปฏิเสธคำขอสำเร็จ';
         $stmt->execute();
         $request = $stmt->get_result()->fetch_assoc();
     }
+}
+
+if ($action === 'close_case' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $close_notes = clean_input($_POST['close_notes'] ?? '');
+
+    $close_stmt = $conn->prepare("
+        UPDATE service_requests
+        SET status = 'completed',
+            completed_at = NOW(),
+            admin_notes = ?
+        WHERE request_id = ? AND status != 'completed'
+    ");
+    $close_stmt->bind_param("si", $close_notes, $request_id);
+
+    if ($close_stmt->execute() && $close_stmt->affected_rows > 0) {
+        send_status_update_notification($request_id, $conn, 'completed', $close_notes);
+        $_SESSION['success_msg'] = 'ปิด case เสร็จสิ้นสำเร็จ';
+    } else {
+        $_SESSION['error_msg'] = 'ไม่สามารถปิด case ได้ หรือ case นี้ปิดแล้ว';
+    }
+    $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
 }
 
 // AJAX: update single service-detail field
@@ -1142,6 +1136,35 @@ include __DIR__ . '/admin-layout/topbar.php';
                     </div>
                 </div>
 
+                <!-- Close Case (Admin only — no assignment required) -->
+                <?php if ($request['status'] !== 'completed' && $request['status'] !== 'rejected' && $request['status'] !== 'cancelled'): ?>
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-6 border-l-4 border-green-500">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                        <i class="fas fa-check-circle text-green-600"></i> ปิด Case
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-4">ดำเนินการเสร็จสิ้นโดยไม่ต้องมอบหมายงาน เหมาะสำหรับกรณีเจ้าหน้าที่ปฏิบัติงานแล้วแต่ไม่ได้เข้ารับใน<wbr>ระบบ</p>
+
+                    <form method="POST" id="closeCaseForm">
+                        <input type="hidden" name="action" value="close_case">
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                หมายเหตุ / สรุปผลการดำเนินงาน
+                                <span class="text-gray-400 font-normal">(ไม่บังคับ)</span>
+                            </label>
+                            <textarea name="close_notes" id="closeCaseNotes" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                                      placeholder="เช่น ดำเนินการแก้ไขปัญหาเรียบร้อยแล้ว เมื่อ..."></textarea>
+                        </div>
+
+                        <button type="button" onclick="confirmCloseCase()"
+                                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i> ยืนยันปิด Case เสร็จสิ้น
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
                 <!-- Rejection -->
                 <?php if ($request['status'] !== 'rejected' && $request['status'] !== 'completed'): ?>
                 <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -1374,6 +1397,49 @@ async function reassignTask(assignmentId, currentName) {
         }
     } catch (error) {
         Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนผู้รับผิดชอบได้', 'error');
+    }
+}
+
+// Confirm Close Case (complete without assignment)
+async function confirmCloseCase() {
+    const notes = document.getElementById('closeCaseNotes').value.trim();
+
+    const result = await Swal.fire({
+        title: '',
+        html: `
+            <div style="text-align:center;margin-bottom:16px;">
+                <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#15803d);
+                            display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                    <i class="fas fa-check-circle" style="color:#fff;font-size:24px;"></i>
+                </div>
+                <h2 style="margin:0;font-size:1.3rem;font-weight:700;color:#1f2937;">ยืนยันปิด Case?</h2>
+                <p style="margin:6px 0 0;color:#6b7280;font-size:0.875rem;">คำขอ <?= htmlspecialchars($request['request_code']) ?></p>
+            </div>
+            <div style="text-align:left;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-top:8px;">
+                <p style="font-size:0.8rem;font-weight:600;color:#166534;margin:0 0 4px;">
+                    <i class="fas fa-info-circle" style="margin-right:4px;"></i> ผลลัพธ์
+                </p>
+                <p style="font-size:0.8rem;color:#14532d;margin:0;">สถานะคำขอจะเปลี่ยนเป็น "เสร็จสิ้น" และระบบจะแจ้งผู้ร้องขอทางอีเมล</p>
+            </div>
+            ${notes ? '<div style="text-align:left;margin-top:12px;"><p style="font-size:0.75rem;font-weight:600;color:#374151;margin:0 0 4px;">หมายเหตุ:</p><p style="font-size:0.85rem;color:#4b5563;margin:0;background:#f9fafb;padding:10px;border-radius:8px;border:1px solid #e5e7eb;">' + notes.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p></div>' : ''}
+        `,
+        width: 420,
+        padding: '24px',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check-circle" style="margin-right:6px;"></i> ยืนยันปิด Case',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        customClass: {
+            popup: 'swal-status-popup',
+            confirmButton: 'swal-status-confirm-btn',
+            cancelButton: 'swal-status-cancel-btn'
+        },
+        focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+        document.getElementById('closeCaseForm').submit();
     }
 }
 
