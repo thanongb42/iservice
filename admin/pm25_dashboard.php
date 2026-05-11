@@ -33,7 +33,9 @@ try {
     }
 } catch (Exception $e) {}
 
-// ── Step 2: ดึงข้อมูลสถานีจาก pm25_sensors ────────────────────────────────
+// ── Step 2: ดึงข้อมูลสถานีจาก pm25_sensors ─────────────────────────────────
+function nullFloat($v): ?float { return $v !== null && $v !== '' ? (float)$v : null; }
+
 $sensors = [];
 try {
     $rows = $pdo->query("SELECT * FROM pm25_sensors WHERE is_active=1 ORDER BY id")
@@ -48,32 +50,38 @@ try {
             'sim_number'    => $s['sim_number'],
             'lat'           => $s['lat'],
             'lng'           => $s['lng'],
-            'pm25_val'  => $d ? (float)$d['pm25']             : null,
-            'temp'      => $d && $d['temperature'] !== null ? (float)$d['temperature'] : null,
-            'humi'      => $d && $d['humidity']    !== null ? (float)$d['humidity']    : null,
-            'last_ts'   => $d ? (int)$d['sensor_timestamp']  : null,
+            'pm25'  => $d ? nullFloat($d['pm25'])        : null,
+            'pm1'   => $d ? nullFloat($d['pm1'])         : null,
+            'pm10'  => $d ? nullFloat($d['pm10'])        : null,
+            'temp'  => $d ? nullFloat($d['temperature']) : null,
+            'humi'  => $d ? nullFloat($d['humidity'])    : null,
+            'co2'   => $d ? nullFloat($d['co2'])         : null,
+            'last_ts' => $d ? (int)$d['sensor_timestamp'] : null,
         ];
     }
 } catch (Exception $e) {}
 
-$now       = time();
+$now = time();
 $onlineCnt = 0;
 $pmValues  = [];
 foreach ($sensors as $s) {
     if ($s['last_ts'] && ($now - $s['last_ts']) < 1800) $onlineCnt++;
-    if ($s['pm25_val'] !== null) $pmValues[] = $s['pm25_val'];
+    if ($s['pm25'] !== null) $pmValues[] = $s['pm25'];
 }
 $avgPM = $pmValues ? round(array_sum($pmValues) / count($pmValues), 1) : null;
 $maxPM = $pmValues ? max($pmValues) : null;
 
-// ── ข้อมูลกราฟ 24 ชั่วโมงย้อนหลัง ─────────────────────────────────────────
-$chartRaw = [];
+// ── กราฟ 24 ชั่วโมง (ทุก metric) ────────────────────────────────────────────
+$chartRawByCid = [];
+$allTs = [];
 try {
     $cids = array_column($sensors, 'cid');
     if (!empty($cids)) {
         $in   = implode(',', array_fill(0, count($cids), '?'));
         $stmt = $pdo->prepare("
-            SELECT cid, pm25, sensor_timestamp
+            SELECT cid, pm25, pm1, pm10,
+                   temperature AS temp, humidity AS humi, co2,
+                   sensor_timestamp AS ts
             FROM pm25_data
             WHERE cid IN ($in)
               AND sensor_timestamp >= UNIX_TIMESTAMP(NOW()) - 86400
@@ -81,38 +89,24 @@ try {
         ");
         $stmt->execute($cids);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-            $chartRaw[$r['cid']][] = ['ts' => (int)$r['sensor_timestamp'], 'pm25' => (float)$r['pm25']];
+            $ts = (int)$r['ts'];
+            $allTs[$ts] = date('H:i', $ts);
+            $chartRawByCid[$r['cid']][$ts] = [
+                'pm25' => nullFloat($r['pm25']),
+                'pm1'  => nullFloat($r['pm1']),
+                'pm10' => nullFloat($r['pm10']),
+                'temp' => nullFloat($r['temp']),
+                'humi' => nullFloat($r['humi']),
+                'co2'  => nullFloat($r['co2']),
+            ];
         }
     }
 } catch (Exception $e) {}
 
-// รวม timestamps ทั้งหมด
-$allTs = [];
-foreach ($chartRaw as $points) {
-    foreach ($points as $p) $allTs[$p['ts']] = date('d/m H:i', $p['ts']); // Asia/Bangkok ตั้งไว้แล้ว
-}
 ksort($allTs);
 $chartLabels = array_values($allTs);
 $chartTsKeys = array_keys($allTs);
-
-$chartColors = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
-$chartDatasets = [];
-foreach ($sensors as $idx => $s) {
-    $tsMap = [];
-    foreach ($chartRaw[$s['cid']] ?? [] as $p) $tsMap[$p['ts']] = $p['pm25'];
-    $color = $chartColors[$idx % count($chartColors)];
-    $chartDatasets[] = [
-        'label'           => $s['location_name'],
-        'data'            => array_map(fn($ts) => $tsMap[$ts] ?? null, $chartTsKeys),
-        'borderColor'     => $color,
-        'backgroundColor' => $color . '20',
-        'borderWidth'     => 2,
-        'pointRadius'     => 2,
-        'fill'            => false,
-        'tension'         => 0.3,
-        'spanGaps'        => true,
-    ];
-}
+$hasChart    = !empty($chartLabels);
 
 function pmLevel($v): array {
     if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
@@ -194,7 +188,7 @@ include 'admin-layout/topbar.php';
     <!-- Sensor Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <?php foreach ($sensors as $s):
-        $pm       = $s['pm25_val'];
+        $pm       = $s['pm25'];
         $level    = pmLevel($pm);
         $isOnline = $s['last_ts'] && ($now - $s['last_ts']) < 1800;
         $lastTs   = $s['last_ts'] ?? 0;
@@ -232,23 +226,34 @@ include 'admin-layout/topbar.php';
             <?= htmlspecialchars($s['location_name']) ?>
         </h3>
 
-        <!-- Temp / Humidity -->
-        <?php if ($s['temp'] !== null || $s['humi'] !== null): ?>
-        <div class="flex justify-center gap-4 mt-2 mb-1">
-            <?php if ($s['temp'] !== null): ?>
-            <span class="text-xs text-gray-500 flex items-center gap-1">
-                <i class="fas fa-thermometer-half text-orange-400"></i>
-                <?= number_format($s['temp'], 1) ?>°C
-            </span>
-            <?php endif; ?>
-            <?php if ($s['humi'] !== null): ?>
-            <span class="text-xs text-gray-500 flex items-center gap-1">
-                <i class="fas fa-tint text-blue-400"></i>
-                <?= number_format($s['humi'], 1) ?>%
-            </span>
-            <?php endif; ?>
+        <!-- All metrics -->
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs mb-3">
+            <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fas fa-thermometer-half text-orange-400 w-3"></i>
+                <span class="text-gray-400">อุณหภูมิ</span>
+                <span class="ml-auto font-medium"><?= $s['temp'] !== null ? number_format($s['temp'],1).'°C' : '--' ?></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fas fa-tint text-blue-400 w-3"></i>
+                <span class="text-gray-400">ความชื้น</span>
+                <span class="ml-auto font-medium"><?= $s['humi'] !== null ? number_format($s['humi'],1).'%' : '--' ?></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fas fa-wind text-gray-400 w-3"></i>
+                <span class="text-gray-400">PM1</span>
+                <span class="ml-auto font-medium"><?= $s['pm1'] !== null ? number_format($s['pm1'],0) : '--' ?> <span class="text-gray-300">µg</span></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fas fa-smog text-gray-400 w-3"></i>
+                <span class="text-gray-400">PM10</span>
+                <span class="ml-auto font-medium"><?= $s['pm10'] !== null ? number_format($s['pm10'],0) : '--' ?> <span class="text-gray-300">µg</span></span>
+            </div>
+            <div class="col-span-2 flex items-center gap-1.5 text-gray-600">
+                <i class="fas fa-cloud text-green-400 w-3"></i>
+                <span class="text-gray-400">CO2</span>
+                <span class="ml-auto font-medium"><?= $s['co2'] !== null ? number_format($s['co2'],0).' ppm' : '--' ?></span>
+            </div>
         </div>
-        <?php endif; ?>
 
         <!-- Hardware info (admin only) -->
         <div class="mt-auto border-t border-gray-100 pt-3 space-y-1">
@@ -277,20 +282,52 @@ include 'admin-layout/topbar.php';
 
     <!-- ─── Line Chart ─── -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-chart-line text-teal-600"></i>
-                <h2 class="text-base font-semibold text-gray-700">กราฟ PM2.5 ย้อนหลัง 24 ชั่วโมง</h2>
-            </div>
-            <!-- Legend toggles -->
-            <div class="flex flex-wrap gap-2" id="legendToggles"></div>
+        <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-chart-line text-teal-600"></i>
+            <h2 class="text-base font-semibold text-gray-700">กราฟย้อนหลัง 24 ชั่วโมง</h2>
         </div>
-        <?php if (empty($chartLabels)): ?>
+
+        <?php if (!$hasChart): ?>
         <div class="text-center py-10 text-gray-300">
-            <i class="fas fa-chart-line text-3xl mb-2"></i>
+            <i class="fas fa-chart-line text-3xl mb-2 block"></i>
             <p class="text-sm">ยังไม่มีข้อมูลกราฟ — รอ cron รันครั้งถัดไป</p>
         </div>
         <?php else: ?>
+
+        <!-- Metric Tabs -->
+        <div class="flex flex-wrap gap-1.5 mb-4">
+            <?php foreach ([
+                ['pm25','PM2.5','#16a34a'],['pm10','PM10','#0ea5e9'],['pm1','PM1','#8b5cf6'],
+                ['temp','อุณหภูมิ','#f97316'],['humi','ความชื้น','#3b82f6'],['co2','CO2','#84cc16'],
+            ] as [$mk,$ml,$mc]): ?>
+            <button onclick="selectMetric('<?= $mk ?>')" id="metricBtn<?= $mk ?>"
+                    class="metric-btn px-3 py-1 rounded-lg text-xs font-medium border transition-all"
+                    style="border-color:<?= $mc ?>;color:<?= $mc ?>">
+                <?= $ml ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Station Selector -->
+        <div class="flex flex-wrap gap-2 mb-4">
+            <?php foreach ($sensors as $idx => $s):
+                $color = ['#16a34a','#84cc16','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'][$idx % 8];
+            ?>
+            <button onclick="selectStation(<?= $idx ?>)" id="stationBtn<?= $idx ?>"
+                    class="station-btn px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                    style="border-color:<?= $color ?>;color:<?= $color ?>">
+                <?= htmlspecialchars($s['location_name']) ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Chart info -->
+        <div class="flex items-baseline gap-2 mb-2">
+            <span id="chartStationName" class="text-sm font-semibold text-gray-700"></span>
+            <span id="chartMetricLabel" class="text-xs text-gray-400"></span>
+            <span id="chartCurrentVal" class="ml-auto text-sm font-bold"></span>
+        </div>
+
         <div class="relative" style="height:320px">
             <canvas id="pm25Chart"></canvas>
         </div>
@@ -330,64 +367,96 @@ include 'admin-layout/topbar.php';
 </div>
 
 <script>
-// ─── Line Chart ──────────────────────────────────────────────────────────────
-<?php if (!empty($chartLabels)): ?>
-(function () {
-    const labels   = <?= json_encode($chartLabels) ?>;
-    const datasets = <?= json_encode($chartDatasets) ?>;
+// ─── Chart (metric × station) ────────────────────────────────────────────────
+<?php if ($hasChart): ?>
+const chartLabels  = <?= json_encode($chartLabels) ?>;
+const chartTsKeys  = <?= json_encode($chartTsKeys) ?>;
+const chartRawData = <?= json_encode($chartRawByCid) ?>;
+const sensorList   = <?= json_encode(array_map(fn($s) => ['cid'=>$s['cid'],'name'=>$s['location_name']], $sensors)) ?>;
+const stationColors= ['#16a34a','#84cc16','#f97316','#8b5cf6','#ef4444','#eab308','#06b6d4','#ec4899'];
+const metricConfig = {
+    pm25: { label:'PM2.5',    unit:'µg/m³', color:'#16a34a' },
+    pm10: { label:'PM10',     unit:'µg/m³', color:'#0ea5e9' },
+    pm1:  { label:'PM1',      unit:'µg/m³', color:'#8b5cf6' },
+    temp: { label:'อุณหภูมิ', unit:'°C',    color:'#f97316' },
+    humi: { label:'ความชื้น', unit:'%',     color:'#3b82f6' },
+    co2:  { label:'CO2',      unit:'ppm',   color:'#84cc16' },
+};
 
+let pm25Chart = null, activeStation = 0, activeMetric = 'pm25';
+
+function getChartData(cidIdx, metricKey) {
+    const cid = sensorList[cidIdx].cid;
+    const raw = chartRawData[cid] || {};
+    return chartTsKeys.map(ts => { const r = raw[ts]; return r ? (r[metricKey] ?? null) : null; });
+}
+
+function updateChart() {
+    const color = stationColors[activeStation % stationColors.length];
+    const mc    = metricConfig[activeMetric];
+    const data  = getChartData(activeStation, activeMetric);
+    const latest = [...data].reverse().find(v => v !== null);
+
+    document.getElementById('chartStationName').textContent = sensorList[activeStation].name;
+    document.getElementById('chartMetricLabel').textContent = mc.label;
+    const valEl = document.getElementById('chartCurrentVal');
+    valEl.textContent = latest != null ? latest + ' ' + mc.unit : '--';
+    valEl.style.color = color;
+
+    if (pm25Chart) {
+        pm25Chart.data.datasets[0].data            = data;
+        pm25Chart.data.datasets[0].borderColor     = color;
+        pm25Chart.data.datasets[0].backgroundColor = color + '20';
+        pm25Chart.options.scales.y.title.text      = mc.label + ' (' + mc.unit + ')';
+        pm25Chart.update('none');
+    }
+}
+
+function selectStation(idx) {
+    activeStation = idx;
+    document.querySelectorAll('.station-btn').forEach((btn, i) => {
+        const c = stationColors[i % stationColors.length];
+        btn.style.background = i === idx ? c : 'transparent';
+        btn.style.color      = i === idx ? '#fff' : c;
+        btn.style.borderColor = c;
+    });
+    updateChart();
+}
+
+function selectMetric(key) {
+    activeMetric = key;
+    document.querySelectorAll('.metric-btn').forEach(btn => {
+        const mk = btn.id.replace('metricBtn','');
+        const c  = metricConfig[mk].color;
+        const on = mk === key;
+        btn.style.background = on ? c : 'transparent';
+        btn.style.color      = on ? '#fff' : c;
+        btn.style.borderColor = c;
+    });
+    updateChart();
+}
+
+(function () {
     const ctx = document.getElementById('pm25Chart').getContext('2d');
-    const chart = new Chart(ctx, {
+    pm25Chart = new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets },
+        data: { labels: chartLabels, datasets: [{
+            data: [], borderColor: '#16a34a', backgroundColor: '#16a34a20',
+            borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3, spanGaps: true,
+        }]},
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + ' µg/m³' : '-'}`
-                    }
-                }
-            },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y ?? '-'}` } } },
             scales: {
-                x: {
-                    ticks: {
-                        maxTicksLimit: 12,
-                        font: { family: 'Kanit', size: 11 },
-                        maxRotation: 0,
-                    },
-                    grid: { color: '#f1f5f9' }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'PM2.5 (µg/m³)', font: { family: 'Kanit', size: 11 } },
-                    grid: { color: '#f1f5f9' }
-                }
+                x: { ticks: { maxTicksLimit: 12, font: { family:'Kanit',size:11 }, maxRotation:0 }, grid: { color:'#f1f5f9' } },
+                y: { beginAtZero: true, title: { display:true, text:'', font:{ family:'Kanit',size:11 } }, grid: { color:'#f1f5f9' } }
             },
             animation: false,
         }
     });
-
-    // Legend toggles
-    const toggleBox = document.getElementById('legendToggles');
-    datasets.forEach((ds, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all';
-        btn.style.borderColor = ds.borderColor;
-        btn.style.color       = ds.borderColor;
-        btn.style.background  = ds.borderColor + '18';
-        btn.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${ds.borderColor};display:inline-block"></span>${ds.label}`;
-        btn.addEventListener('click', () => {
-            const meta = chart.getDatasetMeta(i);
-            meta.hidden = !meta.hidden;
-            btn.style.opacity = meta.hidden ? '0.35' : '1';
-            chart.update();
-        });
-        toggleBox.appendChild(btn);
-    });
+    selectMetric('pm25');
+    selectStation(0);
 })();
 <?php endif; ?>
 
@@ -396,10 +465,14 @@ const sensors = <?= json_encode(array_map(function ($s) use ($now) {
     return [
         'id'     => (int)$s['id'],
         'name'   => $s['location_name'],
-        'cid'    => $s['cid'],
-        'lat'    => $s['lat']      ? (float)$s['lat']  : null,
-        'lng'    => $s['lng']      ? (float)$s['lng']  : null,
-        'pm25'   => $s['pm25_val'],
+        'lat'    => $s['lat'] ? (float)$s['lat'] : null,
+        'lng'    => $s['lng'] ? (float)$s['lng'] : null,
+        'pm25'   => $s['pm25'],
+        'pm1'    => $s['pm1'],
+        'pm10'   => $s['pm10'],
+        'temp'   => $s['temp'],
+        'humi'   => $s['humi'],
+        'co2'    => $s['co2'],
         'ts'     => $s['last_ts'],
         'online' => $s['last_ts'] && ($now - $s['last_ts']) < 1800,
     ];
@@ -422,8 +495,8 @@ function pmColor(v) {
 const bounds = [];
 sensors.forEach(s => {
     if (!s.lat || !s.lng) return;
-    const c = pmColor(s.pm25);
-    const v = s.pm25 !== null ? Math.round(s.pm25) : '?';
+    const c   = pmColor(s.pm25);
+    const v   = s.pm25 !== null ? Math.round(s.pm25) : '?';
     const icon = L.divIcon({
         html: `<div style="background:${c};width:46px;height:46px;border-radius:50%;border:3px solid white;
                     box-shadow:0 3px 10px rgba(0,0,0,.28);display:flex;flex-direction:column;
@@ -433,15 +506,23 @@ sensors.forEach(s => {
                </div>`,
         className: '', iconSize: [46, 46], iconAnchor: [23, 23]
     });
-    const d = s.ts ? new Date(s.ts * 1000) : null;
-    const tsStr = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
-    const pmStr = s.pm25 !== null ? s.pm25 + ' µg/m³' : 'ไม่มีข้อมูล';
+    const d   = s.ts ? new Date(s.ts * 1000) : null;
+    const ts  = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
+    const fmt = (v, u) => v !== null ? v + ' ' + u : '--';
+    const row = (ic, lb, val) => `<tr><td style="color:#94a3b8;padding:2px 8px 2px 0;font-size:11px">${ic} ${lb}</td><td style="font-weight:600;font-size:12px;text-align:right">${val}</td></tr>`;
     L.marker([s.lat, s.lng], {icon}).addTo(map)
-     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:170px;padding:2px">
-         <b style="font-size:13px;display:block;margin-bottom:4px">${s.name}</b>
-         <span style="color:${c};font-size:20px;font-weight:700">${pmStr}</span><br>
-         <small style="color:#888">อัปเดต: ${tsStr}</small>
-     </div>`);
+     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:200px">
+         <div style="font-size:13px;font-weight:700;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</div>
+         <div style="color:${c};font-size:22px;font-weight:700;margin-bottom:4px">${fmt(s.pm25,'µg/m³')} <span style="font-size:12px;color:#64748b">PM2.5</span></div>
+         <table style="width:100%;border-collapse:collapse">
+             ${row('🌡️','อุณหภูมิ', fmt(s.temp,'°C'))}
+             ${row('💧','ความชื้น', fmt(s.humi,'%'))}
+             ${row('💨','PM1',      fmt(s.pm1,'µg/m³'))}
+             ${row('🌫️','PM10',    fmt(s.pm10,'µg/m³'))}
+             ${row('☁️','CO2',     fmt(s.co2,'ppm'))}
+         </table>
+         <div style="color:#94a3b8;font-size:10px;margin-top:6px;border-top:1px solid #f1f5f9;padding-top:4px">อัปเดต: ${ts}</div>
+     </div>`, { maxWidth: 230 });
     bounds.push([s.lat, s.lng]);
 });
 if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] });
