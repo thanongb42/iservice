@@ -413,7 +413,8 @@ sensors.forEach(s => {
                </div>`,
         className: '', iconSize: [46, 46], iconAnchor: [23, 23]
     });
-    const tsStr = s.ts ? new Date(s.ts * 1000).toLocaleString('th-TH') : 'ไม่มีข้อมูล';
+    const d = s.ts ? new Date(s.ts * 1000) : null;
+    const tsStr = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
     const pmStr = s.pm25 !== null ? s.pm25 + ' µg/m³' : 'ไม่มีข้อมูล';
     L.marker([s.lat, s.lng], {icon}).addTo(map)
      .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:170px;padding:2px">

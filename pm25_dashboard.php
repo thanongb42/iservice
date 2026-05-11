@@ -81,8 +81,12 @@ foreach ($sensors as $s) {
 $avgPM = $pmValues ? round(array_sum($pmValues) / count($pmValues), 1) : null;
 $maxPM = $pmValues ? max($pmValues) : null;
 
-// เวลาอัปเดตล่าสุด (sensor ที่ใหม่ที่สุด)
-$latestTs = max(array_filter(array_column($sensors, 'last_ts'))) ?: null;
+// เวลาที่ cron บันทึกข้อมูลล่าสุด (created_at = เวลาเซิร์ฟเวอร์จริง)
+$lastFetchTs = null;
+try {
+    $r = $pdo->query("SELECT UNIX_TIMESTAMP(MAX(created_at)) AS t FROM pm25_data")->fetch(PDO::FETCH_ASSOC);
+    $lastFetchTs = $r['t'] ? (int)$r['t'] : null;
+} catch (Exception $e) {}
 
 // ── กราฟเส้น 24 ชั่วโมง ─────────────────────────────────────────────────────
 $chartRaw = [];
@@ -225,11 +229,11 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
             <span class="text-slate-500">สูงสุด</span>
             <span class="font-bold text-slate-800"><?= $maxPM !== null ? $maxPM . ' µg/m³' : '--' ?></span>
         </div>
-        <?php if ($latestTs): ?>
+        <?php if ($lastFetchTs): ?>
         <div class="flex items-center gap-2">
             <i class="fas fa-clock text-teal-500 text-xs"></i>
-            <span class="text-slate-500">อัปเดตล่าสุด</span>
-            <span class="font-semibold text-slate-700"><?= date('d/m/Y H:i', $latestTs) ?> น.</span>
+            <span class="text-slate-500">ดึงข้อมูลล่าสุด</span>
+            <span class="font-semibold text-slate-700"><?= date('d/m/Y H:i', $lastFetchTs) ?> น.</span>
         </div>
         <?php endif; ?>
         <div class="ml-auto flex items-center gap-1 text-slate-400 text-xs">
@@ -458,7 +462,8 @@ sensors.forEach(s => {
                </div>`,
         className: '', iconSize: [46, 46], iconAnchor: [23, 23]
     });
-    const tsStr = s.ts ? new Date(s.ts * 1000).toLocaleString('th-TH') : 'ไม่มีข้อมูล';
+    const d = s.ts ? new Date(s.ts * 1000) : null;
+    const tsStr = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
     const pmStr = s.pm25 !== null ? s.pm25 + ' µg/m³' : 'ไม่มีข้อมูล';
     L.marker([s.lat, s.lng], {icon}).addTo(map)
      .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:170px;padding:2px">
