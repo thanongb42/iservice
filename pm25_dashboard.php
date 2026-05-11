@@ -137,10 +137,14 @@ $sensorMapData = array_map(function ($s) use ($now) {
     return [
         'id'     => (int)$s['id'],
         'name'   => $s['location_name'],
-        'cid'    => $s['cid'],
         'lat'    => $s['lat'] ? (float)$s['lat'] : null,
         'lng'    => $s['lng'] ? (float)$s['lng'] : null,
         'pm25'   => $s['pm25'],
+        'pm1'    => $s['pm1'],
+        'pm10'   => $s['pm10'],
+        'temp'   => $s['temp'],
+        'humi'   => $s['humi'],
+        'co2'    => $s['co2'],
         'ts'     => $s['last_ts'],
         'online' => $s['last_ts'] && ($now - $s['last_ts']) < 1800,
     ];
@@ -582,13 +586,23 @@ sensors.forEach(s => {
     });
     const d = s.ts ? new Date(s.ts * 1000) : null;
     const tsStr = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
-    const pmStr = s.pm25 !== null ? s.pm25 + ' µg/m³' : 'ไม่มีข้อมูล';
+    const fmt = (v, unit) => v !== null ? v + ' ' + unit : '--';
+    const row = (icon, label, val) =>
+        `<tr><td style="color:#94a3b8;padding:2px 8px 2px 0;font-size:11px">${icon} ${label}</td>
+             <td style="font-weight:600;font-size:12px;text-align:right">${val}</td></tr>`;
     L.marker([s.lat, s.lng], {icon}).addTo(map)
-     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:170px;padding:2px">
-         <b style="font-size:13px;display:block;margin-bottom:4px">${s.name}</b>
-         <span style="color:${c};font-size:20px;font-weight:700">${pmStr}</span><br>
-         <small style="color:#888">อัปเดต: ${tsStr}</small>
-     </div>`);
+     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:190px">
+         <div style="font-size:13px;font-weight:700;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</div>
+         <div style="color:${c};font-size:22px;font-weight:700;margin-bottom:4px">${fmt(s.pm25,'µg/m³')} <span style="font-size:12px;color:#64748b">PM2.5</span></div>
+         <table style="width:100%;border-collapse:collapse">
+             ${row('🌡️','อุณหภูมิ', fmt(s.temp,'°C'))}
+             ${row('💧','ความชื้น', fmt(s.humi,'%'))}
+             ${row('💨','PM1',      fmt(s.pm1,'µg/m³'))}
+             ${row('🌫️','PM10',    fmt(s.pm10,'µg/m³'))}
+             ${row('☁️','CO2',     fmt(s.co2,'ppm'))}
+         </table>
+         <div style="color:#94a3b8;font-size:10px;margin-top:6px;border-top:1px solid #f1f5f9;padding-top:4px">อัปเดต: ${tsStr}</div>
+     </div>`, { maxWidth: 220 });
     bounds.push([s.lat, s.lng]);
 });
 
