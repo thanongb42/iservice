@@ -255,6 +255,10 @@ include __DIR__ . '/includes/header_public.php';
                             <i class="fas fa-tracking mr-2"></i>
                             ติดตามงาน
                         </a>
+                        <a href="pm25_dashboard.php" class="inline-flex items-center bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-8 py-4 rounded-xl font-bold hover:from-emerald-500 hover:to-teal-600 transition-all transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-wind mr-2"></i>
+                            คุณภาพอากาศ PM2.5
+                        </a>
                         <a href="help.php" class="inline-flex items-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
                             <i class="fas fa-book-open mr-2"></i>
                             คู่มือการใช้งาน

@@ -5,7 +5,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$page_title = 'จัดการสถานี PM2.5';
+$page_title   = 'จัดการสถานี PM2.5';
+$current_page = 'pm25_sensors';
 require_once '../config/database.php';
 $pdo = getPDO();
 
@@ -71,9 +72,9 @@ include 'admin-layout/topbar.php';
                 สถานีที่กำหนดพิกัดแล้ว
             </p>
         </div>
-        <a href="../pm25_dashboard.php" target="_blank"
+        <a href="pm25_dashboard.php"
            class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
-            <i class="fas fa-chart-area"></i> เปิด Dashboard
+            <i class="fas fa-chart-area"></i> ดู Dashboard
         </a>
     </div>
 
@@ -225,6 +226,11 @@ include 'admin-layout/topbar.php';
                         พิกัดบนแผนที่
                         <span class="font-normal text-gray-400 ml-1">— คลิกบนแผนที่เพื่อกำหนด / ลากหมุดเพื่อปรับตำแหน่ง</span>
                     </label>
+                    <button onclick="useMyLocation()" id="gpsBtn"
+                            class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-location-arrow" id="gpsIcon"></i>
+                        <span id="gpsBtnText">ใช้ตำแหน่งปัจจุบัน</span>
+                    </button>
                 </div>
                 <div class="flex gap-3 mb-3">
                     <div class="flex-1">
@@ -357,6 +363,57 @@ function saveEdit() {
         }
     })
     .catch(() => Swal.fire({ icon: 'error', title: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' }));
+}
+
+function useMyLocation() {
+    if (!navigator.geolocation) {
+        Swal.fire({ icon: 'error', title: 'ไม่รองรับ GPS', text: 'เบราว์เซอร์นี้ไม่รองรับ Geolocation' });
+        return;
+    }
+    const btn  = document.getElementById('gpsBtn');
+    const icon = document.getElementById('gpsIcon');
+    const text = document.getElementById('gpsBtnText');
+
+    btn.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin';
+    text.textContent = 'กำลังระบุตำแหน่ง...';
+
+    navigator.geolocation.getCurrentPosition(
+        function (pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const acc = Math.round(pos.coords.accuracy);
+
+            placeMarker(lat, lng);
+            if (editMap) editMap.setView([lat, lng], 17);
+
+            btn.disabled = false;
+            icon.className = 'fas fa-check';
+            text.textContent = 'ได้ตำแหน่งแล้ว (±' + acc + 'm)';
+            btn.classList.replace('bg-blue-600', 'bg-green-600');
+            btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+
+            setTimeout(() => {
+                icon.className = 'fas fa-location-arrow';
+                text.textContent = 'ใช้ตำแหน่งปัจจุบัน';
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                btn.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            }, 3000);
+        },
+        function (err) {
+            btn.disabled = false;
+            icon.className = 'fas fa-location-arrow';
+            text.textContent = 'ใช้ตำแหน่งปัจจุบัน';
+
+            const msgs = {
+                1: 'ถูกปฏิเสธการเข้าถึง GPS — กรุณาอนุญาตในเบราว์เซอร์',
+                2: 'ไม่พบสัญญาณ GPS',
+                3: 'หมดเวลาการระบุตำแหน่ง',
+            };
+            Swal.fire({ icon: 'warning', title: 'ไม่สามารถรับตำแหน่งได้', text: msgs[err.code] || err.message });
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
 }
 
 // Update marker when lat/lng inputs change manually

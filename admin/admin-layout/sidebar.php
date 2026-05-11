@@ -145,7 +145,9 @@ if ($is_admin) {
         'cdp' => [
             'label' => 'CDP',
             'items' => [
-                ['id' => 'cdp_speaker_system', 'icon' => 'fa-broadcast-tower', 'label' => 'ระบบเสียงไร้สาย', 'url' => 'cdp_speaker_system.php'],
+                ['id' => 'cdp_speaker_system', 'icon' => 'fa-broadcast-tower', 'label' => 'ระบบเสียงไร้สาย',  'url' => 'cdp_speaker_system.php'],
+                ['id' => 'pm25_dashboard',      'icon' => 'fa-wind',            'label' => 'PM2.5 Dashboard',  'url' => 'pm25_dashboard.php'],
+                ['id' => 'pm25_sensors',        'icon' => 'fa-satellite-dish',  'label' => 'จัดการสถานี PM2.5','url' => 'pm25_sensors.php'],
             ]
         ],
         'system' => [

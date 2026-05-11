@@ -232,27 +232,12 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
                 <?= htmlspecialchars($s['location_name']) ?>
             </h3>
 
-            <!-- Device info -->
-            <div class="mt-auto border-t border-slate-100 pt-3 space-y-1">
-                <div class="flex justify-between text-[11px]">
-                    <span class="text-slate-400">CID</span>
-                    <span class="font-mono text-slate-600"><?= htmlspecialchars($s['cid']) ?></span>
-                </div>
-                <div class="flex justify-between text-[11px]">
-                    <span class="text-slate-400">S/N</span>
-                    <span class="font-mono text-slate-600"><?= htmlspecialchars($s['serial_number'] ?? '-') ?></span>
-                </div>
-                <div class="flex justify-between text-[11px]">
-                    <span class="text-slate-400">SIM</span>
-                    <span class="text-slate-600"><?= htmlspecialchars($s['sim_number'] ?? '-') ?></span>
-                </div>
+            <!-- Last update -->
+            <div class="mt-auto border-t border-slate-100 pt-2 text-center">
                 <?php if ($lastTs): ?>
-                <div class="flex justify-between text-[11px] pt-1 border-t border-slate-50">
-                    <span class="text-slate-400">อัปเดต</span>
-                    <span class="text-slate-500"><?= date('d/m H:i', $lastTs) ?> น.</span>
-                </div>
+                <span class="text-[11px] text-slate-400">อัปเดต <?= date('d/m H:i', $lastTs) ?> น.</span>
                 <?php else: ?>
-                <div class="text-center text-[11px] text-slate-300 pt-1">ยังไม่มีข้อมูล</div>
+                <span class="text-[11px] text-slate-300">ยังไม่มีข้อมูล</span>
                 <?php endif; ?>
             </div>
         </div>
