@@ -44,8 +44,8 @@ if (!empty($sensorRecords)) {
             'pm25'  => $d ? nullFloat($d['pm25'])        : null,
             'pm1'   => $d ? nullFloat($d['pm1'])         : null,
             'pm10'  => $d ? nullFloat($d['pm10'])        : null,
-            'temp'  => $d ? nullFloat($d['temperature']) : null,
-            'humi'  => $d ? nullFloat($d['humidity'])    : null,
+            'temp'  => $d ? nullFloat($d['temperature'] ?? null) : null,
+            'humi'  => $d ? nullFloat($d['humidity']    ?? null) : null,
             'co2'   => $d ? nullFloat($d['co2'])         : null,
             'last_ts' => $d ? (int)$d['sensor_timestamp'] : null,
         ];
