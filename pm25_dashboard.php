@@ -191,9 +191,21 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
             <h1 class="text-lg font-bold leading-tight">ระบบติดตามคุณภาพอากาศ PM2.5</h1>
             <p class="text-teal-200 text-xs">เทศบาลนครรังสิต · อัปเดตอัตโนมัติทุก 60 วินาที</p>
         </div>
-        <div class="text-right text-sm text-teal-100 hidden sm:block">
-            <div><?= date('d/m/Y') ?></div>
-            <div id="clockTime" class="font-mono font-semibold"><?= date('H:i:s') ?></div>
+        <div class="flex items-center gap-2 ml-auto">
+            <div class="text-right text-sm text-teal-100 hidden sm:block mr-2">
+                <div><?= date('d/m/Y') ?></div>
+                <div id="clockTime" class="font-mono font-semibold"><?= date('H:i:s') ?></div>
+            </div>
+            <a href="index.php"
+               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/15 hover:bg-white/25 text-white transition-colors">
+                <i class="fas fa-home"></i>
+                <span class="hidden sm:inline">หน้าหลัก</span>
+            </a>
+            <a href="login.php"
+               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-teal-700 hover:bg-teal-50 transition-colors">
+                <i class="fas fa-sign-in-alt"></i>
+                <span class="hidden sm:inline">เข้าสู่ระบบ</span>
+            </a>
         </div>
     </div>
 </header>
