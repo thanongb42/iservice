@@ -54,6 +54,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # ── Pass Authorization header to PHP (Apache strips it by default) ────────
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    # ─────────────────────────────────────────────────────────────────────────
+
     # ── Force HTTP → HTTPS redirect ──────────────────────────────────────────
     RewriteCond %{HTTPS} off
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
