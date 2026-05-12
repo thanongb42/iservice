@@ -23,6 +23,38 @@ $latest_news = get_latest_tech_news(3); // ดึงข่าวล่าสุ�
 $tech_news_html = render_tech_news_cards($all_news);
 $tech_updates_html = render_tech_updates($latest_news);
 
+// ── PM2.5 Section Data ───────────────────────────────────────────────────────
+date_default_timezone_set('Asia/Bangkok');
+$pm25Sensors = [];
+$pm25Summary = ['online' => 0, 'avg_pm25' => null, 'avg_temp' => null, 'avg_humi' => null];
+try {
+    require_once __DIR__ . '/config/database.php';
+    $pdoPM25 = getPDO();
+    $stmt = $pdoPM25->query("
+        SELECT s.id, s.location_name, s.lat, s.lng, s.cid,
+               d.pm25, d.temperature, d.humidity, d.co2, d.pm1, d.pm10,
+               d.sensor_timestamp, d.created_at
+        FROM pm25_sensors s
+        LEFT JOIN pm25_data d ON s.cid = d.cid
+          AND d.sensor_timestamp = (SELECT MAX(sensor_timestamp) FROM pm25_data WHERE cid = s.cid)
+        WHERE s.is_active = 1
+        ORDER BY s.id
+    ");
+    $pm25Sensors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $now25 = time();
+    $pmVals = $tmpVals = $humVals = [];
+    foreach ($pm25Sensors as $s) {
+        if ($s['sensor_timestamp'] && ($now25 - (int)$s['sensor_timestamp']) < 1800) $pm25Summary['online']++;
+        if ($s['pm25']        !== null) $pmVals[]  = (float)$s['pm25'];
+        if (isset($s['temperature']) && $s['temperature'] !== null) $tmpVals[] = (float)$s['temperature'];
+        if (isset($s['humidity'])    && $s['humidity']    !== null) $humVals[] = (float)$s['humidity'];
+    }
+    if ($pmVals)  $pm25Summary['avg_pm25'] = round(array_sum($pmVals)  / count($pmVals),  1);
+    if ($tmpVals) $pm25Summary['avg_temp'] = round(array_sum($tmpVals) / count($tmpVals), 1);
+    if ($humVals) $pm25Summary['avg_humi'] = round(array_sum($humVals) / count($humVals), 1);
+} catch (Exception $e) {}
+// ─────────────────────────────────────────────────────────────────────────────
+
 $page_title = "ระบบบริการออนไลน์ | ฝ่ายบริการและเผยแพร่วิชาการ เทศบาลนครรังสิต";
 $meta_description = "ยื่นคำร้องออนไลน์ ติดตามสถานะงาน และรับบริการดิจิทัลจากฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ เทศบาลนครรังสิต ปทุมธานี";
 $extra_styles = '
@@ -410,6 +442,147 @@ include __DIR__ . '/includes/header_public.php';
             </div>
         </div>
     </section>
+
+    <!-- ─── PM2.5 Section ─────────────────────────────────────────────────── -->
+    <?php if (!empty($pm25Sensors)): ?>
+    <section class="bg-gradient-to-br from-slate-50 to-teal-50 py-12 md:py-16">
+        <div class="container mx-auto px-4">
+
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <span class="text-teal-600 font-bold tracking-wider uppercase text-sm">
+                    <i class="fas fa-wind mr-1"></i> Environmental Monitoring
+                </span>
+                <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mt-2">
+                    คุณภาพอากาศ PM2.5
+                </h3>
+                <p class="text-gray-500 mt-2 text-sm">ตรวจวัดแบบ Real-time <?= count($pm25Sensors) ?> จุดทั่วเขตเทศบาลนครรังสิต</p>
+                <div class="w-16 h-1 bg-teal-500 mx-auto mt-3 rounded-full"></div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-sm p-4 text-center border border-slate-100">
+                    <div class="text-2xl font-bold text-green-600"><?= $pm25Summary['online'] ?></div>
+                    <div class="text-xs text-slate-400 mt-1">สถานีออนไลน์</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm p-4 text-center border border-slate-100">
+                    <?php
+                    $avgPM = $pm25Summary['avg_pm25'];
+                    $col = '#94a3b8';
+                    if ($avgPM !== null) {
+                        if ($avgPM <= 25) $col = '#16a34a';
+                        elseif ($avgPM <= 37) $col = '#84cc16';
+                        elseif ($avgPM <= 50) $col = '#eab308';
+                        elseif ($avgPM <= 90) $col = '#f97316';
+                        else $col = '#ef4444';
+                    }
+                    ?>
+                    <div class="text-2xl font-bold" style="color:<?= $col ?>"><?= $avgPM ?? '--' ?></div>
+                    <div class="text-xs text-slate-400 mt-1">PM2.5 เฉลี่ย (µg/m³)</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm p-4 text-center border border-slate-100">
+                    <div class="text-2xl font-bold text-orange-500"><?= $pm25Summary['avg_temp'] ?? '--' ?></div>
+                    <div class="text-xs text-slate-400 mt-1">อุณหภูมิเฉลี่ย (°C)</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm p-4 text-center border border-slate-100">
+                    <div class="text-2xl font-bold text-blue-500"><?= $pm25Summary['avg_humi'] ?? '--' ?></div>
+                    <div class="text-xs text-slate-400 mt-1">ความชื้นเฉลี่ย (%)</div>
+                </div>
+            </div>
+
+            <!-- Map -->
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
+                <div id="pm25IndexMap" style="height:400px"></div>
+            </div>
+
+            <!-- AQI Legend -->
+            <div class="flex flex-wrap justify-center gap-2 text-xs mb-6">
+                <?php foreach ([
+                    ['#16a34a','0–25','ดีมาก'],['#84cc16','26–37','ดี'],
+                    ['#eab308','38–50','ปานกลาง'],['#f97316','51–90','เริ่มมีผลกระทบ'],
+                    ['#ef4444','≥91','มีผลกระทบ'],
+                ] as [$c,$r,$l]): ?>
+                <span class="flex items-center gap-1 px-3 py-1 rounded-full" style="background:<?= $c ?>18">
+                    <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:<?= $c ?>"></span>
+                    <span style="color:<?= $c ?>" class="font-semibold"><?= $r ?></span>
+                    <span class="text-slate-500"><?= $l ?></span>
+                </span>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- CTA -->
+            <div class="text-center">
+                <a href="pm25_dashboard.php"
+                   class="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-all transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-chart-area"></i>
+                    ดูข้อมูลคุณภาพอากาศทั้งหมด
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+    (function () {
+        const map = L.map('pm25IndexMap').setView([13.983, 100.632], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap', maxZoom: 19
+        }).addTo(map);
+
+        const sensors = <?= json_encode(array_map(function($s) {
+            return [
+                'name' => $s['location_name'],
+                'lat'  => $s['lat']  ? (float)$s['lat']  : null,
+                'lng'  => $s['lng']  ? (float)$s['lng']  : null,
+                'pm25' => $s['pm25'] !== null ? (float)$s['pm25'] : null,
+                'temp' => isset($s['temperature']) && $s['temperature'] !== null ? (float)$s['temperature'] : null,
+                'humi' => isset($s['humidity'])    && $s['humidity']    !== null ? (float)$s['humidity']    : null,
+                'ts'   => $s['sensor_timestamp'] ? (int)$s['sensor_timestamp'] : null,
+            ];
+        }, $pm25Sensors)) ?>;
+
+        function pmColor(v) {
+            if (v === null) return '#94a3b8';
+            if (v <= 25)  return '#16a34a';
+            if (v <= 37)  return '#84cc16';
+            if (v <= 50)  return '#eab308';
+            if (v <= 90)  return '#f97316';
+            return '#ef4444';
+        }
+
+        const bounds = [];
+        sensors.forEach(s => {
+            if (!s.lat || !s.lng) return;
+            const c = pmColor(s.pm25);
+            const v = s.pm25 !== null ? Math.round(s.pm25) : '?';
+            const icon = L.divIcon({
+                html: `<div style="background:${c};width:44px;height:44px;border-radius:50%;border:3px solid white;
+                            box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;flex-direction:column;
+                            align-items:center;justify-content:center;font-family:sans-serif;">
+                         <span style="color:white;font-size:12px;font-weight:700;line-height:1">${v}</span>
+                         <span style="color:white;font-size:8px;opacity:.85;line-height:1.3">µg</span>
+                       </div>`,
+                className: '', iconSize: [44, 44], iconAnchor: [22, 22]
+            });
+            const d = s.ts ? new Date(s.ts * 1000) : null;
+            const ts = d ? `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : '—';
+            L.marker([s.lat, s.lng], {icon}).addTo(map)
+             .bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+                 <b style="font-size:13px;display:block;margin-bottom:4px">${s.name}</b>
+                 <span style="color:${c};font-size:20px;font-weight:700">${s.pm25 !== null ? s.pm25+' µg/m³' : '—'}</span>
+                 ${s.temp !== null ? `<br><small>🌡️ ${s.temp}°C &nbsp; 💧 ${s.humi}%</small>` : ''}
+                 <br><small style="color:#94a3b8">อัปเดต: ${ts}</small>
+             </div>`);
+            bounds.push([s.lat, s.lng]);
+        });
+        if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
+    })();
+    </script>
+    <?php endif; ?>
+    <!-- ─── End PM2.5 Section ──────────────────────────────────────────────── -->
 
     <!-- My Services Section -->
     <section id="services" class="container mx-auto px-4 py-12 md:py-16 lg:py-20">
