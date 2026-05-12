@@ -104,22 +104,75 @@ if ($type === 'latest') {
             'cid'         => $r['cid'],
             'lat'         => $s && $s['lat'] ? (float)$s['lat'] : null,
             'lng'         => $s && $s['lng'] ? (float)$s['lng'] : null,
-            'pm25'        => $r['pm25']        !== null ? (float)$r['pm25']        : null,
-            'pm1'         => $r['pm1']         !== null ? (float)$r['pm1']         : null,
-            'pm10'        => $r['pm10']        !== null ? (float)$r['pm10']        : null,
+            'pm25'        => $r['pm25']  !== null ? (float)$r['pm25']  : null,
+            'pm1'         => $r['pm1']   !== null ? (float)$r['pm1']   : null,
+            'pm10'        => $r['pm10']  !== null ? (float)$r['pm10']  : null,
             'temperature' => isset($r['temperature']) && $r['temperature'] !== null ? (float)$r['temperature'] : null,
-            'humidity'    => isset($r['humidity'])    && $r['humidity']    !== null ? (float)$r['humidity']    : null,
-            'co2'         => $r['co2']         !== null ? (float)$r['co2']         : null,
+            'humidity'    => isset($r['humidity'])    && $r['humidity']  !== null ? (float)$r['humidity']    : null,
+            'co2'         => $r['co2']   !== null ? (float)$r['co2']   : null,
+            'online'      => (time() - (int)$r['sensor_timestamp']) < 1800,
             'recorded_at' => date('Y-m-d H:i:s', (int)$r['sensor_timestamp']),
-            'fetched_at'  => $r['created_at']  ?? null,
+            'fetched_at'  => $r['created_at'] ?? null,
         ];
     }
+
+    // ── คำนวณค่าเฉลี่ย / สรุปทุก metric ─────────────────────────────────────
+    function avg(array $data, string $key): ?float {
+        $vals = array_filter(array_column($data, $key), fn($v) => $v !== null);
+        return $vals ? round(array_sum($vals) / count($vals), 2) : null;
+    }
+    function maxVal(array $data, string $key): ?float {
+        $vals = array_filter(array_column($data, $key), fn($v) => $v !== null);
+        return $vals ? (float)max($vals) : null;
+    }
+    function minVal(array $data, string $key): ?float {
+        $vals = array_filter(array_column($data, $key), fn($v) => $v !== null);
+        return $vals ? (float)min($vals) : null;
+    }
+
+    $onlineCount = count(array_filter($data, fn($d) => $d['online']));
+
+    $summary = [
+        'stations_total'  => count($data),
+        'stations_online' => $onlineCount,
+        'pm25' => [
+            'avg' => avg($data, 'pm25'),
+            'max' => maxVal($data, 'pm25'),
+            'min' => minVal($data, 'pm25'),
+        ],
+        'pm1' => [
+            'avg' => avg($data, 'pm1'),
+            'max' => maxVal($data, 'pm1'),
+            'min' => minVal($data, 'pm1'),
+        ],
+        'pm10' => [
+            'avg' => avg($data, 'pm10'),
+            'max' => maxVal($data, 'pm10'),
+            'min' => minVal($data, 'pm10'),
+        ],
+        'temperature' => [
+            'avg' => avg($data, 'temperature'),
+            'max' => maxVal($data, 'temperature'),
+            'min' => minVal($data, 'temperature'),
+        ],
+        'humidity' => [
+            'avg' => avg($data, 'humidity'),
+            'max' => maxVal($data, 'humidity'),
+            'min' => minVal($data, 'humidity'),
+        ],
+        'co2' => [
+            'avg' => avg($data, 'co2'),
+            'max' => maxVal($data, 'co2'),
+            'min' => minVal($data, 'co2'),
+        ],
+    ];
 
     respond(200, [
         'status'       => 'success',
         'type'         => 'latest',
         'generated_at' => date('Y-m-d H:i:s'),
         'count'        => count($data),
+        'summary'      => $summary,
         'data'         => $data,
     ]);
 
