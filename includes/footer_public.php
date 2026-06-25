@@ -140,6 +140,12 @@ if (!isset($footer_org_name) || !isset($footer_logo)) {
         </div>
     </footer>
 
+<?php
+// Privacy consent + survey widget (ทุก public page)
+if (!isset($privacy_category))   $privacy_category   = 'general';
+if (!isset($privacy_page_title)) $privacy_page_title = '';
+require_once __DIR__ . '/privacy_consent.php';
+?>
     <script>
         // Mobile Menu Toggle
         if (!window.mobileMenuInitialized) {

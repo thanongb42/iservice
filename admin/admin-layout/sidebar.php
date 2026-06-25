@@ -131,6 +131,7 @@ if ($is_admin) {
                 ['id' => 'create_job', 'icon' => 'fa-plus-circle', 'label' => 'สร้างงาน', 'url' => 'create_job.php'],
                 ['id' => 'service_requests', 'icon' => 'fa-clipboard-list', 'label' => 'คำขอบริการ', 'url' => 'service_requests.php', 'badge' => $pending_requests > 0 ? $pending_requests : null],
                 ['id' => 'my_service', 'icon' => 'fa-concierge-bell', 'label' => 'บริการของเรา', 'url' => 'my_service.php'],
+                ['id' => 'internet_request_types', 'icon' => 'fa-wifi', 'label' => 'ประเภทคำขอ Internet', 'url' => 'internet_request_types.php'],
             ]
         ],
         'content' => [
@@ -149,6 +150,9 @@ if ($is_admin) {
                 ['id' => 'pm25_dashboard',      'icon' => 'fa-wind',            'label' => 'PM2.5 Dashboard',  'url' => 'pm25_dashboard.php'],
                 ['id' => 'pm25_sensors',        'icon' => 'fa-satellite-dish',  'label' => 'จัดการสถานี PM2.5','url' => 'pm25_sensors.php'],
                 ['id' => 'pm25_api_keys',       'icon' => 'fa-key',             'label' => 'API Keys PM2.5',   'url' => 'pm25_api_keys.php'],
+                ...( ($_SESSION['username'] ?? '') === 'thanong' ? [
+                    ['id' => 'pm25_postman_guide', 'icon' => 'fa-book-open', 'label' => 'คู่มือ Postman API', 'url' => 'pm25_postman_guide.php'],
+                ] : []),
             ]
         ],
         'system' => [
@@ -158,6 +162,7 @@ if ($is_admin) {
                 ['id' => 'visitor_stats', 'icon' => 'fa-chart-line', 'label' => 'สถิติผู้เข้าชม', 'url' => 'visitor_stats.php'],
                 ['id' => 'form_test_runner', 'icon' => 'fa-flask', 'label' => 'ทดสอบฟอร์ม', 'url' => 'form_test_runner.php'],
                 ['id' => 'system_setting', 'icon' => 'fa-cog', 'label' => 'ตั้งค่าระบบ', 'url' => 'system_setting.php'],
+                ['id' => 'cron_schedules', 'icon' => 'fa-clock', 'label' => 'Cron Jobs', 'url' => 'cron_schedules.php'],
             ]
         ]
     ];

@@ -42,7 +42,8 @@ storage/pm25_cron.log           # Log การทำงาน cron
 ```sql
 id            INT AUTO_INCREMENT PK
 location_name VARCHAR(255)        -- ชื่อสถานที่
-cid           VARCHAR(20) UNIQUE  -- Device CID (key เชื่อมกับ pm25_data)
+cid           VARCHAR(20) UNIQUE  -- Device CID / Station ID (RS01,RS02,RS03 สำหรับ Jumbo)
+api_provider  ENUM('freshnergy','jumbo') DEFAULT 'freshnergy'  -- ← เพิ่มใน pm25_jumbo_stations.sql
 serial_number VARCHAR(50)
 sim_number    VARCHAR(20)
 lat           DECIMAL(10,7)       -- ละติจูด (ตั้งผ่าน admin map)
@@ -69,7 +70,7 @@ created_at       TIMESTAMP        -- เวลาที่ cron บันทึ�
 UNIQUE KEY uq_cid_ts (cid, sensor_timestamp)
 ```
 
-### 8 สถานี (ข้อมูลจาก new_point.txt)
+### 11 สถานี (8 Freshnergy + 3 Jumbo)
 
 | id | location_name | cid | lat | lng |
 |----|--------------|-----|-----|-----|
@@ -84,9 +85,21 @@ UNIQUE KEY uq_cid_ts (cid, sensor_timestamp)
 
 > หมายเหตุ: สถานีที่ 3 CID เดิมใน new_point.txt คือ `58BF25FD48FD` (D) แต่ใน API จริงและ DB คือ `58BF25FD48FC` (C)
 
+**Jumbo สถานี (เพิ่มผ่าน pm25_jumbo_stations.sql):**
+
+| cid | location_name | api_provider |
+|-----|---------------|--------------|
+| RS01 | ป้ายรถเมล์อัจฉริยะ RS01 | jumbo |
+| RS02 | ป้ายรถเมล์อัจฉริยะ RS02 | jumbo |
+| RS03 | ป้ายรถเมล์อัจฉริยะ RS03 | jumbo |
+
+> lat/lng ของ Jumbo ต้องตั้งทีหลังผ่าน Admin → จัดการสถานี (แผนที่)
+
 ---
 
-## 4. Freshnergy API
+## 4. APIs
+
+### 4a. Freshnergy API (8 สถานี — โรงเรียน/เทศบาล)
 
 ```
 Endpoint : POST https://app.freshnergy.com/api/v2/device
@@ -125,13 +138,49 @@ eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50Ijp7ImVtYWlsIjoicmFuZ3NpdDYwMDB
 
 ---
 
+### 4b. Jumbo Smart Bus-Stop API (3 สถานี — ป้ายรถเมล์อัจฉริยะ)
+
+```
+Endpoint : GET https://rsweather.jumboelec.co.th/api/v1/weather/bus-stop/{stationId}/latest
+Auth     : Header "x-api-key: rangsit1@weather"
+StationIds: RS01, RS02, RS03
+```
+
+**Response structure:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 4317,
+    "stationId": "RS03",
+    "temperature": 30,
+    "humidity": 67,
+    "pm25": 0,
+    "pm10": 0,
+    "createdAt": "2026-06-04T03:48:16.924Z",
+    "displayTime": "04/06/2026, 10:48:16"
+  }
+}
+```
+
+**สำคัญ:**
+- `pm25` (ไม่มี underscore) ตรงกับ DB column เลย
+- `temperature`, `humidity` (ชื่อเต็ม ไม่ใช่ temp/humi)
+- `createdAt` เป็น ISO 8601 UTC + milliseconds → แปลงด้วย `(new DateTime($createdAt))->getTimestamp()`
+- **ไม่มี** `pm1`, `co2` → บันทึกเป็น NULL
+- เรียกทีละ stationId (GET ไม่มี batch)
+
+---
+
 ## 5. Cron Setup
 
 ### ตัว Script: `pm25_cron.php`
 
 Logic:
-1. โหลด CID จาก `pm25_sensors` (active=1) → fallback hardcoded 8 CIDs
-2. วนเรียก API ทีละ CID
+1. โหลด sensors (cid + api_provider) จาก `pm25_sensors` (active=1) → fallback hardcoded 8 Freshnergy CIDs
+2. วน sensors — route ตาม `api_provider`:
+   - `freshnergy` → `api_fetch_freshnergy()` POST + JWT
+   - `jumbo` → `api_fetch_jumbo()` GET + x-api-key, แปลง `createdAt` ISO → Unix
 3. `INSERT IGNORE` ลง `pm25_data` (UNIQUE KEY ป้องกัน duplicate)
 4. Log ผลลงใน `storage/pm25_cron.log`
 
@@ -173,15 +222,15 @@ Logic:
 
 ---
 
-## 7. เกณฑ์สี PM2.5 (Thailand EPA)
+## 7. เกณฑ์สี PM2.5 (Thailand EPA — มาตรฐาน กรมควบคุมมลพิษ ปี 2564)
 
 | ช่วง µg/m³ | สี | Label |
 |-----------|-----|-------|
-| 0 – 25 | `#16a34a` เขียวเข้ม | ดีมาก |
-| 26 – 37 | `#84cc16` เขียวอ่อน | ดี |
-| 38 – 50 | `#eab308` เหลือง | ปานกลาง |
-| 51 – 90 | `#f97316` ส้ม | เริ่มมีผลกระทบ |
-| ≥ 91 | `#ef4444` แดง | มีผลกระทบต่อสุขภาพ |
+| 0 – 15.0 | `#0891b2` ฟ้าอมน้ำเงิน | ดีมาก |
+| 15.1 – 25.0 | `#16a34a` เขียว | ดี |
+| 25.1 – 37.5 | `#d97706` เหลือง/อำพัน | ปานกลาง |
+| 37.6 – 75.0 | `#ea580c` ส้ม | เริ่มมีผลกระทบต่อสุขภาพ |
+| ≥ 75.1 | `#dc2626` แดง | มีผลกระทบต่อสุขภาพ |
 | null | `#94a3b8` เทา | ไม่มีข้อมูล |
 
 ---
@@ -211,7 +260,7 @@ $_is_local = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'])
 
 ---
 
-## 10. สถานะ Production (อัปเดต 2026-05-11)
+## 10. สถานะ Production (อัปเดต 2026-06-04)
 
 - [x] ไฟล์ PHP ทุกตัว FTP ขึ้น production แล้ว
 - [x] `pm25_production_import.sql` import ใน phpMyAdmin แล้ว (pm25_sensors + UNIQUE KEY)
@@ -219,6 +268,11 @@ $_is_local = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'])
 - [x] cron-job.org ตั้งค่าแล้ว: `https://iservice.rangsitcity.go.th/pm25_cron.php` ทุก 5 นาที
 - [ ] ลบ `pm25_test.php` ออกจาก production (มี API key)
 - [ ] ลบ cPanel cron job ออก (ซ้ำซ้อนกับ cron-job.org)
+
+**Jumbo integration (2026-06-04):**
+- [ ] Import `database/pm25_jumbo_stations.sql` ใน phpMyAdmin (local + production)
+- [ ] FTP `pm25_cron.php` (updated) + `admin/pm25_sensors.php` (updated) ขึ้น production
+- [ ] ตั้ง lat/lng ป้าย RS01/RS02/RS03 ผ่าน Admin → จัดการสถานี
 
 ---
 

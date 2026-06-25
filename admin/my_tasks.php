@@ -62,7 +62,7 @@ $stats_stmt->execute();
 $stats = $stats_stmt->get_result()->fetch_assoc();
 
 // Get assigned tasks
-$tasks_query = "SELECT ta.*, sr.request_code, sr.service_name, sr.requester_name, sr.requester_phone, sr.requester_email,
+$tasks_query = "SELECT ta.*, sr.request_code, sr.service_name, sr.requester_name, sr.requester_phone, sr.requester_email, sr.department_name,
                 u_by.username as assigned_by_username,
                 CONCAT(p_by.prefix_name, u_by.first_name, ' ', u_by.last_name) as assigned_by_name,
                 r.role_name as assigned_role_name
@@ -127,6 +127,12 @@ $current_page = 'my_tasks';
 $breadcrumb = [
     ['label' => 'หน้าหลัก', 'icon' => 'fa-home'],
     ['label' => 'งานของฉัน']
+];
+
+$svc_icons = [
+    'PHOTOGRAPHY'=>'fa-camera','MC'=>'fa-microphone','IT_SUPPORT'=>'fa-desktop',
+    'EMAIL'=>'fa-envelope','NAS'=>'fa-database','WEB_DESIGN'=>'fa-globe',
+    'PRINTER'=>'fa-print','QR_CODE'=>'fa-qrcode','INTERNET'=>'fa-wifi','LED'=>'fa-tv',
 ];
 
 include 'admin-layout/header.php';
@@ -583,6 +589,34 @@ include 'admin-layout/topbar.php';
         letter-spacing: 0.05em;
     }
 
+    #tasksTable th.sortable {
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    #tasksTable th.sortable:hover {
+        background-color: #f0fdfa;
+        color: #0d9488;
+    }
+
+    #tasksTable th.sortable.sorted {
+        background-color: #f0fdfa;
+        color: #0d9488;
+    }
+
+    #tasksTable .sort-icon {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: 0.7rem;
+        opacity: 0.5;
+    }
+
+    #tasksTable th.sorted .sort-icon {
+        opacity: 1;
+        color: #0d9488;
+    }
+
     #tasksTable tbody tr {
         border-bottom: 1px solid #f3f4f6;
         transition: background-color 0.15s ease;
@@ -767,119 +801,40 @@ include 'admin-layout/topbar.php';
     <div id="list-view" class="tab-content">
         <?php if (!empty($all_tasks)): ?>
 
-        <!-- Search -->
-        <div class="p-3 border-b border-gray-50">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <input type="text" id="cardSearch"
-                       class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:bg-white transition"
-                       placeholder="ค้นหารหัส, บริการ, ผู้ขอ...">
-            </div>
+        <!-- Search + Filter -->
+        <div class="table-controls px-3 pt-3">
+            <input type="text" id="taskSearch" class="table-search-box"
+                   placeholder="ค้นหารหัส, บริการ, ผู้ขอ...">
+            <select id="taskStatusFilter" class="table-search-box" style="flex: 0 0 auto; min-width: 160px;">
+                <option value="">ทุกสถานะ</option>
+                <option value="pending">รอรับงาน</option>
+                <option value="accepted">รับงานแล้ว</option>
+                <option value="in_progress">กำลังดำเนินการ</option>
+                <option value="completed">เสร็จสิ้น</option>
+            </select>
         </div>
 
-        <!-- Task Cards -->
-        <div class="p-3 space-y-2.5" id="taskCardList">
-        <?php
-        $svc_icons = [
-            'PHOTOGRAPHY'=>'fa-camera','MC'=>'fa-microphone','IT_SUPPORT'=>'fa-desktop',
-            'EMAIL'=>'fa-envelope','NAS'=>'fa-database','WEB_DESIGN'=>'fa-globe',
-            'PRINTER'=>'fa-print','QR_CODE'=>'fa-qrcode','INTERNET'=>'fa-wifi','LED'=>'fa-tv',
-        ];
-        $status_cfg = [
-            'pending'    =>['color'=>'#f59e0b','bg'=>'#fffbeb','badge'=>'bg-amber-100 text-amber-800',  'label'=>'รอรับงาน',       'icon'=>'fa-clock'],
-            'accepted'   =>['color'=>'#3b82f6','bg'=>'#eff6ff','badge'=>'bg-blue-100 text-blue-800',    'label'=>'รับงานแล้ว',     'icon'=>'fa-check-circle'],
-            'in_progress'=>['color'=>'#8b5cf6','bg'=>'#f5f3ff','badge'=>'bg-purple-100 text-purple-800','label'=>'กำลังดำเนินการ','icon'=>'fa-spinner'],
-            'completed'  =>['color'=>'#10b981','bg'=>'#f0fdf4','badge'=>'bg-green-100 text-green-800',  'label'=>'เสร็จสิ้น',      'icon'=>'fa-check-double'],
-            'cancelled'  =>['color'=>'#6b7280','bg'=>'#f9fafb','badge'=>'bg-gray-100 text-gray-600',   'label'=>'ยกเลิก',         'icon'=>'fa-ban'],
-        ];
-        foreach ($all_tasks as $task):
-            $sc  = $status_cfg[$task['status']] ?? $status_cfg['cancelled'];
-            $sic = $svc_icons[$task['service_code'] ?? ''] ?? 'fa-concierge-bell';
-            $search_str = strtolower($task['request_code'].' '.$task['service_name'].' '.$task['requester_name']);
-        ?>
-        <div class="task-card-item rounded-2xl overflow-hidden shadow-sm ring-1 ring-gray-100 bg-white"
-             data-search="<?= htmlspecialchars($search_str) ?>">
-            <div class="flex">
-                <!-- Left color strip -->
-                <div class="w-1.5 flex-shrink-0" style="background:<?= $sc['color'] ?>;"></div>
-
-                <!-- Card body -->
-                <div class="flex-1 p-4 min-w-0">
-
-                    <!-- Row 1: service icon + name + status badge -->
-                    <div class="flex items-start gap-2.5 mb-2">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                             style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>;">
-                            <i class="fas <?= $sic ?> text-sm"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="font-bold text-gray-900 text-[15px] leading-snug truncate">
-                                <?= htmlspecialchars($task['service_name']) ?>
-                            </p>
-                            <p class="text-xs font-mono text-gray-400 mt-0.5"><?= htmlspecialchars($task['request_code']) ?></p>
-                        </div>
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0 <?= $sc['badge'] ?>">
-                            <i class="fas <?= $sc['icon'] ?> text-[10px]"></i>
-                            <?= $sc['label'] ?>
-                        </span>
-                    </div>
-
-                    <!-- Row 2: requester + due date -->
-                    <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span class="flex items-center gap-1 truncate">
-                            <i class="fas fa-user-circle text-gray-300"></i>
-                            <?= htmlspecialchars($task['requester_name']) ?>
-                        </span>
-                        <?php if ($task['due_date']): ?>
-                        <span class="flex items-center gap-1 flex-shrink-0 ml-2 font-medium" style="color:<?= $sc['color'] ?>;">
-                            <i class="fas fa-calendar-alt text-[10px]"></i>
-                            <?= thdate('d/m/Y', strtotime($task['due_date'])) ?>
-                        </span>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Row 3: action buttons -->
-                    <div class="flex gap-2">
-                        <!-- VIEW DETAIL — big prominent button -->
-                        <a href="task_detail.php?assignment_id=<?= $task['assignment_id'] ?>"
-                           class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
-                           style="background:<?= $sc['bg'] ?>; color:<?= $sc['color'] ?>; border:1.5px solid <?= $sc['color'] ?>40;">
-                            <i class="fas fa-eye text-base"></i>
-                            <span>ดูรายละเอียด</span>
-                        </a>
-
-                        <!-- STATUS ACTION button -->
-                        <?php if ($task['status'] === 'pending'): ?>
-                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'accepted')"
-                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
-                                style="background:#3b82f6;">
-                            <i class="fas fa-hand-paper"></i>
-                            <span class="hidden sm:inline">รับงาน</span>
-                        </button>
-                        <?php elseif ($task['status'] === 'accepted'): ?>
-                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'in_progress')"
-                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
-                                style="background:#8b5cf6;">
-                            <i class="fas fa-play"></i>
-                            <span class="hidden sm:inline">เริ่มงาน</span>
-                        </button>
-                        <?php elseif ($task['status'] === 'in_progress'): ?>
-                        <button onclick="updateTaskStatus(<?= $task['assignment_id'] ?>, 'completed')"
-                                class="flex items-center gap-1.5 py-2.5 px-4 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
-                                style="background:#10b981;">
-                            <i class="fas fa-check"></i>
-                            <span class="hidden sm:inline">เสร็จสิ้น</span>
-                        </button>
-                        <?php endif; ?>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-        <?php endforeach; ?>
+        <!-- Tasks Table -->
+        <div class="tasks-table-container px-3 pb-3" style="overflow-x: auto;">
+            <table id="tasksTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-col="assignment_id">ID <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="request_code">รหัสคำร้อง <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="service_name">บริการ <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="requester_name">ผู้ขอ <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="department_name">สังกัดหน่วยงาน <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="due_date">กำหนดส่ง <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="status">สถานะ <span class="sort-icon">↕</span></th>
+                        <th style="width: 90px;">การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
         </div>
 
-        <div class="text-center text-xs text-gray-400 py-3" id="cardInfo"></div>
+        <div class="table-info px-3" id="tableInfo"></div>
+        <div class="table-pagination px-3 pb-3" id="taskPagination"></div>
 
         <?php else: ?>
         <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -1097,23 +1052,165 @@ include 'admin-layout/topbar.php';
         if (tabName === 'calendar-view') renderCalendar();
     }
 
-    // ── Card search ────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('cardSearch');
-        const cards       = document.querySelectorAll('.task-card-item');
-        const info        = document.getElementById('cardInfo');
-        if (!searchInput) return;
-        searchInput.addEventListener('input', function () {
-            const term = this.value.toLowerCase();
-            let visible = 0;
-            cards.forEach(card => {
-                const match = !term || (card.dataset.search || '').includes(term);
-                card.style.display = match ? '' : 'none';
-                if (match) visible++;
+    // ── Tasks table: sort / filter / paginate ───────────────────────
+    const taskStatusLabels = { pending: 'รอรับงาน', accepted: 'รับงานแล้ว', in_progress: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น' };
+    let taskTableSort = { col: 'assignment_id', dir: 'desc' };
+    let taskTablePage = 1;
+    const taskTablePageSize = 10;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function formatThaiDateShort(dateStr) {
+        if (!dateStr) return '-';
+        const datePart = dateStr.split(' ')[0].split('T')[0];
+        const [y, m, d] = datePart.split('-');
+        if (!y || !m || !d) return '-';
+        return `${d}/${m}/${parseInt(y, 10) + 543}`;
+    }
+
+    function initializeTable() {
+        document.querySelectorAll('#tasksTable thead th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                if (taskTableSort.col === col) {
+                    taskTableSort.dir = taskTableSort.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    taskTableSort.col = col;
+                    taskTableSort.dir = 'asc';
+                }
+                taskTablePage = 1;
+                renderTaskTable();
             });
-            if (info) info.textContent = term ? `พบ ${visible} รายการ` : '';
         });
-    });
+
+        const searchInput  = document.getElementById('taskSearch');
+        const statusFilter = document.getElementById('taskStatusFilter');
+        if (searchInput)  searchInput.addEventListener('input', () => { taskTablePage = 1; renderTaskTable(); });
+        if (statusFilter) statusFilter.addEventListener('change', () => { taskTablePage = 1; renderTaskTable(); });
+
+        renderTaskTable();
+    }
+
+    function renderTaskTable() {
+        const search       = (document.getElementById('taskSearch')?.value || '').toLowerCase().trim();
+        const statusFilter = document.getElementById('taskStatusFilter')?.value || '';
+
+        let rows = tasksData.filter(t => {
+            const matchesSearch = !search || `${t.request_code} ${t.service_name} ${t.requester_name}`.toLowerCase().includes(search);
+            const matchesStatus = !statusFilter || t.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+
+        const { col, dir } = taskTableSort;
+        rows.sort((a, b) => {
+            let valA = a[col];
+            let valB = b[col];
+            if (col === 'assignment_id') {
+                valA = parseInt(valA, 10) || 0;
+                valB = parseInt(valB, 10) || 0;
+            } else {
+                valA = (valA || '').toString().toLowerCase();
+                valB = (valB || '').toString().toLowerCase();
+            }
+            if (valA < valB) return dir === 'asc' ? -1 : 1;
+            if (valA > valB) return dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Update sort icons on headers
+        document.querySelectorAll('#tasksTable thead th.sortable').forEach(th => {
+            const icon = th.querySelector('.sort-icon');
+            if (th.dataset.col === col) {
+                th.classList.add('sorted');
+                icon.textContent = dir === 'asc' ? '↑' : '↓';
+            } else {
+                th.classList.remove('sorted');
+                icon.textContent = '↕';
+            }
+        });
+
+        const totalItems = rows.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / taskTablePageSize));
+        if (taskTablePage > totalPages) taskTablePage = totalPages;
+        const startIdx   = (taskTablePage - 1) * taskTablePageSize;
+        const pageRows   = rows.slice(startIdx, startIdx + taskTablePageSize);
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (pageRows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:#9ca3af;">ไม่พบรายการ</td></tr>`;
+        } else {
+            pageRows.forEach(task => {
+                let actionBtn = '';
+                if (task.status === 'pending') {
+                    actionBtn = `<button onclick="updateTaskStatus(${task.assignment_id}, 'accepted')" class="btn-action-small" style="color:#3b82f6;" title="รับงาน"><i class="fas fa-hand-paper"></i></button>`;
+                } else if (task.status === 'accepted') {
+                    actionBtn = `<button onclick="updateTaskStatus(${task.assignment_id}, 'in_progress')" class="btn-action-small" style="color:#8b5cf6;" title="เริ่มงาน"><i class="fas fa-play"></i></button>`;
+                } else if (task.status === 'in_progress') {
+                    actionBtn = `<button onclick="updateTaskStatus(${task.assignment_id}, 'completed')" class="btn-action-small" style="color:#10b981;" title="เสร็จสิ้น"><i class="fas fa-check"></i></button>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-mono text-gray-400">#${task.assignment_id}</td>
+                    <td class="font-mono">${escapeHtml(task.request_code)}</td>
+                    <td>${escapeHtml(task.service_name)}</td>
+                    <td>${escapeHtml(task.requester_name)}</td>
+                    <td>${escapeHtml(task.department_name) || '<span class="text-gray-400">-</span>'}</td>
+                    <td>${formatThaiDateShort(task.due_date)}</td>
+                    <td><span class="status-badge status-${task.status}">${taskStatusLabels[task.status] || task.status}</span></td>
+                    <td>
+                        <a href="task_detail.php?assignment_id=${task.assignment_id}" class="btn-action-small" title="ดูรายละเอียด"><i class="fas fa-eye"></i></a>
+                        ${actionBtn}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const infoEl = document.getElementById('tableInfo');
+        if (infoEl) {
+            infoEl.textContent = totalItems > 0
+                ? `แสดง ${startIdx + 1}-${Math.min(startIdx + taskTablePageSize, totalItems)} จาก ${totalItems} รายการ`
+                : 'ไม่พบรายการ';
+        }
+
+        renderTaskPagination(totalPages);
+    }
+
+    function renderTaskPagination(totalPages) {
+        const container = document.getElementById('taskPagination');
+        if (!container) return;
+        container.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const addBtn = (label, page, disabled, active) => {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-btn' + (active ? ' active' : '');
+            btn.innerHTML = label;
+            btn.disabled = disabled;
+            btn.onclick = () => { taskTablePage = page; renderTaskTable(); };
+            container.appendChild(btn);
+        };
+
+        addBtn('&laquo;', 1, taskTablePage === 1, false);
+        addBtn('&lsaquo;', taskTablePage - 1, taskTablePage === 1, false);
+
+        const startP = Math.max(1, taskTablePage - 2);
+        const endP   = Math.min(totalPages, taskTablePage + 2);
+        for (let p = startP; p <= endP; p++) {
+            addBtn(p, p, false, p === taskTablePage);
+        }
+
+        addBtn('&rsaquo;', taskTablePage + 1, taskTablePage === totalPages, false);
+        addBtn('&raquo;', totalPages, taskTablePage === totalPages, false);
+    }
 
     // ── Calendar functions ─────────────────────────────────────────
     function renderCalendar() {

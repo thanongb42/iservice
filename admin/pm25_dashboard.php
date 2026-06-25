@@ -9,6 +9,7 @@ $page_title   = 'Dashboard PM2.5';
 $current_page = 'pm25_dashboard';
 date_default_timezone_set('Asia/Bangkok');
 require_once '../config/database.php';
+require_once '../includes/pm25_helpers.php';
 $pdo = getPDO();
 
 $user = [
@@ -34,7 +35,6 @@ try {
 } catch (Exception $e) {}
 
 // ── Step 2: ดึงข้อมูลสถานีจาก pm25_sensors ─────────────────────────────────
-function nullFloat($v): ?float { return $v !== null && $v !== '' ? (float)$v : null; }
 
 $sensors = [];
 try {
@@ -107,16 +107,6 @@ ksort($allTs);
 $chartLabels = array_values($allTs);
 $chartTsKeys = array_keys($allTs);
 $hasChart    = !empty($chartLabels);
-
-function pmLevel($v): array {
-    if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
-    $v = (float)$v;
-    if ($v <= 25)  return ['hex' => '#16a34a', 'label' => 'ดีมาก'];
-    if ($v <= 37)  return ['hex' => '#84cc16', 'label' => 'ดี'];
-    if ($v <= 50)  return ['hex' => '#eab308', 'label' => 'ปานกลาง'];
-    if ($v <= 90)  return ['hex' => '#f97316', 'label' => 'เริ่มมีผลกระทบ'];
-    return             ['hex' => '#ef4444', 'label' => 'มีผลกระทบต่อสุขภาพ'];
-}
 
 include 'admin-layout/header.php';
 include 'admin-layout/sidebar.php';
@@ -206,18 +196,21 @@ include 'admin-layout/topbar.php';
 
         <!-- PM2.5 circle -->
         <div class="pm-ring" style="background:<?= $level['hex'] ?>">
-            <div class="text-white font-bold text-2xl leading-none">
+            <div class="font-bold text-2xl leading-none" style="color:<?= $level['text'] ?>">
                 <?= $pm !== null ? number_format($pm, 1) : '--' ?>
             </div>
-            <div class="text-white text-[10px] opacity-80 mt-0.5">µg/m³</div>
+            <div class="text-[10px] opacity-80 mt-0.5" style="color:<?= $level['text'] ?>">µg/m³</div>
         </div>
 
-        <!-- AQI label -->
-        <div class="text-center mb-2">
+        <!-- level label -->
+        <div class="text-center mb-1">
             <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                  style="background:<?= $level['hex'] ?>1a; color:<?= $level['hex'] ?>">
+                  style="background:<?= $level['hex'] ?>22;color:<?= $level['hex'] ?>;border:1px solid <?= $level['hex'] ?>44">
                 <?= $level['label'] ?>
             </span>
+        </div>
+        <div class="text-center text-[10px] text-slate-400 px-2 mb-2 leading-snug">
+            <?= $level['advice'] ?>
         </div>
 
         <!-- Location -->
@@ -343,25 +336,40 @@ include 'admin-layout/topbar.php';
         <div id="map"></div>
     </div>
 
-    <!-- AQI Legend -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">เกณฑ์คุณภาพอากาศ PM2.5 (µg/m³)</h3>
-        <div class="flex flex-wrap gap-2 text-[12px]">
-            <?php foreach ([
-                ['#16a34a', '0 – 25',  'ดีมาก'],
-                ['#84cc16', '26 – 37', 'ดี'],
-                ['#eab308', '38 – 50', 'ปานกลาง'],
-                ['#f97316', '51 – 90', 'เริ่มมีผลกระทบต่อสุขภาพ'],
-                ['#ef4444', '≥ 91',    'มีผลกระทบต่อสุขภาพ'],
-                ['#94a3b8', '–',       'ไม่มีข้อมูล'],
-            ] as [$c, $range, $label]): ?>
-            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style="background:<?= $c ?>18">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<?= $c ?>"></span>
-                <span style="color:<?= $c ?>" class="font-semibold"><?= $range ?></span>
-                <span class="text-gray-500"><?= $label ?></span>
-            </div>
-            <?php endforeach; ?>
-        </div>
+    <!-- AQI Legend Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full border-collapse">
+            <tbody>
+                <tr>
+                    <td class="bg-slate-800 text-white font-bold px-5 py-3 whitespace-nowrap text-sm w-40">
+                        PM<sub>2.5</sub>(µg/m³)
+                    </td>
+                    <?php
+                    $legendData = [
+                        ['#3BCCFF','#0c4a6e','0–15.0',    'fa-person-running', 'ดีมาก'],
+                        ['#92D050','#14532d','15.1–25.0',  'fa-person',         'ดี'],
+                        ['#FFFF00','#713f12','25.1–37.5',  'fa-person',         'ปานกลาง'],
+                        ['#FFA200','#ffffff','37.6–75.0',  'fa-head-side-mask', 'เริ่มมีผลกระทบ'],
+                        ['#F04646','#ffffff','≥ 75.1',     'fa-person-falling', 'มีผลกระทบต่อสุขภาพ'],
+                    ];
+                    foreach ($legendData as [$c,$tc,$r]) : ?>
+                    <td class="text-center font-bold py-2.5 px-2 text-sm leading-tight"
+                        style="background:<?= $c ?>;color:<?= $tc ?>">
+                        <?= $r ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                <tr>
+                    <td class="bg-slate-800 border-t border-slate-700"></td>
+                    <?php foreach ($legendData as [$c,$tc,$r,$icon,$label]): ?>
+                    <td class="text-center py-3 px-2" style="background:<?= $c ?>;border-top:1px solid rgba(0,0,0,.08)">
+                        <i class="fas <?= $icon ?> text-2xl block mb-1" style="color:<?= $tc ?>"></i>
+                        <div class="text-[11px] font-bold mb-0.5" style="color:<?= $tc ?>"><?= $label ?></div>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
 </div>
@@ -483,37 +491,47 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap', maxZoom: 19
 }).addTo(map);
 
-function pmColor(v) {
-    if (v === null) return '#94a3b8';
-    if (v <= 25) return '#16a34a';
-    if (v <= 37) return '#84cc16';
-    if (v <= 50) return '#eab308';
-    if (v <= 90) return '#f97316';
-    return '#ef4444';
+const PM25_LEVELS = [
+    [0,    15.0, '#3BCCFF','#0c4a6e','ดีมาก',             'ดำเนินชีวิตได้ตามปกติ'],
+    [15.1, 25.0, '#92D050','#14532d','ดี',                 'ทำกิจกรรมกลางแจ้งได้ · กลุ่มเสี่ยงสังเกตอาการ'],
+    [25.1, 37.5, '#FFFF00','#713f12','ปานกลาง',            'ลดเวลากิจกรรมกลางแจ้ง · กลุ่มเสี่ยงใช้หน้ากาก PM2.5'],
+    [37.6, 75.0, '#FFA200','#ffffff','เริ่มมีผลกระทบ',     'ใช้หน้ากาก PM2.5 · จำกัดเวลากลางแจ้ง'],
+    [75.1, 9999, '#F04646','#ffffff','มีผลกระทบต่อสุขภาพ','งดกิจกรรมกลางแจ้ง · ใช้หน้ากาก PM2.5 ทุกครั้ง'],
+];
+function pmGet(v) {
+    if (v === null) return {bg:'#94a3b8',tc:'#fff',label:'ไม่มีข้อมูล',advice:''};
+    for (const [lo,hi,bg,tc,label,advice] of PM25_LEVELS) {
+        if (v <= hi) return {bg,tc,label,advice};
+    }
+    return {bg:'#F04646',tc:'#fff',label:'มีผลกระทบต่อสุขภาพ',advice:'งดกิจกรรมกลางแจ้ง'};
 }
+function pmColor(v) { return pmGet(v).bg; }
 
 const bounds = [];
 sensors.forEach(s => {
     if (!s.lat || !s.lng) return;
-    const c   = pmColor(s.pm25);
-    const v   = s.pm25 !== null ? Math.round(s.pm25) : '?';
+    const lv  = pmGet(s.pm25);
     const icon = L.divIcon({
-        html: `<div style="background:${c};width:46px;height:46px;border-radius:50%;border:3px solid white;
+        html: `<div style="background:${lv.bg};width:50px;height:50px;border-radius:50%;border:3px solid white;
                     box-shadow:0 3px 10px rgba(0,0,0,.28);display:flex;flex-direction:column;
                     align-items:center;justify-content:center;font-family:'Kanit',sans-serif;">
-                 <span style="color:white;font-size:13px;font-weight:700;line-height:1">${v}</span>
-                 <span style="color:white;font-size:8px;opacity:.8;line-height:1.2">µg</span>
+                 <span style="color:${lv.tc};font-size:13px;font-weight:700;line-height:1.1">${s.pm25 !== null ? Math.round(s.pm25) : '?'}</span>
+                 <span style="color:${lv.tc};font-size:8px;opacity:.8;line-height:1.3">µg/m³</span>
                </div>`,
-        className: '', iconSize: [46, 46], iconAnchor: [23, 23]
+        className: '', iconSize: [50, 50], iconAnchor: [25, 25]
     });
     const d   = s.ts ? new Date(s.ts * 1000) : null;
     const ts  = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
     const fmt = (v, u) => v !== null ? v + ' ' + u : '--';
     const row = (ic, lb, val) => `<tr><td style="color:#94a3b8;padding:2px 8px 2px 0;font-size:11px">${ic} ${lb}</td><td style="font-weight:600;font-size:12px;text-align:right">${val}</td></tr>`;
     L.marker([s.lat, s.lng], {icon}).addTo(map)
-     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:200px">
+     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:210px">
          <div style="font-size:13px;font-weight:700;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</div>
-         <div style="color:${c};font-size:22px;font-weight:700;margin-bottom:4px">${fmt(s.pm25,'µg/m³')} <span style="font-size:12px;color:#64748b">PM2.5</span></div>
+         <div style="background:${lv.bg};border-radius:8px;padding:6px 10px;margin-bottom:8px">
+           <div style="color:${lv.tc};font-size:22px;font-weight:700;line-height:1">${fmt(s.pm25,'µg/m³')}</div>
+           <div style="color:${lv.tc};font-size:11px;font-weight:600;opacity:.9">PM 2.5 · ${lv.label}</div>
+         </div>
+         <div style="font-size:10px;color:#64748b;background:#f8fafc;border-radius:6px;padding:5px 8px;margin-bottom:8px;line-height:1.5">💡 ${lv.advice}</div>
          <table style="width:100%;border-collapse:collapse">
              ${row('🌡️','อุณหภูมิ', fmt(s.temp,'°C'))}
              ${row('💧','ความชื้น', fmt(s.humi,'%'))}
@@ -522,7 +540,7 @@ sensors.forEach(s => {
              ${row('☁️','CO2',     fmt(s.co2,'ppm'))}
          </table>
          <div style="color:#94a3b8;font-size:10px;margin-top:6px;border-top:1px solid #f1f5f9;padding-top:4px">อัปเดต: ${ts}</div>
-     </div>`, { maxWidth: 230 });
+     </div>`, { maxWidth: 240 });
     bounds.push([s.lat, s.lng]);
 });
 if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] });

@@ -426,6 +426,10 @@ include 'admin-layout/topbar.php';
                         <span class="detail-label">หน่วยงาน</span>
                         <span class="detail-value"><?= htmlspecialchars($task['department_name'] ?? '-') ?></span>
                     </div>
+                    <div class="detail-item">
+                        <span class="detail-label">เลขบัตรประชาชน</span>
+                        <span class="detail-value"><?= htmlspecialchars($service_details['citizen_id'] ?? '') ?: '-' ?></span>
+                    </div>
                 </div>
             </div>
 
@@ -621,7 +625,7 @@ include 'admin-layout/topbar.php';
                 'video_required'     => ['1'=>'ต้องการ','0'=>'ไม่ต้องการ'],
                 'drone_required'     => ['1'=>'ต้องการ','0'=>'ไม่ต้องการ'],
             ];
-            $hidden_fields = ['id','request_id','created_at','updated_at'];
+            $hidden_fields = ['id','request_id','created_at','updated_at','citizen_id'];
             ?>
             <div class="detail-card">
                 <h3><i class="fas fa-info-circle text-blue-600"></i> ข้อมูลเพิ่มเติม</h3>

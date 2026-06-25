@@ -3,6 +3,7 @@ vendor/
 
 # Environment files
 .env
+.env.gdcc
 .env.local
 .env.*.local
 
@@ -31,6 +32,9 @@ uploads/
 public/uploads/
 storage/uploads/
 storage/backups/
+
+# Database dumps (may contain real production/PII data — never commit)
+database_Export/
 
 # Screenshots / screen captures
 Screenshot*.png

@@ -4,6 +4,36 @@
  * ไฟล์ตั้งค่าการเชื่อมต่อฐานข้อมูล
  */
 
+function iservice_load_env_file(string $path): void {
+    if (!is_file($path) || !is_readable($path)) {
+        return;
+    }
+
+    foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            continue;
+        }
+
+        [$key, $value] = array_map('trim', explode('=', $line, 2));
+        $value = trim($value, chr(34) . chr(39));
+        if ($key !== '' && getenv($key) === false) {
+            putenv($key . '=' . $value);
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+function iservice_env(string $key, ?string $default = null): ?string {
+    $value = getenv($key);
+    if ($value === false || $value === '') {
+        return $default;
+    }
+    return $value;
+}
+
+// Optional VM1-only overrides. Do not commit real credentials in this file.
+iservice_load_env_file(__DIR__ . '/../.env.gdcc');
 // Auto-detect environment: localhost vs production
 // CLI บน Windows (XAMPP) = local; CLI บน Linux = production
 $_is_local = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1', '::1'])
@@ -17,11 +47,11 @@ if ($_is_local) {
     define('DB_PASS',    '');
     define('DB_NAME',    'iservice_db');
 } else {
-    // Production (Hosting)
-    define('DB_HOST',    'localhost');
-    define('DB_USER',    'rangsitadmin_iservice');
-    define('DB_PASS',    'IService@2026');
-    define('DB_NAME',    'rangsitadmin_iservice_db');
+    // Production. VM1 should provide these via .env.gdcc or server env vars.
+    define('DB_HOST',    iservice_env('DB_HOST', 'localhost'));
+    define('DB_USER',    iservice_env('DB_USER', 'rangsitadmin_iservice'));
+    define('DB_PASS',    iservice_env('DB_PASS', ''));
+    define('DB_NAME',    iservice_env('DB_NAME', 'rangsitadmin_iservice_db'));
 }
 define('DB_CHARSET', 'utf8mb4');
 define('IS_LOCAL',   $_is_local);

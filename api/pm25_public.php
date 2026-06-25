@@ -61,6 +61,52 @@ try {
         ->execute([$keyRow['id']]);
 } catch (Exception $e) {}
 
+// ── มาตรฐานสี PM2.5 (กรมควบคุมมลพิษ) ─────────────────────────────────────────
+function pmLevel(?float $v): array {
+    if ($v === null) return [
+        'level'  => 'N/A',
+        'label'  => 'ไม่มีข้อมูล',
+        'label_en' => 'No Data',
+        'color'  => '#94a3b8',
+        'advice' => '–',
+    ];
+    if ($v <= 15.0) return [
+        'level'    => 1,
+        'label'    => 'ดีมาก',
+        'label_en' => 'Very Good',
+        'color'    => '#3BCCFF',
+        'advice'   => 'ประชาชนทุกคนสามารถดำเนินชีวิตได้ตามปกติ',
+    ];
+    if ($v <= 25.0) return [
+        'level'    => 2,
+        'label'    => 'ดี',
+        'label_en' => 'Good',
+        'color'    => '#92D050',
+        'advice'   => 'ทำกิจกรรมกลางแจ้งได้ตามปกติ กลุ่มเสี่ยงควรสังเกตอาการ',
+    ];
+    if ($v <= 37.5) return [
+        'level'    => 3,
+        'label'    => 'ปานกลาง',
+        'label_en' => 'Moderate',
+        'color'    => '#FFFF00',
+        'advice'   => 'ลดระยะเวลากิจกรรมกลางแจ้ง กลุ่มเสี่ยงใช้หน้ากาก PM2.5',
+    ];
+    if ($v <= 75.0) return [
+        'level'    => 4,
+        'label'    => 'เริ่มมีผลกระทบต่อสุขภาพ',
+        'label_en' => 'Starting to Affect Health',
+        'color'    => '#FFA200',
+        'advice'   => 'ใช้หน้ากาก PM2.5 ทุกครั้งที่ออกนอกอาคาร จำกัดเวลาทำกิจกรรมกลางแจ้ง',
+    ];
+    return [
+        'level'    => 5,
+        'label'    => 'มีผลกระทบต่อสุขภาพ',
+        'label_en' => 'Affecting Health',
+        'color'    => '#F04646',
+        'advice'   => 'งดกิจกรรมกลางแจ้ง ใช้หน้ากาก PM2.5 ทุกครั้ง หากมีอาการให้รีบพบแพทย์',
+    ];
+}
+
 // ── 2. Parse params ─────────────────────────────────────────────────────────
 $type  = $_GET['type']  ?? 'latest';
 $hours = min((int)($_GET['hours'] ?? 24), 168); // max 7 วัน
@@ -113,6 +159,7 @@ if ($type === 'latest') {
             'online'      => (time() - (int)$r['sensor_timestamp']) < 1800,
             'recorded_at' => date('Y-m-d H:i:s', (int)$r['sensor_timestamp']),
             'fetched_at'  => $r['created_at'] ?? null,
+            'aqi'         => pmLevel($r['pm25'] !== null ? (float)$r['pm25'] : null),
         ];
     }
 
@@ -167,11 +214,24 @@ if ($type === 'latest') {
         ],
     ];
 
+    $summary['aqi_overall'] = pmLevel($summary['pm25']['avg'] !== null ? (float)$summary['pm25']['avg'] : null);
+
     respond(200, [
         'status'       => 'success',
         'type'         => 'latest',
         'generated_at' => date('Y-m-d H:i:s'),
         'count'        => count($data),
+        'aqi_standard' => [
+            'source'     => 'กรมควบคุมมลพิษ (Pollution Control Department, Thailand)',
+            'unit'       => 'µg/m³ (24-hour average)',
+            'levels'     => [
+                ['level'=>1, 'range'=>'0–15.0',    'label'=>'ดีมาก',                    'color'=>'#3BCCFF'],
+                ['level'=>2, 'range'=>'15.1–25.0',  'label'=>'ดี',                       'color'=>'#92D050'],
+                ['level'=>3, 'range'=>'25.1–37.5',  'label'=>'ปานกลาง',                  'color'=>'#FFFF00'],
+                ['level'=>4, 'range'=>'37.6–75.0',  'label'=>'เริ่มมีผลกระทบต่อสุขภาพ',  'color'=>'#FFA200'],
+                ['level'=>5, 'range'=>'≥75.1',      'label'=>'มีผลกระทบต่อสุขภาพ',       'color'=>'#F04646'],
+            ],
+        ],
         'summary'      => $summary,
         'data'         => $data,
     ]);
@@ -209,6 +269,7 @@ if ($type === 'latest') {
             'humidity'    => isset($r['humidity'])    && $r['humidity']    !== null ? (float)$r['humidity']    : null,
             'co2'         => $r['co2']         !== null ? (float)$r['co2']         : null,
             'recorded_at' => date('Y-m-d H:i:s', (int)$r['sensor_timestamp']),
+            'aqi'         => pmLevel($r['pm25'] !== null ? (float)$r['pm25'] : null),
         ];
     }
 

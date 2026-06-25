@@ -240,6 +240,13 @@ if (!isset($app_name) || !isset($org_name) || !isset($logo_path)) {
             z-index: 999;
         }
 
+        /* Fix: sticky navbar floats to middle of page and covers content when printing */
+        @media print {
+            .sticky {
+                position: static !important;
+            }
+        }
+
     <!-- Image Responsive -->
     <style>
         img {

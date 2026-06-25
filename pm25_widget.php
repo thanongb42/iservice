@@ -5,6 +5,7 @@
  */
 date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/pm25_helpers.php';
 $pdo = getPDO();
 
 $sensors = [];
@@ -38,14 +39,6 @@ try {
     $summary['last_fetch'] = $r['t'] ? date('d/m/Y H:i', (int)$r['t']).' น.' : null;
 } catch (Exception $e) {}
 
-function pmLevel($v) {
-    if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
-    if ($v <= 25) return ['hex' => '#16a34a', 'label' => 'ดีมาก'];
-    if ($v <= 37) return ['hex' => '#84cc16', 'label' => 'ดี'];
-    if ($v <= 50) return ['hex' => '#eab308', 'label' => 'ปานกลาง'];
-    if ($v <= 90) return ['hex' => '#f97316', 'label' => 'เริ่มมีผลกระทบ'];
-    return ['hex' => '#ef4444', 'label' => 'มีผลกระทบ'];
-}
 $avgLevel = pmLevel($summary['avg_pm25']);
 ?>
 <!DOCTYPE html>
@@ -54,6 +47,7 @@ $avgLevel = pmLevel($summary['avg_pm25']);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PM2.5 Widget — เทศบาลนครรังสิต</title>
+<link rel="icon" type="image/png" href="public/assets/images/logo/rangsit-small-logo.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -177,15 +171,16 @@ body { background: #f8fafc; }
     ?>
     <div class="w-sensor">
         <div class="w-dot" style="background:<?= $lv['hex'] ?>">
-            <div class="w-dot-val"><?= $pm !== null ? number_format($pm, 0) : '--' ?></div>
-            <div class="w-dot-unit">µg/m³</div>
+            <div class="w-dot-val" style="color:<?= $lv['text'] ?>"><?= $pm !== null ? number_format($pm, 1) : '--' ?></div>
+            <div class="w-dot-unit" style="color:<?= $lv['text'] ?>;opacity:.8">µg/m³</div>
         </div>
         <div>
             <div class="w-sensor-name"><?= htmlspecialchars($s['location_name']) ?></div>
             <div class="w-sensor-meta">
                 <?= $online ? '<span style="color:#16a34a">●</span> ออนไลน์' : '<span style="color:#94a3b8">○</span> ออฟไลน์' ?>
-                &nbsp;·&nbsp;<?= $lv['label'] ?>
+                &nbsp;·&nbsp;<span style="color:<?= $lv['hex'] ?>;font-weight:600"><?= $lv['label'] ?></span>
             </div>
+            <div class="w-sensor-meta" style="margin-top:1px">💡 <?= $lv['advice'] ?></div>
         </div>
     </div>
     <?php endforeach; ?>
@@ -195,11 +190,11 @@ body { background: #f8fafc; }
     <div class="w-footer">
         <div class="w-legend">
             <?php foreach ([
-                ['#16a34a','0–25'],['#84cc16','26–37'],
-                ['#eab308','38–50'],['#f97316','51–90'],['#ef4444','≥91'],
+                ['#3BCCFF','0–15.0'],['#92D050','15.1–25.0'],
+                ['#FFFF00','25.1–37.5'],['#FFA200','37.6–75.0'],['#F04646','≥75.1'],
             ] as [$c,$r]): ?>
             <span class="w-leg-item">
-                <span class="w-leg-dot" style="background:<?= $c ?>"></span><?= $r ?>
+                <span class="w-leg-dot" style="background:<?= $c ?>;border:1px solid #e2e8f0"></span><?= $r ?>
             </span>
             <?php endforeach; ?>
         </div>
@@ -227,31 +222,44 @@ const sensors = <?= json_encode(array_map(function($s) {
     ];
 }, $sensors)) ?>;
 
-function pmColor(v) {
-    if (!v) return '#94a3b8';
-    if (v <= 25) return '#16a34a'; if (v <= 37) return '#84cc16';
-    if (v <= 50) return '#eab308'; if (v <= 90) return '#f97316';
-    return '#ef4444';
+const PM25_LEVELS = [
+    [0,    15.0, '#3BCCFF','#0c4a6e','ดีมาก',             'ดำเนินชีวิตได้ตามปกติ'],
+    [15.1, 25.0, '#92D050','#14532d','ดี',                 'ทำกิจกรรมกลางแจ้งได้ตามปกติ'],
+    [25.1, 37.5, '#FFFF00','#713f12','ปานกลาง',            'ลดระยะเวลากิจกรรมกลางแจ้ง'],
+    [37.6, 75.0, '#FFA200','#ffffff','เริ่มมีผลกระทบ',     'ใช้หน้ากาก PM2.5 ทุกครั้ง'],
+    [75.1, 9999, '#F04646','#ffffff','มีผลกระทบต่อสุขภาพ','งดกิจกรรมกลางแจ้ง'],
+];
+function pmGet(v) {
+    if (v === null) return {bg:'#94a3b8',tc:'#fff',label:'ไม่มีข้อมูล',advice:''};
+    for (const [lo,hi,bg,tc,label,advice] of PM25_LEVELS) {
+        if (v <= hi) return {bg,tc,label,advice};
+    }
+    return {bg:'#F04646',tc:'#fff',label:'มีผลกระทบต่อสุขภาพ',advice:'งดกิจกรรมกลางแจ้ง'};
 }
 
 const bounds = [];
 sensors.forEach(s => {
     if (!s.lat || !s.lng) return;
-    const c = pmColor(s.pm25), v = s.pm25 !== null ? Math.round(s.pm25) : '?';
+    const lv = pmGet(s.pm25);
+    const v  = s.pm25 !== null ? s.pm25.toFixed(1) : '?';
     L.marker([s.lat, s.lng], { icon: L.divIcon({
-        html: `<div style="background:${c};width:40px;height:40px;border-radius:50%;border:3px solid white;
-                    box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;
+        html: `<div style="background:${lv.bg};width:44px;height:44px;border-radius:50%;border:3px solid white;
+                    box-shadow:0 2px 8px rgba(0,0,0,.28);display:flex;flex-direction:column;
                     align-items:center;justify-content:center;">
-                 <span style="color:white;font-size:11px;font-weight:700;font-family:Kanit,sans-serif;line-height:1">${v}</span>
-                 <span style="color:white;font-size:7px;opacity:.85;line-height:1.3">µg</span>
+                 <span style="color:${lv.tc};font-size:11px;font-weight:700;font-family:Kanit,sans-serif;line-height:1">${v}</span>
+                 <span style="color:${lv.tc};font-size:7px;opacity:.8;line-height:1.3">µg/m³</span>
                </div>`,
-        className: '', iconSize: [40, 40], iconAnchor: [20, 20]
+        className: '', iconSize: [44, 44], iconAnchor: [22, 22]
     })}).addTo(map).bindPopup(
-        `<b style="font-family:Kanit,sans-serif">${s.name}</b><br>
-         <span style="color:${c};font-size:18px;font-weight:700;font-family:Kanit,sans-serif">
-             ${s.pm25 !== null ? s.pm25+' µg/m³' : '—'}
-         </span>
-         ${s.temp ? `<br><small style="font-family:Kanit,sans-serif">🌡️ ${s.temp}°C &nbsp; 💧 ${s.humi}%</small>` : ''}`
+        `<div style="font-family:Kanit,sans-serif;min-width:170px">
+         <div style="font-weight:700;font-size:13px;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</div>
+         <div style="background:${lv.bg};border-radius:8px;padding:6px 10px;margin-bottom:6px">
+           <div style="color:${lv.tc};font-size:20px;font-weight:700;line-height:1">${s.pm25 !== null ? s.pm25.toFixed(1)+' µg/m³' : '–'}</div>
+           <div style="color:${lv.tc};font-size:11px;font-weight:600;opacity:.9">PM 2.5 · ${lv.label}</div>
+         </div>
+         <div style="font-size:10px;color:#64748b;background:#f8fafc;border-radius:6px;padding:4px 8px;margin-bottom:6px">💡 ${lv.advice}</div>
+         ${s.temp ? `<div style="font-size:11px;color:#64748b">🌡️ ${s.temp}°C &nbsp; 💧 ${s.humi}%</div>` : ''}
+         </div>`
     );
     bounds.push([s.lat, s.lng]);
 });

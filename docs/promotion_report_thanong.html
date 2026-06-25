@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>รายงานผลการปฏิบัติงาน - นายทนงค์ บุญเติม</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:16pt;line-height:2;color:#111;background:#ddd}
+
+.page{width:210mm;min-height:297mm;background:#fff;margin:16px auto;padding:25mm 22mm 22mm 28mm;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;page-break-after:always}
+.page:last-child{page-break-after:auto}
+
+/* Cover */
+.cover{display:flex;flex-direction:column;align-items:center;min-height:258mm;padding:0}
+.cover-emblem{width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#003087,#0056b3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 4px 16px rgba(0,0,100,.3)}
+.cover-emblem svg{width:70px;height:70px;fill:#fff;opacity:.9}
+.cover h1{font-size:17pt;font-weight:700;color:#003087;text-align:center;line-height:1.7;margin-bottom:4px}
+.cover h2{font-size:15pt;font-weight:400;color:#444;text-align:center;margin-bottom:20px}
+.cover-redline{border-top:3px solid #b30000;border-bottom:3px solid #b30000;padding:10px 0;text-align:center;margin:16px 0;width:100%}
+.cover-redline h3{font-size:19pt;font-weight:700;color:#b30000;line-height:1.7}
+.cover-box{width:100%;background:#f0f4fb;border:1px solid #b8cce4;border-radius:8px;padding:18px 24px;margin:14px 0}
+.cover-box table{width:100%;border-collapse:collapse}
+.cover-box td{padding:5px 10px;font-size:15pt;vertical-align:top}
+.cover-box td:first-child{white-space:nowrap;font-weight:600;color:#003087;width:42%}
+.cover-projname{width:100%;background:#e8f4e8;border:1px solid #7dba7d;border-left:5px solid #27863a;border-radius:6px;padding:14px 18px;margin:10px 0;font-size:15pt;line-height:1.9}
+.cover-footer{margin-top:auto;padding-top:24px;text-align:center;font-size:14pt;color:#666;border-top:1px solid #ccc;width:100%}
+
+/* running header */
+.rh{background:#003087;color:#fff;padding:7px 14px;font-size:12pt;border-radius:4px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.rh span{opacity:.8}
+
+/* TOC */
+.toc-line{display:flex;align-items:baseline;margin:5px 0;font-size:15pt}
+.toc-line .toc-title{flex:1}
+.toc-line .toc-dots{flex:1;border-bottom:1px dotted #999;margin:0 6px;min-width:20px}
+.toc-line .toc-pg{white-space:nowrap;font-weight:600;color:#003087}
+
+/* Headings */
+h2.sec{font-size:16pt;font-weight:700;color:#fff;background:#003087;padding:8px 16px;border-radius:5px;margin:22px 0 14px;line-height:1.5}
+h3.sub{font-size:15pt;font-weight:700;color:#003087;border-left:4px solid #003087;padding-left:12px;margin:16px 0 8px;line-height:1.6}
+h4.subsub{font-size:14pt;font-weight:700;color:#1a1a1a;margin:12px 0 6px;line-height:1.6}
+
+p{margin-bottom:10px;text-align:justify}
+p.ind{text-indent:2.5em}
+p.noind{text-indent:0}
+
+ul,ol{padding-left:2.4em;margin:8px 0 10px}
+li{margin-bottom:6px;line-height:1.8}
+li::marker{color:#003087}
+
+/* Boxes */
+.box{border-radius:6px;padding:14px 18px;margin:12px 0}
+.box-blue{background:#eef4fc;border:1px solid #a8c6e8;border-left:5px solid #003087}
+.box-green{background:#edfaf1;border:1px solid #a9dfbf;border-left:5px solid #1e8449}
+.box-amber{background:#fffbea;border:1px solid #f9e49a;border-left:5px solid #d4a017}
+.box-red{background:#fdf2f2;border:1px solid #f5b7b1;border-left:5px solid #b30000}
+.box-gray{background:#f8f8f8;border:1px solid #ddd;border-left:5px solid #777}
+.box-title{font-weight:700;color:#003087;margin-bottom:6px;font-size:15pt}
+
+/* Table */
+table.t{width:100%;border-collapse:collapse;font-size:14pt;margin:12px 0}
+table.t th{background:#003087;color:#fff;padding:7px 12px;border:1px solid #003087;text-align:center;font-weight:600}
+table.t td{padding:7px 12px;border:1px solid #bbb;vertical-align:top;line-height:1.7}
+table.t tr:nth-child(even) td{background:#f5f8ff}
+table.t td.ctr{text-align:center}
+table.t td.num{text-align:right;font-weight:600}
+table.t tfoot td{background:#e8f0fe;font-weight:700}
+
+/* Stat cards */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.stat{background:#f5f8ff;border:1px solid #c5d8f5;border-top:4px solid #003087;border-radius:6px;padding:12px 10px;text-align:center}
+.stat .n{font-size:22pt;font-weight:700;color:#003087;line-height:1.2}
+.stat .l{font-size:11pt;color:#555;margin-top:4px;line-height:1.4}
+
+/* Flowchart */
+.flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:0 auto}
+.fb{padding:9px 16px;border-radius:6px;text-align:center;font-size:13pt;font-weight:600;width:100%;line-height:1.5}
+.fb-pill{background:#003087;color:#fff;border-radius:30px}
+.fb-rect{background:#eef4fc;border:2px solid #003087;color:#003087}
+.fb-rect2{background:#fdf2f2;border:2px solid #b30000;color:#8b0000}
+.fb-rect3{background:#edfaf1;border:2px solid #1e8449;color:#145a32}
+.fb-diamond{background:#fffbea;border:2px solid #d4a017;color:#784212;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);height:64px;display:flex;align-items:center;justify-content:center;border-radius:0;font-size:12pt}
+.fa{width:2px;height:20px;background:#003087;margin:0 auto;position:relative}
+.fa::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid #003087}
+.fa-r{background:#b30000}.fa-r::after{border-top-color:#b30000}
+
+/* Architecture boxes */
+.arch{display:grid;gap:8px;margin:14px 0}
+.arch-layer{border:2px solid #003087;border-radius:8px;padding:10px 14px}
+.arch-label{font-size:12pt;font-weight:700;color:#003087;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.arch-items{display:flex;flex-wrap:wrap;gap:6px}
+.arch-chip{background:#003087;color:#fff;font-size:11pt;padding:3px 10px;border-radius:20px}
+.arch-chip.secondary{background:#0056b3}
+.arch-chip.light{background:#5b8dd9}
+
+/* Before/After */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.ba-col{border-radius:8px;padding:14px}
+.ba-col.before{background:#fdf2f2;border:1px solid #f5b7b1}
+.ba-col.after{background:#edfaf1;border:1px solid #a9dfbf}
+.ba-head{font-weight:700;font-size:14pt;margin-bottom:8px;text-align:center;padding:6px;border-radius:4px}
+.ba-col.before .ba-head{background:#b30000;color:#fff}
+.ba-col.after .ba-head{background:#1e8449;color:#fff}
+
+/* Sig block */
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;margin-top:30px}
+.sig-line{border-bottom:1px solid #333;height:30px;margin-bottom:6px}
+
+/* Page number */
+.pgn{position:absolute;bottom:14mm;right:22mm;font-size:12pt;color:#999}
+.pgn-center{position:absolute;bottom:14mm;left:50%;transform:translateX(-50%);font-size:12pt;color:#999}
+
+hr.d{border:none;border-top:1px solid #ddd;margin:18px 0}
+
+@media print{
+  body{background:#fff}
+  .page{margin:0;box-shadow:none;padding:20mm 20mm 18mm 25mm}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== หน้าปก ==================== -->
+<div class="page">
+<div class="cover">
+
+  <div class="cover-emblem">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="3"/>
+      <path d="M50 10 L55 35 L80 35 L60 52 L68 78 L50 62 L32 78 L40 52 L20 35 L45 35 Z" fill="white" opacity="0.9"/>
+    </svg>
+  </div>
+
+  <h1>รายงานผลการปฏิบัติงาน<br>เพื่อประกอบการประเมินบุคคล</h1>
+  <h2>เพื่อแต่งตั้งให้ดำรงตำแหน่งในระดับที่สูงขึ้น</h2>
+
+  <div class="cover-redline">
+    <h3>นักวิชาการคอมพิวเตอร์ปฏิบัติการ<br>
+    ▼<br>
+    นักวิชาการคอมพิวเตอร์ชำนาญการ</h3>
+  </div>
+
+  <div class="cover-projname">
+    <strong>ชื่อผลงาน:</strong><br>
+    ระบบบริการดิจิทัลเทศบาลนครรังสิต (iService)<br>
+    <span style="font-size:14pt;color:#444;">ระบบรับคำขอรับบริการด้านเทคโนโลยีสารสนเทศผ่านช่องทางออนไลน์</span>
+  </div>
+
+  <div class="cover-box">
+    <table>
+      <tr><td>ผู้ขอรับการประเมิน</td><td><strong>นายทนงค์ บุญเติม</strong></td></tr>
+      <tr><td>ตำแหน่งปัจจุบัน</td><td>นักวิชาการคอมพิวเตอร์ปฏิบัติการ</td></tr>
+      <tr><td>ตำแหน่งที่ขอประเมิน</td><td><strong>นักวิชาการคอมพิวเตอร์ชำนาญการ</strong></td></tr>
+      <tr><td>หน่วยงาน</td>
+        <td>งานสถิติและข้อมูลสารสนเทศ ฝ่ายบริการและเผยแพร่วิชาการ<br>
+        กองยุทธศาสตร์และงบประมาณ <strong>เทศบาลนครรังสิต</strong></td></tr>
+      <tr><td>ระยะเวลาดำเนินการ</td><td>ตุลาคม ๒๕๖๗ – พฤษภาคม ๒๕๖๘ (๘ เดือน)</td></tr>
+    </table>
+  </div>
+
+  <div class="cover-footer">
+    ปีงบประมาณ พ.ศ. ๒๕๖๘<br>
+    เทศบาลนครรังสิต จังหวัดปทุมธานี
+  </div>
+
+</div>
+<div class="pgn-center">- ก -</div>
+</div>
+
+
+<!-- ==================== สารบัญ ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+<h2 class="sec" style="text-align:center;">สารบัญ</h2>
+
+<div style="margin-top:16px;">
+  <div class="toc-line"><span class="toc-title">หลักการและเหตุผล / ความเป็นมา</span><span class="toc-dots"></span><span class="toc-pg">๑</span></div>
+  <div class="toc-line"><span class="toc-title">๑. ชื่อผลงาน</span><span class="toc-dots"></span><span class="toc-pg">๒</span></div>
+  <div class="toc-line"><span class="toc-title">๒. ระยะเวลาดำเนินการ</span><span class="toc-dots"></span><span class="toc-pg">๒</span></div>
+  <div class="toc-line"><span class="toc-title">๓. ความรู้ทางวิชาการ หรือแนวความคิดที่ใช้ในการดำเนินการ</span><span class="toc-dots"></span><span class="toc-pg">๓</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๓.๑ หลักการวิเคราะห์และออกแบบระบบสารสนเทศ</span><span class="toc-dots"></span><span class="toc-pg">๓</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๓.๒ เทคโนโลยีที่ประยุกต์ใช้</span><span class="toc-dots"></span><span class="toc-pg">๓</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๓.๓ หลักความมั่นคงปลอดภัยสารสนเทศ</span><span class="toc-dots"></span><span class="toc-pg">๔</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๓.๔ กฎหมายและระเบียบที่เกี่ยวข้อง</span><span class="toc-dots"></span><span class="toc-pg">๔</span></div>
+  <div class="toc-line"><span class="toc-title">๔. สรุปสาระสำคัญ และระเบียบกฎหมายที่เกี่ยวข้อง</span><span class="toc-dots"></span><span class="toc-pg">๕</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๔.๑ สาระสำคัญ</span><span class="toc-dots"></span><span class="toc-pg">๕</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๔.๒ เป้าหมาย (เชิงปริมาณ / เชิงคุณภาพ)</span><span class="toc-dots"></span><span class="toc-pg">๖</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๔.๓ หน่วยงานที่รับผิดชอบ</span><span class="toc-dots"></span><span class="toc-pg">๖</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๔.๔ สถานที่ดำเนินการ</span><span class="toc-dots"></span><span class="toc-pg">๖</span></div>
+  <div class="toc-line" style="padding-left:2em"><span class="toc-title">๔.๕ งบประมาณ</span><span class="toc-dots"></span><span class="toc-pg">๖</span></div>
+  <div class="toc-line"><span class="toc-title">๕. ขั้นตอนการดำเนินงาน และแผนผังขั้นตอนการปฏิบัติงาน</span><span class="toc-dots"></span><span class="toc-pg">๗</span></div>
+  <div class="toc-line"><span class="toc-title">๖. ผลสำเร็จของงาน</span><span class="toc-dots"></span><span class="toc-pg">๙</span></div>
+  <div class="toc-line"><span class="toc-title">๗. การนำไปใช้ประโยชน์</span><span class="toc-dots"></span><span class="toc-pg">๑๑</span></div>
+  <div class="toc-line"><span class="toc-title">๘. ความยุ่งยากในการดำเนินการ / ปัญหา / อุปสรรค</span><span class="toc-dots"></span><span class="toc-pg">๑๒</span></div>
+  <div class="toc-line"><span class="toc-title">๙. วิธีการดำเนินการแก้ไขปัญหาจนเกิดผลสำเร็จ</span><span class="toc-dots"></span><span class="toc-pg">๑๒</span></div>
+  <div class="toc-line"><span class="toc-title">๑๐. ข้อเสนอแนะ</span><span class="toc-dots"></span><span class="toc-pg">๑๓</span></div>
+  <div class="toc-line"><span class="toc-title">๑๑. ผู้ร่วมดำเนินการ</span><span class="toc-dots"></span><span class="toc-pg">๑๓</span></div>
+</div>
+
+<hr class="d" style="margin-top:30px;">
+<h3 class="sub" style="margin-top:20px;">รายการตาราง</h3>
+<div class="toc-line"><span class="toc-title">ตารางที่ ๑ ประเภทบริการในระบบ iService</span><span class="toc-dots"></span><span class="toc-pg">๕</span></div>
+<div class="toc-line"><span class="toc-title">ตารางที่ ๒ แผนการดำเนินงาน</span><span class="toc-dots"></span><span class="toc-pg">๗</span></div>
+<div class="toc-line"><span class="toc-title">ตารางที่ ๓ เปรียบเทียบสภาพก่อน-หลังการพัฒนาระบบ</span><span class="toc-dots"></span><span class="toc-pg">๑๐</span></div>
+
+<h3 class="sub" style="margin-top:16px;">รายการแผนภาพ</h3>
+<div class="toc-line"><span class="toc-title">แผนภาพที่ ๑ สถาปัตยกรรมระบบ iService</span><span class="toc-dots"></span><span class="toc-pg">๕</span></div>
+<div class="toc-line"><span class="toc-title">แผนภาพที่ ๒ ขั้นตอนการทำงานของผู้ขอรับบริการ</span><span class="toc-dots"></span><span class="toc-pg">๘</span></div>
+<div class="toc-line"><span class="toc-title">แผนภาพที่ ๓ ขั้นตอนการทำงานของเจ้าหน้าที่</span><span class="toc-dots"></span><span class="toc-pg">๘</span></div>
+
+<div class="pgn-center">- ข -</div>
+</div>
+
+
+<!-- ==================== หลักการและเหตุผล ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">หลักการและเหตุผล / ความเป็นมาและความสำคัญของปัญหา</h2>
+
+<h3 class="sub">ความเป็นมา</h3>
+<p class="ind">เทศบาลนครรังสิต เป็นองค์กรปกครองส่วนท้องถิ่นขนาดใหญ่ มีบุคลากรจำนวนหลายร้อยคนกระจายอยู่ในหลายกอง ฝ่าย และส่วน การดำเนินภารกิจของบุคลากรทุกระดับล้วนต้องอาศัยเทคโนโลยีสารสนเทศเป็นเครื่องมือสนับสนุนการปฏิบัติงาน งานสถิติและข้อมูลสารสนเทศ ฝ่ายบริการและเผยแพร่วิชาการ กองยุทธศาสตร์และงบประมาณ จึงมีหน้าที่รับผิดชอบให้บริการด้านเทคโนโลยีสารสนเทศแก่บุคลากรทุกหน่วยงาน</p>
+<p class="ind">ก่อนการพัฒนาระบบ iService การรับคำขอรับบริการด้านไอทีดำเนินการในรูปแบบเดิม กล่าวคือ บุคลากรที่ประสงค์ขอรับบริการต้องติดต่อโดยตรงผ่านช่องทางโทรศัพท์ การแจ้งด้วยวาจา หรือการส่งข้อความผ่านแอปพลิเคชัน LINE ส่วนตัว ซึ่งขาดระบบบันทึก ติดตาม และรายงานที่เป็นมาตรฐาน</p>
+
+<h3 class="sub">สภาพปัญหาก่อนดำเนินการ</h3>
+<div class="ba">
+  <div class="ba-col before">
+    <div class="ba-head">❌ สภาพปัญหาเดิม</div>
+    <ul style="font-size:13pt;">
+      <li>รับเรื่องผ่านโทรศัพท์และวาจา ไม่มีการบันทึก</li>
+      <li>ไม่สามารถติดตามสถานะงานได้</li>
+      <li>งานหล่นหาย ลืม หรือดำเนินการซ้ำซ้อน</li>
+      <li>ไม่มีข้อมูลสถิติภาระงานรวม</li>
+      <li>ผู้บริหารไม่ทราบผลการดำเนินงาน</li>
+      <li>ไม่สามารถวัดประสิทธิภาพการให้บริการ</li>
+      <li>บุคลากรที่ขอรับบริการไม่ทราบว่างานถูกดำเนินการหรือยัง</li>
+      <li>ไม่มีเอกสารหลักฐานการขอรับบริการ</li>
+    </ul>
+  </div>
+  <div class="ba-col after">
+    <div class="ba-head">✅ สภาพหลังพัฒนาระบบ</div>
+    <ul style="font-size:13pt;">
+      <li>ยื่นคำขอออนไลน์ บันทึกอัตโนมัติ ตลอด ๒๔ ชั่วโมง</li>
+      <li>ติดตามสถานะแบบ Real-time ทุกขั้นตอน</li>
+      <li>มีระบบมอบหมายงานและแจ้งเตือน</li>
+      <li>Dashboard สถิติภาระงาน แบ่งตามประเภท/ช่วงเวลา</li>
+      <li>รายงานผลการดำเนินงานให้ผู้บริหารได้ทันที</li>
+      <li>วัดและเปรียบเทียบประสิทธิภาพได้</li>
+      <li>แจ้งเตือนผ่าน LINE และอีเมลอัตโนมัติ</li>
+      <li>พิมพ์เอกสารคำขอ/ผลดำเนินงานได้ทันที</li>
+    </ul>
+  </div>
+</div>
+
+<h3 class="sub">ความสำคัญและความจำเป็น</h3>
+<p class="ind">รัฐบาลไทยมีนโยบายขับเคลื่อนการพัฒนาประเทศด้วยโมเดลเศรษฐกิจ BCG และแผนพัฒนารัฐบาลดิจิทัลของประเทศไทย พ.ศ. ๒๕๖๖–๒๕๗๐ ซึ่งกำหนดให้หน่วยงานภาครัฐต้องปรับเปลี่ยนกระบวนการทำงานสู่ดิจิทัล (Digital Transformation) เพื่อเพิ่มประสิทธิภาพการบริการและลดภาระงานเอกสาร สอดคล้องกับพระราชบัญญัติการบริหารงานและการให้บริการภาครัฐผ่านระบบดิจิทัล พ.ศ. ๒๕๖๒ ที่กำหนดให้หน่วยงานรัฐต้องพัฒนาระบบบริการดิจิทัล</p>
+<p class="ind">ด้วยเหตุผลดังกล่าว ผู้ขอรับการประเมินจึงได้ริเริ่มพัฒนาระบบ iService ขึ้นจากศูนย์ด้วยตนเอง โดยไม่ใช้งบประมาณเพิ่มเติม เพื่อแก้ไขปัญหาการบริหารจัดการคำขอรับบริการด้านไอทีขององค์กร ให้มีประสิทธิภาพ โปร่งใส และสามารถตรวจสอบได้ อันเป็นการสนับสนุนภารกิจหลักขององค์กรในการให้บริการสาธารณะ</p>
+
+<div class="box box-amber">
+  <p class="box-title">🏛 นโยบายและแผนที่เกี่ยวข้อง</p>
+  <ul style="font-size:13pt;">
+    <li>แผนพัฒนารัฐบาลดิจิทัลของประเทศไทย พ.ศ. ๒๕๖๖–๒๕๗๐ (ยุทธศาสตร์ที่ ๑: ยกระดับคุณภาพการให้บริการแก่ประชาชน)</li>
+    <li>พ.ร.บ. การบริหารงานและการให้บริการภาครัฐผ่านระบบดิจิทัล พ.ศ. ๒๕๖๒</li>
+    <li>ยุทธศาสตร์ชาติ ๒๐ ปี (พ.ศ. ๒๕๖๑–๒๕๘๐) ด้านการปรับสมดุลและพัฒนาระบบการบริหารจัดการภาครัฐ</li>
+    <li>แผนปฏิบัติการดิจิทัลเทศบาลนครรังสิต</li>
+  </ul>
+</div>
+
+<div class="pgn">- ๑ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 1–2 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๑. ชื่อผลงาน</h2>
+<div class="box box-blue">
+  <p class="box-title" style="font-size:16pt;">⚙️ ระบบบริการดิจิทัลเทศบาลนครรังสิต (iService)</p>
+  <p class="noind" style="font-size:14pt;color:#333;line-height:1.8;">
+    ระบบรับคำขอรับบริการด้านเทคโนโลยีสารสนเทศผ่านช่องทางออนไลน์<br>
+    สำหรับบุคลากรเทศบาลนครรังสิต<br>
+    <strong>URL ระบบ:</strong> <span style="color:#0056b3;">https://iservice.rangsitcity.go.th/</span>
+  </p>
+</div>
+
+<hr class="d">
+
+<h2 class="sec">๒. ระยะเวลาดำเนินการ</h2>
+
+<table class="t">
+  <thead>
+    <tr>
+      <th style="width:10%">ลำดับ</th>
+      <th style="width:30%">ระยะเวลา</th>
+      <th>กิจกรรม / ผลที่ดำเนินการ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="ctr">๑</td>
+      <td class="ctr">ต.ค. – พ.ย. ๒๕๖๗<br><small>(๒ เดือน)</small></td>
+      <td><strong>วิเคราะห์ความต้องการและออกแบบระบบ</strong><br>
+      สัมภาษณ์ผู้ใช้งาน รวบรวม Requirement จัดทำ Use Case Diagram, ERD, Wireframe และออกแบบฐานข้อมูล</td>
+    </tr>
+    <tr>
+      <td class="ctr">๒</td>
+      <td class="ctr">ธ.ค. ๒๕๖๗ – ม.ค. ๒๕๖๘<br><small>(๒ เดือน)</small></td>
+      <td><strong>พัฒนาระบบหลัก (Core System)</strong><br>
+      พัฒนาระบบฐานข้อมูล ระบบ Login/Authentication ระบบยื่นคำขอรับบริการ ๑๐ ประเภท และระบบจัดการสำหรับ Admin</td>
+    </tr>
+    <tr>
+      <td class="ctr">๓</td>
+      <td class="ctr">ก.พ. ๒๕๖๘<br><small>(๑ เดือน)</small></td>
+      <td><strong>พัฒนาระบบแจ้งเตือนและ Dashboard</strong><br>
+      บูรณาการ LINE Messaging API, ระบบอีเมล SMTP, พัฒนา Admin Dashboard สถิติแบบ Real-time</td>
+    </tr>
+    <tr>
+      <td class="ctr">๔</td>
+      <td class="ctr">มี.ค. ๒๕๖๘<br><small>(๑ เดือน)</small></td>
+      <td><strong>ทดสอบระบบ (UAT) และปรับปรุง</strong><br>
+      ทดสอบ Functional Testing, Security Testing, Performance Testing กับผู้ใช้งานจริง และแก้ไขข้อบกพร่อง</td>
+    </tr>
+    <tr>
+      <td class="ctr">๕</td>
+      <td class="ctr">เม.ย. ๒๕๖๘<br><small>(๑ เดือน)</small></td>
+      <td><strong>Deploy และอบรมผู้ใช้</strong><br>
+      ติดตั้งระบบบน Production Server, ตั้งค่า SSL, DNS, Cron Job จัดอบรมและจัดทำคู่มือ</td>
+    </tr>
+    <tr>
+      <td class="ctr">๖</td>
+      <td class="ctr">พ.ค. ๒๕๖๘ – ปัจจุบัน<br><small>(ต่อเนื่อง)</small></td>
+      <td><strong>เปิดใช้งานจริงและพัฒนาต่อเนื่อง</strong><br>
+      เปิดให้บริการจริง ติดตามผล เพิ่มระบบ PM2.5 Monitoring, ศูนย์รวมการเรียนรู้ดิจิทัล, Visitor Analytics</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2" class="ctr"><strong>รวมระยะเวลา</strong></td><td><strong>๘ เดือน (ตุลาคม ๒๕๖๗ – พฤษภาคม ๒๕๖๘)</strong></td></tr>
+  </tfoot>
+</table>
+
+<div class="pgn">- ๒ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 3 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๓. ความรู้ทางวิชาการ หรือแนวความคิดที่ใช้ในการดำเนินการ</h2>
+
+<h3 class="sub">๓.๑ หลักการวิเคราะห์และออกแบบระบบสารสนเทศ (Systems Analysis and Design)</h3>
+<p class="ind">การพัฒนาระบบ iService ใช้กระบวนการ <strong>Software Development Life Cycle (SDLC)</strong> โดยประยุกต์ใช้วิธีการแบบ Iterative ซึ่งแบ่งการพัฒนาเป็นรอบๆ ทำให้สามารถนำข้อเสนอแนะจากผู้ใช้งานมาปรับปรุงได้อย่างรวดเร็ว ในแต่ละรอบมีกระบวนการ Requirements → Design → Development → Testing → Release ครบถ้วน</p>
+<p class="ind">การออกแบบระบบฐานข้อมูลใช้หลักการ <strong>Normalization</strong> ถึง Third Normal Form (3NF) เพื่อลดความซ้ำซ้อนของข้อมูล (Data Redundancy) และรักษา Data Integrity พร้อมทั้งออกแบบ Index บน Column ที่ใช้ค้นหาบ่อย เช่น status, created_at, department_id เพื่อเพิ่มประสิทธิภาพการค้นหา</p>
+<p class="ind">สถาปัตยกรรมระบบใช้รูปแบบ <strong>MVC (Model-View-Controller)</strong> บางส่วน ควบคู่กับ Legacy Flat-PHP เพื่อให้ระบบทำงานได้เสถียรและพัฒนาต่อได้ง่าย โดยแยกส่วน Logic การทำงาน, การแสดงผล และการจัดการข้อมูลออกจากกันอย่างชัดเจน</p>
+
+<h3 class="sub">๓.๒ เทคโนโลยีที่ประยุกต์ใช้และเหตุผล</h3>
+
+<div class="arch">
+  <div class="arch-layer">
+    <div class="arch-label">🖥 Server / Infrastructure</div>
+    <div class="arch-items">
+      <span class="arch-chip">Apache Web Server</span>
+      <span class="arch-chip">cPanel Hosting (Linux)</span>
+      <span class="arch-chip">SSL/HTTPS (Let's Encrypt)</span>
+      <span class="arch-chip">Cron Job Scheduler</span>
+      <span class="arch-chip">Git Version Control</span>
+    </div>
+  </div>
+  <div class="arch-layer" style="border-color:#0056b3;">
+    <div class="arch-label" style="color:#0056b3;">⚙️ Backend Language &amp; Framework</div>
+    <div class="arch-items">
+      <span class="arch-chip secondary">PHP 7.4+</span>
+      <span class="arch-chip secondary">MySQL / MySQLi</span>
+      <span class="arch-chip secondary">PDO (Prepared Statements)</span>
+      <span class="arch-chip secondary">RESTful API Design</span>
+      <span class="arch-chip secondary">Bearer Token Auth</span>
+      <span class="arch-chip secondary">SMTP Email (PHPMailer)</span>
+    </div>
+  </div>
+  <div class="arch-layer" style="border-color:#1e8449;">
+    <div class="arch-label" style="color:#1e8449;">🎨 Frontend</div>
+    <div class="arch-items">
+      <span class="arch-chip light">HTML5 / CSS3</span>
+      <span class="arch-chip light">Tailwind CSS</span>
+      <span class="arch-chip light">JavaScript ES6+</span>
+      <span class="arch-chip light">jQuery</span>
+      <span class="arch-chip light">SweetAlert2</span>
+      <span class="arch-chip light">FontAwesome</span>
+      <span class="arch-chip light">Leaflet.js (แผนที่)</span>
+      <span class="arch-chip light">PDF.js</span>
+      <span class="arch-chip light">Chart.js</span>
+    </div>
+  </div>
+  <div class="arch-layer" style="border-color:#7d3c98;">
+    <div class="arch-label" style="color:#7d3c98;">🔗 External API Integration</div>
+    <div class="arch-items">
+      <span class="arch-chip" style="background:#7d3c98;">LINE Messaging API</span>
+      <span class="arch-chip" style="background:#7d3c98;">LINE LIFF</span>
+      <span class="arch-chip" style="background:#7d3c98;">PM2.5 IoT Sensor API</span>
+    </div>
+  </div>
+</div>
+
+<p class="ind">การเลือกใช้ <strong>PHP</strong> เป็นภาษาหลักเนื่องจากรองรับการทำงานบน cPanel Hosting ของเทศบาลได้โดยตรง ไม่ต้องติดตั้งเพิ่มเติม ใช้ <strong>Tailwind CSS</strong> แทน Bootstrap เพราะมีขนาดเล็กกว่าและปรับแต่งได้ยืดหยุ่นกว่า ใช้ <strong>PDO Prepared Statements</strong> ทุกครั้งที่ Query ฐานข้อมูลเพื่อป้องกัน SQL Injection โดยหลักการ</p>
+
+<h3 class="sub">๓.๓ หลักความมั่นคงปลอดภัยสารสนเทศ (Information Security)</h3>
+<p class="ind">การออกแบบระบบคำนึงถึงหลักการ <strong>OWASP Top 10</strong> (Open Web Application Security Project) ซึ่งเป็นมาตรฐานสากลด้านความมั่นคงปลอดภัยเว็บแอปพลิเคชัน โดยครอบคลุมการป้องกันช่องโหว่ที่พบบ่อยในระบบเว็บ ดังนี้</p>
+<ul>
+  <li><strong>SQL Injection Prevention:</strong> ใช้ Prepared Statements และ Parameterized Queries ทุก Query โดยไม่ใช้การ Concatenate String โดยตรง</li>
+  <li><strong>XSS Prevention:</strong> ใช้ <code>htmlspecialchars()</code> ทุก Output ที่แสดงผลข้อมูลจาก User Input</li>
+  <li><strong>Authentication:</strong> ระบบ Session-based Authentication พร้อม Role-Based Access Control (RBAC) แบ่ง ๓ ระดับ (admin / staff / user)</li>
+  <li><strong>API Security:</strong> ใช้ Bearer Token Authentication สำหรับ Public API พร้อมตรวจสอบ Token ทุก Request</li>
+  <li><strong>HTTPS Enforcement:</strong> บังคับ HTTPS ผ่าน .htaccess RewriteRule และ SSL Certificate</li>
+  <li><strong>File Upload Security:</strong> ตรวจสอบและบล็อก File Extension ที่อันตราย (php, exe, bat, sh ฯลฯ) ก่อนอนุญาตให้อัปโหลด</li>
+</ul>
+
+<h3 class="sub">๓.๔ กฎหมายและระเบียบที่เกี่ยวข้อง</h3>
+<ul>
+  <li>พระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. ๒๕๕๐ (แก้ไขเพิ่มเติม พ.ศ. ๒๕๖๐)</li>
+  <li>พระราชบัญญัติการบริหารงานและการให้บริการภาครัฐผ่านระบบดิจิทัล พ.ศ. ๒๕๖๒</li>
+  <li>พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. ๒๕๖๒ (PDPA)</li>
+  <li>ระเบียบกระทรวงมหาดไทยว่าด้วยการรักษาความปลอดภัยในระบบสารสนเทศ</li>
+  <li>มาตรฐานและนโยบายความมั่นคงปลอดภัยของสำนักงานรัฐบาลอิเล็กทรอนิกส์ (EGA/DGA)</li>
+</ul>
+
+<div class="pgn">- ๓ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 4 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๔. สรุปสาระสำคัญ และระเบียบกฎหมายที่เกี่ยวข้อง</h2>
+
+<h3 class="sub">๔.๑ สาระสำคัญ</h3>
+<p class="ind">ระบบ iService (iService Digital Platform) คือระบบสารสนเทศสำหรับบริหารจัดการคำขอรับบริการด้านเทคโนโลยีสารสนเทศภายในเทศบาลนครรังสิต พัฒนาเป็นเว็บแอปพลิเคชันสำหรับใช้งานผ่านอินเทอร์เน็ต รองรับการทำงานบนอุปกรณ์ทุกประเภท ทั้งคอมพิวเตอร์ แท็บเล็ต และสมาร์ทโฟน (Responsive Web Design)</p>
+<p class="ind">ระบบแบ่งผู้ใช้งานเป็น ๓ ระดับ ได้แก่ <strong>(๑) ผู้ดูแลระบบ (Admin)</strong> มีสิทธิ์เต็มในการจัดการทุกส่วน <strong>(๒) เจ้าหน้าที่ (Staff)</strong> รับมอบหมายและดำเนินการคำขอ และ <strong>(๓) ผู้ใช้ทั่วไป (User)</strong> ยื่นคำขอและติดตามสถานะ ระบบรองรับบริการ <strong>๑๐ ประเภท</strong> ดังตารางที่ ๑</p>
+
+<p class="noind" style="text-align:center;font-weight:700;font-size:14pt;margin:8px 0 4px;"><em>ตารางที่ ๑ ประเภทบริการในระบบ iService</em></p>
+<table class="t">
+  <thead>
+    <tr><th style="width:5%">ที่</th><th style="width:15%">รหัส</th><th style="width:30%">ประเภทบริการ</th><th>รายละเอียด / ตัวอย่างคำขอ</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="ctr">๑</td><td>EMAIL</td><td>อีเมลองค์กร</td><td>ขอสร้าง/แก้ไข/รีเซ็ตรหัสผ่านบัญชีอีเมล @rangsitcity.go.th</td></tr>
+    <tr><td class="ctr">๒</td><td>NAS</td><td>พื้นที่จัดเก็บข้อมูล</td><td>ขอ/ขยายพื้นที่บน Network Attached Storage สำหรับหน่วยงาน</td></tr>
+    <tr><td class="ctr">๓</td><td>IT_SUPPORT</td><td>ซ่อม/สนับสนุน IT</td><td>แจ้งซ่อมคอมพิวเตอร์ เครื่องพิมพ์ อุปกรณ์ต่อพ่วง ระบบเครือข่าย</td></tr>
+    <tr><td class="ctr">๔</td><td>INTERNET</td><td>อินเทอร์เน็ต</td><td>ขอเปิดใช้/แก้ไขการเชื่อมต่ออินเทอร์เน็ต ขอเพิ่ม Bandwidth</td></tr>
+    <tr><td class="ctr">๕</td><td>QR_CODE</td><td>QR Code</td><td>ขอออกแบบและจัดทำ QR Code สำหรับป้ายประชาสัมพันธ์</td></tr>
+    <tr><td class="ctr">๖</td><td>PHOTOGRAPHY</td><td>ถ่ายภาพ/วิดีโอ</td><td>ขอบริการถ่ายภาพกิจกรรม ประชุม อบรม งานสำคัญต่างๆ</td></tr>
+    <tr><td class="ctr">๗</td><td>WEB_DESIGN</td><td>กราฟิก/เว็บไซต์</td><td>ขอออกแบบสื่อดิจิทัล แบนเนอร์ อินโฟกราฟิก โปสเตอร์ออนไลน์</td></tr>
+    <tr><td class="ctr">๘</td><td>PRINTER</td><td>เครื่องพิมพ์</td><td>ขอติดตั้ง/ซ่อมเครื่องพิมพ์ เพิ่ม Driver เปลี่ยนหมึก/ดรัม</td></tr>
+    <tr><td class="ctr">๙</td><td>LED</td><td>จอ LED</td><td>ขอใช้งานจอ LED แสดงผลในกิจกรรมและงานประชุมต่างๆ</td></tr>
+    <tr><td class="ctr">๑๐</td><td>MC</td><td>พิธีกร/ระบบเสียง</td><td>ขอบริการพิธีกรและระบบเสียงสำหรับงานพิธีการ</td></tr>
+  </tbody>
+</table>
+
+<h3 class="sub">๔.๒ เป้าหมาย</h3>
+
+<h4 class="subsub">เชิงปริมาณ</h4>
+<ul>
+  <li>รับคำขอรับบริการผ่านระบบออนไลน์ได้ไม่น้อยกว่าร้อยละ ๘๐ ของคำขอทั้งหมดภายในปีงบประมาณ ๒๕๖๘</li>
+  <li>ครอบคลุมบริการครบ ๑๐ ประเภทในระบบเดียว ทดแทนการรับเรื่องแบบเดิมได้ทั้งหมด</li>
+  <li>ลดระยะเวลาการรับเรื่อง/ประสานงานจากเฉลี่ย ๓๐ นาที เหลือไม่เกิน ๕ นาที</li>
+  <li>ระบบสามารถรองรับผู้ใช้งานพร้อมกันได้ไม่น้อยกว่า ๕๐ Session</li>
+  <li>ระบบมีเวลาใช้งาน (Uptime) ไม่น้อยกว่าร้อยละ ๙๙ ต่อเดือน</li>
+</ul>
+
+<h4 class="subsub">เชิงคุณภาพ</h4>
+<ul>
+  <li>บุคลากรทุกระดับสามารถยื่นคำขอ ติดตามสถานะ และพิมพ์เอกสารได้ด้วยตนเองตลอด ๒๔ ชั่วโมง ๗ วัน</li>
+  <li>เจ้าหน้าที่ IT สามารถจัดการ มอบหมาย และบันทึกผลงานได้อย่างเป็นระบบ ลดภาระการจดบันทึกแบบ Manual</li>
+  <li>ผู้บริหารสามารถดูรายงานสถิติและวิเคราะห์ภาระงานแบบ Real-time ผ่าน Dashboard</li>
+  <li>มีหลักฐานการขอรับบริการและผลการดำเนินงานที่สามารถสืบค้นและตรวจสอบได้ย้อนหลัง</li>
+  <li>ระบบมีความมั่นคงปลอดภัยตามมาตรฐาน OWASP ป้องกันการโจมตีทางไซเบอร์เบื้องต้น</li>
+</ul>
+
+<h3 class="sub">๔.๓ หน่วยงานที่รับผิดชอบ</h3>
+<div class="box box-blue">
+  <p class="noind">งานสถิติและข้อมูลสารสนเทศ<br>
+  <strong>ฝ่ายบริการและเผยแพร่วิชาการ  กองยุทธศาสตร์และงบประมาณ</strong><br>
+  <strong>เทศบาลนครรังสิต</strong> เลขที่ ๑๕๑ ถนนรังสิต-ปทุมธานี ตำบลประชาธิปัตย์ อำเภอธัญบุรี จังหวัดปทุมธานี ๑๒๑๓๐</p>
+</div>
+
+<h3 class="sub">๔.๔ สถานที่ดำเนินการ</h3>
+<ul>
+  <li>พัฒนา: สำนักงานเทศบาลนครรังสิต (อาคารกองยุทธศาสตร์และงบประมาณ)</li>
+  <li>ระบบออนไลน์เข้าถึงได้ที่: <strong>https://iservice.rangsitcity.go.th/</strong> (เข้าถึงได้ทั่วโลกผ่านอินเทอร์เน็ต)</li>
+</ul>
+
+<h3 class="sub">๔.๕ งบประมาณ</h3>
+<div class="box box-green">
+  <p class="box-title">ไม่ใช้งบประมาณเพิ่มเติม — พัฒนาด้วยทรัพยากรที่มีอยู่เดิม</p>
+  <table class="t" style="font-size:13pt;">
+    <tr><th>รายการ</th><th>ลักษณะ</th><th>มูลค่า</th></tr>
+    <tr><td>Web Hosting (cPanel) + โดเมน</td><td>ใช้ของเทศบาลที่มีอยู่แล้ว</td><td class="ctr">–</td></tr>
+    <tr><td>ซอฟต์แวร์พัฒนาระบบ (PHP, MySQL, Apache)</td><td>Open Source ไม่มีค่าลิขสิทธิ์</td><td class="ctr">–</td></tr>
+    <tr><td>ซอฟต์แวร์ Frontend (Tailwind, jQuery)</td><td>Open Source / CDN ฟรี</td><td class="ctr">–</td></tr>
+    <tr><td>LINE Messaging API</td><td>Free Tier เพียงพอสำหรับองค์กร</td><td class="ctr">–</td></tr>
+    <tr><td>กำลังคนพัฒนา</td><td>นายทนงค์ บุญเติม (บุคลากรเทศบาล)</td><td class="ctr">–</td></tr>
+    <tfoot><tr><td colspan="2"><strong>รวมงบประมาณที่ใช้จริง</strong></td><td class="ctr num">๐ บาท</td></tr></tfoot>
+  </table>
+  <p class="noind" style="margin-top:8px;font-size:13pt;"><strong>มูลค่าที่ประหยัดได้เทียบกับการจ้างบริษัทพัฒนาระบบภายนอก: ประมาณ ๒๐๐,๐๐๐ – ๕๐๐,๐๐๐ บาท</strong><br>
+  (อ้างอิงจากราคาตลาดการพัฒนา Web Application ระดับองค์กรขนาดใกล้เคียงกัน)</p>
+</div>
+
+<div class="pgn">- ๔ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 5 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๕. ขั้นตอนการดำเนินงาน และแผนผังแสดงขั้นตอนการปฏิบัติงาน (โดยละเอียด)</h2>
+
+<h3 class="sub">๕.๑ ขั้นตอนและวิธีดำเนินการ</h3>
+
+<div class="box box-blue" style="margin-bottom:10px;">
+  <p class="box-title">ขั้นตอนที่ ๑ — การสำรวจและวิเคราะห์ความต้องการ (Requirements Analysis)</p>
+  <ul style="font-size:13pt;">
+    <li>สัมภาษณ์เจ้าหน้าที่ IT ผู้ใช้งาน และผู้บริหาร เพื่อระบุ Pain Points ในกระบวนการเดิม</li>
+    <li>จัดทำรายการ Functional Requirements ครอบคลุมทั้ง ๓ กลุ่มผู้ใช้ (Admin / Staff / User)</li>
+    <li>จัดทำ Use Case Diagram แสดงการโต้ตอบระหว่างผู้ใช้กับระบบทุกสถานการณ์</li>
+    <li>จัดทำ Entity Relationship Diagram (ERD) ออกแบบโครงสร้างฐานข้อมูลรองรับ Scale-up ในอนาคต</li>
+    <li>ออกแบบ Wireframe ทุกหน้าจอก่อนลงมือพัฒนา เพื่อให้ผู้ใช้งานอนุมัติแนวทางก่อน</li>
+  </ul>
+</div>
+
+<div class="box box-blue" style="margin-bottom:10px;">
+  <p class="box-title">ขั้นตอนที่ ๒ — การออกแบบระบบ (System Design)</p>
+  <ul style="font-size:13pt;">
+    <li><strong>Database Design:</strong> ออกแบบตาราง ๒๐+ ตาราง ครอบคลุม service_requests, departments (๔ ระดับ), users, task_assignments, internal_jobs เป็นต้น ใช้หลัก Normalization และ Foreign Key Constraints</li>
+    <li><strong>Architecture Design:</strong> กำหนดโครงสร้างโฟลเดอร์ แยก admin/, api/, includes/, forms/, config/ อย่างชัดเจน เพื่อความปลอดภัยและง่ายต่อการดูแลรักษา</li>
+    <li><strong>API Design:</strong> ออกแบบ RESTful API Endpoint สำหรับการสื่อสารระหว่าง Frontend-Backend และ Public API สำหรับ Integration ภายนอก</li>
+    <li><strong>Security Architecture:</strong> กำหนด RBAC Matrix สำหรับ ๓ Role และออกแบบระบบ Session Management</li>
+  </ul>
+</div>
+
+<div class="box box-blue" style="margin-bottom:10px;">
+  <p class="box-title">ขั้นตอนที่ ๓ — การพัฒนาระบบ (System Development)</p>
+  <ul style="font-size:13pt;">
+    <li><strong>ระบบหน้าบ้าน (Public Portal):</strong> หน้ายื่นคำขอ ๑๐ ประเภท พร้อม Dynamic Form Fields, หน้าติดตามสถานะ, ระบบพิมพ์เอกสาร PDF, ศูนย์รวมการเรียนรู้ดิจิทัล</li>
+    <li><strong>ระบบหลังบ้าน (Admin Panel):</strong> Dashboard สถิติ, จัดการคำขอ, มอบหมายงาน Multi-Assignee, บันทึกผลการดำเนินงาน, รายงาน</li>
+    <li><strong>ระบบการแจ้งเตือน:</strong> LINE Messaging API ผ่าน Cron Job ทุก ๑๕ นาที, Email Notification ผ่าน SMTP ทุกสถานะการเปลี่ยนแปลง</li>
+    <li><strong>ฟีเจอร์เพิ่มเติม:</strong> ระบบติดตามคุณภาพอากาศ PM2.5 Real-time (สถานี ๑๐ แห่ง), Visitor Analytics, API สาธารณะพร้อม Bearer Token Auth</li>
+    <li><strong>Version Control:</strong> ใช้ Git บันทึกทุกการเปลี่ยนแปลง มี Branch Strategy แยก Development / Production</li>
+  </ul>
+</div>
+
+<div class="box box-blue" style="margin-bottom:10px;">
+  <p class="box-title">ขั้นตอนที่ ๔ — การทดสอบระบบ (Testing)</p>
+  <ul style="font-size:13pt;">
+    <li><strong>Unit Testing:</strong> ทดสอบฟังก์ชันการทำงานของแต่ละโมดูลอย่างละเอียด</li>
+    <li><strong>Integration Testing:</strong> ทดสอบการทำงานร่วมกันระหว่าง Frontend, Backend, Database และ External API</li>
+    <li><strong>Security Testing:</strong> ทดสอบป้องกัน SQL Injection, XSS, CSRF และ Unauthorized Access</li>
+    <li><strong>UAT (User Acceptance Testing):</strong> ให้เจ้าหน้าที่และผู้ใช้งานจริงทดสอบและให้ข้อเสนอแนะ</li>
+    <li><strong>Cross-browser / Responsive Testing:</strong> ทดสอบบน Chrome, Firefox, Safari, Edge และอุปกรณ์ Mobile</li>
+  </ul>
+</div>
+
+<div class="box box-blue" style="margin-bottom:10px;">
+  <p class="box-title">ขั้นตอนที่ ๕ — การติดตั้งระบบบน Production (Deployment)</p>
+  <ul style="font-size:13pt;">
+    <li>อัปโหลดไฟล์ระบบผ่าน FTP ไปยัง cPanel Hosting ของเทศบาล</li>
+    <li>Import ฐานข้อมูลผ่าน phpMyAdmin พร้อมตรวจสอบ Charset (utf8mb4)</li>
+    <li>ตั้งค่า .htaccess สำหรับ URL Rewrite, HTTPS Redirect และ Security Headers</li>
+    <li>ตั้งค่า Cron Job บน cPanel สำหรับระบบแจ้งเตือน LINE (ทุก ๑๕ นาที)</li>
+    <li>ทดสอบบน Production Environment ก่อนประกาศเปิดใช้งาน</li>
+  </ul>
+</div>
+
+<div class="box box-blue">
+  <p class="box-title">ขั้นตอนที่ ๖ — การอบรมและพัฒนาต่อเนื่อง</p>
+  <ul style="font-size:13pt;">
+    <li>จัดทำคู่มือการใช้งานระบบสำหรับผู้ใช้แต่ละระดับ (Admin / Staff / User)</li>
+    <li>สาธิตการใช้งานให้แก่บุคลากร รับข้อเสนอแนะ และปรับปรุงอย่างต่อเนื่อง</li>
+    <li>พัฒนาฟีเจอร์ใหม่ตามความต้องการ: PM2.5 Dashboard, Learning Resources Center, Visitor Analytics</li>
+    <li>บำรุงรักษาและอัปเดตระบบให้มีความปลอดภัยและทันสมัยอยู่เสมอ</li>
+  </ul>
+</div>
+
+<div class="pgn">- ๕ -</div>
+</div>
+
+
+<!-- ==================== Flowcharts ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h3 class="sub">๕.๒ แผนผังแสดงขั้นตอนการปฏิบัติงาน</h3>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px;">
+
+  <div>
+    <p class="noind" style="text-align:center;font-weight:700;color:#003087;font-size:14pt;margin-bottom:12px;">
+      แผนภาพที่ ๒<br>ขั้นตอน — ผู้ขอรับบริการ (User)
+    </p>
+    <div class="flow">
+      <div class="fb fb-pill">🟢 เริ่มต้น</div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">เข้าสู่ระบบ iService<br><small>https://iservice.rangsitcity.go.th</small></div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">เลือกประเภทบริการ<br><small>(๑ ใน ๑๐ ประเภท)</small></div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">กรอกแบบฟอร์มคำขอ<br><small>ระบุรายละเอียดตามประเภท</small></div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">แนบเอกสาร/รูปภาพ<br><small>(ถ้ามี)</small></div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">ยืนยันและส่งคำขอ</div>
+      <div class="fa"></div>
+      <div class="fb fb-rect3">รับหมายเลขคำขอ<br>+ แจ้งเตือน LINE / Email</div>
+      <div class="fa"></div>
+      <div class="fb fb-rect">ติดตามสถานะแบบ Real-time<br><small>รับแจ้งเตือนทุก Update</small></div>
+      <div class="fa"></div>
+      <div class="fb fb-rect3">รับทราบผลการดำเนินงาน<br>พิมพ์เอกสารหลักฐาน</div>
+      <div class="fa"></div>
+      <div class="fb fb-pill">🔴 สิ้นสุด</div>
+    </div>
+  </div>
+
+  <div>
+    <p class="noind" style="text-align:center;font-weight:700;color:#b30000;font-size:14pt;margin-bottom:12px;">
+      แผนภาพที่ ๓<br>ขั้นตอน — เจ้าหน้าที่ IT (Admin/Staff)
+    </p>
+    <div class="flow">
+      <div class="fb fb-pill" style="background:#7d3c98;">📩 รับแจ้งเตือนคำขอใหม่</div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">เข้าสู่ระบบ Admin Panel<br><small>ดูรายการคำขอที่รอดำเนินการ</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">ตรวจสอบรายละเอียด<br><small>ชื่อผู้ขอ, ประเภท, ข้อมูลแบบฟอร์ม</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">มอบหมายงานให้เจ้าหน้าที่<br><small>รองรับ Multi-Assignee</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">อัปเดตสถานะ<br><small>รับเรื่อง → กำลังดำเนินการ</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">ดำเนินการแก้ไข/ให้บริการ<br><small>บันทึกหมายเหตุการดำเนินงาน</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect3">เปลี่ยนสถานะ "เสร็จสิ้น"<br><small>ระบบแจ้งเตือนผู้ขออัตโนมัติ</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-rect2">ดู Dashboard สถิติ<br><small>วิเคราะห์ภาระงานรวม</small></div>
+      <div class="fa fa-r"></div>
+      <div class="fb fb-pill" style="background:#b30000;">🔴 สิ้นสุด</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="pgn">- ๖ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 6 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๖. ผลสำเร็จของงาน</h2>
+
+<h3 class="sub">๖.๑ เชิงปริมาณ</h3>
+
+<div class="stats">
+  <div class="stat"><div class="n">10</div><div class="l">ประเภทบริการ<br>ในระบบเดียว</div></div>
+  <div class="stat"><div class="n">3</div><div class="l">ระดับสิทธิ์<br>ผู้ใช้งาน</div></div>
+  <div class="stat"><div class="n">4</div><div class="l">ระดับโครงสร้าง<br>หน่วยงาน</div></div>
+  <div class="stat"><div class="n">20+</div><div class="l">ตารางในฐานข้อมูล<br>ที่ออกแบบไว้</div></div>
+  <div class="stat"><div class="n">10</div><div class="l">สถานีตรวจวัด<br>PM2.5</div></div>
+  <div class="stat"><div class="n">7</div><div class="l">ประเภทสื่อ<br>Learning Center</div></div>
+  <div class="stat"><div class="n">24/7</div><div class="l">เข้าถึงระบบได้<br>ตลอดเวลา</div></div>
+  <div class="stat"><div class="n">0 บาท</div><div class="l">งบประมาณ<br>ที่ใช้เพิ่มเติม</div></div>
+</div>
+
+<p class="ind">ในด้านฟีเจอร์ที่พัฒนาสำเร็จครบถ้วน ได้แก่</p>
+<ul>
+  <li><strong>ระบบยื่นคำขอรับบริการออนไลน์:</strong> รองรับ ๑๐ ประเภทบริการ พร้อม Dynamic Form Fields ที่ปรับเปลี่ยนตามประเภทที่เลือก</li>
+  <li><strong>ระบบติดตามสถานะ:</strong> ผู้ขอรับบริการสามารถค้นหาด้วยหมายเลขคำขอ ดูสถานะแบบ Timeline และทราบชื่อผู้รับผิดชอบ</li>
+  <li><strong>ระบบมอบหมายงาน Multi-Assignee:</strong> มอบหมายผู้รับผิดชอบได้หลายคนพร้อมกัน แต่ละคนรับแจ้งเตือน LINE โดยอัตโนมัติ</li>
+  <li><strong>Admin Dashboard:</strong> แสดงสถิติคำขอแบ่งตามสถานะ ประเภท และช่วงเวลา พร้อม Chart แสดงผลด้วยภาพ</li>
+  <li><strong>ระบบพิมพ์เอกสาร:</strong> พิมพ์ใบคำขอรับบริการ A4 พร้อม QR Code ลิงก์ไปยังหน้าติดตาม</li>
+  <li><strong>PM2.5 Monitoring:</strong> แสดงค่าฝุ่น PM2.5 Real-time จาก ๑๐ สถานี บน Interactive Map (Leaflet.js) พร้อมสีตาม AQI Standard</li>
+  <li><strong>ศูนย์รวมการเรียนรู้ดิจิทัล:</strong> รองรับสื่อ ๗ ประเภท (PDF, Video, YouTube, Podcast, Blog, Source Code, Flipbook) พร้อม Flipbook Viewer</li>
+  <li><strong>Public API:</strong> API สาธารณะพร้อม Bearer Token Authentication สำหรับ Integration กับระบบอื่น</li>
+  <li><strong>Visitor Analytics:</strong> บันทึกและวิเคราะห์ข้อมูลผู้เข้าชมเว็บไซต์แบบ Privacy-Compliant</li>
+</ul>
+
+<h3 class="sub">๖.๒ เชิงคุณภาพ</h3>
+
+<p class="noind" style="text-align:center;font-weight:700;font-size:14pt;margin:8px 0 4px;"><em>ตารางที่ ๓ เปรียบเทียบสภาพก่อน-หลังการพัฒนาระบบ iService</em></p>
+<table class="t">
+  <thead>
+    <tr>
+      <th>ด้าน</th>
+      <th style="background:#8b0000;">ก่อนพัฒนาระบบ</th>
+      <th style="background:#1e5631;">หลังพัฒนาระบบ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>ช่องทางรับเรื่อง</strong></td>
+      <td>โทรศัพท์ วาจา LINE ส่วนตัว</td>
+      <td>ระบบออนไลน์ ๒๔ ชั่วโมง พร้อมบันทึกอัตโนมัติ</td>
+    </tr>
+    <tr>
+      <td><strong>การบันทึกข้อมูล</strong></td>
+      <td>ไม่มีการบันทึก หรือบันทึกในสมุดส่วนตัว</td>
+      <td>บันทึกลงฐานข้อมูลอัตโนมัติ ค้นหาย้อนหลังได้ทุกเมื่อ</td>
+    </tr>
+    <tr>
+      <td><strong>การติดตามงาน</strong></td>
+      <td>โทรถามเป็นรายครั้ง ไม่แน่ใจสถานะ</td>
+      <td>ติดตาม Real-time ผ่าน Timeline แจ้งเตือนทุกขั้นตอน</td>
+    </tr>
+    <tr>
+      <td><strong>เวลาประสานงาน</strong></td>
+      <td>เฉลี่ย ๒๐–๓๐ นาทีต่อเรื่อง</td>
+      <td>ไม่เกิน ๓–๕ นาที (กรอกแบบฟอร์มออนไลน์)</td>
+    </tr>
+    <tr>
+      <td><strong>รายงานภาระงาน</strong></td>
+      <td>ไม่มีข้อมูลสถิติ ไม่สามารถรายงานได้</td>
+      <td>Dashboard Real-time Export รายงานได้ทุกเมื่อ</td>
+    </tr>
+    <tr>
+      <td><strong>เอกสารหลักฐาน</strong></td>
+      <td>ไม่มีเอกสารรับรอง</td>
+      <td>พิมพ์ใบรับบริการ A4 พร้อม QR Code ได้ทันที</td>
+    </tr>
+    <tr>
+      <td><strong>การมอบหมายงาน</strong></td>
+      <td>แจ้งด้วยวาจา อาจตกหล่น</td>
+      <td>มอบหมาย Multi-Assignee พร้อมแจ้ง LINE ทันที</td>
+    </tr>
+    <tr>
+      <td><strong>ความโปร่งใส</strong></td>
+      <td>ผู้บริหารไม่ทราบภาพรวม</td>
+      <td>ผู้บริหารดู Dashboard วิเคราะห์ได้ทุกเวลา</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pgn">- ๗ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 7–9 ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๗. การนำไปใช้ประโยชน์</h2>
+
+<h3 class="sub">๗.๑ ประโยชน์ต่อบุคลากรผู้รับบริการ</h3>
+<p class="ind">บุคลากรเทศบาลนครรังสิตทุกระดับสามารถยื่นคำขอรับบริการด้านไอทีได้ด้วยตนเองผ่านระบบออนไลน์ตลอด ๒๔ ชั่วโมง โดยไม่ต้องรอเวลาทำการ ไม่ต้องเดินทางมาแจ้งด้วยตนเอง สามารถแนบรูปภาพหรือเอกสารประกอบคำขอ และติดตามความคืบหน้าได้แบบ Real-time ผ่านระบบออนไลน์หรือการแจ้งเตือน LINE ซึ่งลดความไม่สะดวกและเวลาที่เสียไปกับการประสานงาน</p>
+
+<h3 class="sub">๗.๒ ประโยชน์ต่อเจ้าหน้าที่ IT</h3>
+<p class="ind">เจ้าหน้าที่ IT มีระบบจัดการงานที่เป็นระเบียบ สามารถจัดลำดับความสำคัญของงาน มอบหมายงานให้เพื่อนร่วมทีมได้อย่างชัดเจน บันทึกผลการดำเนินงานเพื่อเป็นหลักฐาน และดูภาระงานรวมทั้งหมดได้จาก Dashboard ลดปัญหางานตกหล่นและการทำงานซ้ำซ้อน</p>
+
+<h3 class="sub">๗.๓ ประโยชน์ต่อผู้บริหาร</h3>
+<p class="ind">ผู้บริหารสามารถติดตามประสิทธิภาพการให้บริการด้านไอทีขององค์กรได้แบบ Real-time ผ่าน Admin Dashboard ทราบจำนวนคำขอทั้งหมด สถิติแยกตามประเภทและสถานะ ประวัติการดำเนินงาน และสามารถนำข้อมูลไปใช้ประกอบการวางแผนจัดสรรอัตรากำลังและทรัพยากร</p>
+
+<h3 class="sub">๗.๔ ประโยชน์ต่อองค์กร</h3>
+<ul>
+  <li><strong>ลดต้นทุน:</strong> ลดภาระงานธุรการและการประสานงาน ประหยัดเวลาบุคลากรทั้งองค์กรโดยรวม</li>
+  <li><strong>เพิ่มความโปร่งใส:</strong> ทุกคำขอมีหลักฐานดิจิทัล ตรวจสอบย้อนหลังได้ สอดคล้องกับหลักธรรมาภิบาล</li>
+  <li><strong>ภาพลักษณ์องค์กร:</strong> แสดงถึงการพัฒนาสู่รัฐบาลดิจิทัล ทันสมัย และมุ่งมั่นพัฒนาคุณภาพบริการ</li>
+  <li><strong>ต้นแบบ:</strong> ระบบสามารถเป็นต้นแบบให้หน่วยงานอื่นในองค์กรหรือ อปท. อื่นนำไปประยุกต์ใช้ได้</li>
+  <li><strong>ฐานข้อมูลสำหรับการวางแผน:</strong> ข้อมูลสถิติการขอรับบริการนำไปใช้ประกอบการจัดทำงบประมาณจัดซื้อครุภัณฑ์ IT</li>
+</ul>
+
+<hr class="d">
+
+<h2 class="sec">๘. ความยุ่งยากในการดำเนินการ / ปัญหา / อุปสรรค</h2>
+
+<table class="t">
+  <thead>
+    <tr><th style="width:5%">ที่</th><th style="width:30%">ปัญหา/อุปสรรค</th><th>รายละเอียด</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="ctr">๑</td>
+      <td><strong>Apache ตัด Authorization Header</strong></td>
+      <td>Production Server บน cPanel ใช้ mod_php ที่ถูกตั้งค่าให้ตัด Authorization Header ทิ้ง ทำให้ Bearer Token Authentication ของ Public API ไม่สามารถทำงานได้</td>
+    </tr>
+    <tr>
+      <td class="ctr">๒</td>
+      <td><strong>ความแตกต่าง Local vs Production</strong></td>
+      <td>โครงสร้าง Directory, การตั้งค่า PHP และ MySQL บน Server จริงแตกต่างจาก Local Development ทำให้ Path ของไฟล์และ URL Rewrite ต้องปรับแก้</td>
+    </tr>
+    <tr>
+      <td class="ctr">๓</td>
+      <td><strong>ข้อจำกัด LINE Messaging API</strong></td>
+      <td>การส่ง LINE Push Message ต้องทราบ LINE User ID ของผู้รับ ซึ่งต้องเชื่อมต่อกับบัญชี LINE ส่วนตัวก่อน ต้องพัฒนา LIFF สำหรับขั้นตอนนี้</td>
+    </tr>
+    <tr>
+      <td class="ctr">๔</td>
+      <td><strong>พัฒนาเพียงคนเดียว</strong></td>
+      <td>ต้องรับผิดชอบตั้งแต่ออกแบบ พัฒนา ทดสอบ ไปจนถึง Deploy เพียงคนเดียว ในขณะที่ยังต้องปฏิบัติงานประจำตามปกติ ทำให้เวลาพัฒนาจำกัด</td>
+    </tr>
+    <tr>
+      <td class="ctr">๕</td>
+      <td><strong>ผู้ใช้หลากหลายระดับทักษะ</strong></td>
+      <td>บุคลากรในองค์กรมีทักษะด้านเทคโนโลยีที่แตกต่างกันมาก ต้องออกแบบ UI/UX ให้ใช้งานง่ายโดยไม่ต้องอบรมมาก</td>
+    </tr>
+    <tr>
+      <td class="ctr">๖</td>
+      <td><strong>การป้องกัน SQL Comment ใน PHP Docblock</strong></td>
+      <td>สคริปต์ Cron Job ที่ใช้ <code>/** */</code> Comment ตามมาตรฐาน PHP Docblock มี pattern <code>*/15</code> (ทุก ๑๕ นาที) ซึ่งปิด Comment Block ก่อนกำหนด ทำให้ parse error</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="d">
+
+<h2 class="sec">๙. วิธีการดำเนินการแก้ไขปัญหา / อุปสรรค จนเกิดผลสำเร็จ</h2>
+
+<table class="t">
+  <thead>
+    <tr><th style="width:5%">ที่</th><th style="width:30%">วิธีแก้ไข</th><th>รายละเอียดการแก้ไข</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="ctr">๑</td>
+      <td><strong>RewriteRule ส่ง Token ผ่าน Env Var</strong></td>
+      <td>เพิ่ม Rule ใน <code>.htaccess</code> ให้ส่ง Authorization Header ผ่าน Environment Variable (<code>HTTP_AUTHORIZATION</code>) แทนการส่งตรง จากนั้น PHP อ่านค่าจาก <code>getenv()</code> แทน <code>$_SERVER</code> ทำให้ Token Authentication ทำงานได้บน Production</td>
+    </tr>
+    <tr>
+      <td class="ctr">๒</td>
+      <td><strong>ฟังก์ชัน fix_asset_path() ส่วนกลาง</strong></td>
+      <td>พัฒนาฟังก์ชัน <code>fix_asset_path($path, $from_admin)</code> ใน <code>config/database.php</code> เพื่อแปลง Path ของไฟล์ให้ถูกต้องโดยอัตโนมัติทั้งบน Local และ Production โดยไม่ต้องแก้ Code แต่ละไฟล์</td>
+    </tr>
+    <tr>
+      <td class="ctr">๓</td>
+      <td><strong>LINE LIFF + Cron Job</strong></td>
+      <td>พัฒนา LINE LIFF Application สำหรับเชื่อมต่อ LINE User ID กับระบบ และตั้ง Cron Job บน cPanel ทุก ๑๕ นาทีเพื่อ Query งานที่ใกล้ถึงกำหนดแล้วส่ง Push Message โดยมี Unique Key ป้องกันการแจ้งเตือนซ้ำ</td>
+    </tr>
+    <tr>
+      <td class="ctr">๔</td>
+      <td><strong>Prioritization + Git Version Control</strong></td>
+      <td>จัดลำดับความสำคัญฟีเจอร์ พัฒนา Core Feature ให้สมบูรณ์ก่อน แล้วค่อยเพิ่ม Feature เสริม ใช้ Git บันทึกทุกการเปลี่ยนแปลงและ Branch แยก Dev/Prod ทำให้ทำงานคนเดียวได้อย่างมีประสิทธิภาพ</td>
+    </tr>
+    <tr>
+      <td class="ctr">๕</td>
+      <td><strong>User-Centered Design</strong></td>
+      <td>ออกแบบ UI ด้วย Tailwind CSS ให้ Responsive ทุกอุปกรณ์ ใช้ SweetAlert2 ทดแทน Browser Alert เพื่อการแสดงผลที่ชัดเจนและสวยงาม ใช้ภาษาไทยทั้งหมดในส่วน User Interface</td>
+    </tr>
+    <tr>
+      <td class="ctr">๖</td>
+      <td><strong>เปลี่ยน Comment เป็น # แทน /** */</strong></td>
+      <td>ในไฟล์ Cron Script เปลี่ยน Docblock Comment <code>/** */</code> เป็น <code>#</code> Line Comment ซึ่งไม่มีปัญหา Pattern ปิด Comment Block กลางคัน ทำให้สคริปต์ Parse ได้ถูกต้อง</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pgn">- ๘ -</div>
+</div>
+
+
+<!-- ==================== หัวข้อ 10–11 + ลายเซ็น ==================== -->
+<div class="page">
+<div class="rh"><span>รายงานผลการปฏิบัติงาน</span><span>นายทนงค์ บุญเติม</span></div>
+
+<h2 class="sec">๑๐. ข้อเสนอแนะ</h2>
+
+<h3 class="sub">๑๐.๑ ข้อเสนอแนะด้านนโยบายและการบริหาร</h3>
+<ul>
+  <li>ควรมีนโยบายกำหนดให้ใช้ระบบ iService เป็นช่องทางหลักอย่างเป็นทางการ และยกเลิกการรับเรื่องแบบเดิม (โทรศัพท์/วาจา) เพื่อให้ข้อมูลครบถ้วนและสามารถนำไปวิเคราะห์ได้</li>
+  <li>ควรกำหนด <strong>Service Level Agreement (SLA)</strong> มาตรฐานเวลาดำเนินการสำหรับแต่ละประเภทบริการ เช่น IT Support ต้องดำเนินการภายใน ๒ ชั่วโมง เป็นต้น เพื่อให้ระบบสามารถแจ้งเตือนงานที่เกินกำหนดอัตโนมัติได้</li>
+  <li>ควรนำข้อมูลสถิติจากระบบมาใช้ประกอบการจัดทำแผนปฏิบัติการและงบประมาณด้าน IT ประจำปี</li>
+</ul>
+
+<h3 class="sub">๑๐.๒ ข้อเสนอแนะด้านการพัฒนาระบบต่อเนื่อง</h3>
+<ul>
+  <li>ควรพัฒนา <strong>Mobile Application</strong> (Android/iOS) เพื่อเพิ่มความสะดวกในการยื่นคำขอและรับแจ้งเตือนผ่านสมาร์ทโฟน</li>
+  <li>ควรพัฒนาระบบ <strong>Advanced Reporting</strong> ให้สามารถ Export รายงานในรูปแบบ Excel/PDF สำหรับการนำเสนอผู้บริหาร</li>
+  <li>ควรพิจารณาพัฒนา <strong>Single Sign-On (SSO)</strong> เชื่อมต่อกับระบบสารสนเทศอื่นๆ ของเทศบาล เพื่อลดขั้นตอนการ Login ซ้ำซ้อน</li>
+  <li>ควรจัดทำระบบ <strong>Backup อัตโนมัติ</strong> รายวัน และแผน Disaster Recovery เป็นลายลักษณ์อักษรเพื่อรองรับกรณีระบบขัดข้อง</li>
+  <li>ควรต่อยอด ระบบ PM2.5 ให้ส่งแจ้งเตือน LINE อัตโนมัติแก่ผู้บริหารเมื่อค่าเกินมาตรฐาน WHO</li>
+</ul>
+
+<h3 class="sub">๑๐.๓ ข้อเสนอแนะด้านบุคลากรและองค์กร</h3>
+<ul>
+  <li>ควรจัดสรรบุคลากรด้านเทคโนโลยีสารสนเทศเพิ่มเติมอย่างน้อย ๑ อัตรา เพื่อรองรับการพัฒนาและบำรุงรักษาระบบสารสนเทศที่มีความซับซ้อนมากขึ้น</li>
+  <li>ควรส่งเสริมและสนับสนุนให้บุคลากรได้รับการพัฒนาทักษะดิจิทัล เพื่อให้ใช้งานระบบได้อย่างเต็มประสิทธิภาพ</li>
+  <li>ควรจัดอบรมทบทวนการใช้ระบบสำหรับบุคลากรใหม่ที่เข้ามาปฏิบัติงานในองค์กร</li>
+</ul>
+
+<hr class="d">
+
+<h2 class="sec">๑๑. ผู้ร่วมดำเนินการ</h2>
+<div class="box box-gray">
+  <p class="noind" style="font-size:15pt;">
+    <strong>ไม่มีผู้ร่วมดำเนินการ</strong><br>
+    ระบบ iService ออกแบบ พัฒนา ทดสอบ ติดตั้ง และบำรุงรักษา โดย <strong>นายทนงค์ บุญเติม</strong> แต่เพียงผู้เดียว โดยใช้เวลานอกเหนือจากการปฏิบัติงานประจำ แสดงถึงความมุ่งมั่น ความสามารถในการทำงานอิสระ และความชำนาญการในสาขาวิชาชีพอย่างแท้จริง
+  </p>
+</div>
+
+<hr class="d">
+
+<!-- ลายเซ็น -->
+<div style="margin-top:20px;">
+  <p class="noind" style="text-align:center;font-size:14pt;color:#555;margin-bottom:20px;">
+    ข้าพเจ้าขอรับรองว่าข้อมูลในรายงานฉบับนี้เป็นความจริงทุกประการ
+  </p>
+  <div class="sig">
+    <div>
+      <div class="sig-line"></div>
+      <p class="noind">(นายทนงค์ บุญเติม)</p>
+      <p class="noind" style="font-size:13pt;color:#555;">นักวิชาการคอมพิวเตอร์ปฏิบัติการ</p>
+      <p class="noind" style="font-size:13pt;color:#555;">ผู้ขอรับการประเมิน</p>
+      <p class="noind" style="font-size:13pt;margin-top:4px;">วันที่&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+    </div>
+    <div>
+      <div class="sig-line"></div>
+      <p class="noind">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</p>
+      <p class="noind" style="font-size:13pt;color:#555;">ผู้บังคับบัญชา</p>
+      <p class="noind" style="font-size:13pt;color:#555;">ตำแหน่ง ........................................</p>
+      <p class="noind" style="font-size:13pt;margin-top:4px;">วันที่&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+    </div>
+  </div>
+</div>
+
+<div class="pgn">- ๙ -</div>
+</div>
+
+</body>
+</html>

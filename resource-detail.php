@@ -84,11 +84,17 @@ $extra_styles = "
         }
 
         /* Flipbook Styles */
+        #pdfFlipbookViewer {
+            overflow: hidden;
+            max-width: 100%;
+        }
+
         .flipbook-wrapper {
             perspective: 2000px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 16px;
-            padding: 40px 20px;
+            padding: 20px 16px;
+            overflow: hidden;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
@@ -420,8 +426,12 @@ include __DIR__ . '/includes/header_public.php';
                                                     container.appendChild(div);
                                                 });
 
-                                                // Responsive width: limit to viewport
-                                                const maxW = Math.min(pageWidth, Math.floor((window.innerWidth - 60) / 2));
+                                                // Responsive width: use actual container width, not window width
+                                                const viewerEl = document.getElementById("pdfFlipbookViewer");
+                                                const containerW = viewerEl ? viewerEl.offsetWidth : (window.innerWidth - 80);
+                                                // Subtract flipbook-wrapper padding (32px) and leave small margin
+                                                const availableW = containerW - 48;
+                                                const maxW = Math.min(pageWidth, Math.floor(availableW / 2));
                                                 const ratio = maxW / pageWidth;
                                                 const displayH = Math.round(pageHeight * ratio);
 

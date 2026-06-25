@@ -1,0 +1,163 @@
+==================================================================
+ระบบติดตามคุณภาพอากาศ PM2.5 - เทศบาลนครรังสิต
+==================================================================
+URL สาธารณะ : https://iservice.rangsitcity.go.th/pm25_dashboard.php
+URL Admin   : https://iservice.rangsitcity.go.th/admin/pm25_dashboard.php
+
+------------------------------------------------------------------
+1. ภาพรวมสถาปัตยกรรม
+------------------------------------------------------------------
+ระบบทำงานแบบ Pull-based pipeline กล่าวคือ มี Cron Job ดึงข้อมูล
+จาก API ภายนอกเข้ามาเก็บใน MySQL เป็นระยะ ๆ จากนั้น Dashboard และ
+Public API จะอ่านข้อมูลจาก MySQL ตัวเดียวกันนี้เท่านั้น ไม่มีการ
+เรียก API ภายนอกแบบ real-time ตอนผู้ใช้เปิดหน้าเว็บ ทำให้หน้าเว็บ
+โหลดเร็วและไม่ผูกความเสถียรของระบบกับ API ต้นทางโดยตรง
+
+แผนภาพการทำงาน:
+
+   [Freshnergy API]        [Jumbo Bus-Stop API]
+         |                          |
+         +------------+-------------+
+                      |
+            pm25_cron.php
+        (รันทุก 5 นาที ผ่าน cron-job.org)
+                      |
+        MySQL: pm25_data, pm25_sensors
+                      |
+      +---------------+------------------+
+      |               |                  |
+pm25_dashboard.php  admin/pm25_dashboard.php  api/pm25_public.php
+  (สาธารณะ)            (admin, ต้อง login)    (REST API ให้ระบบอื่นเชื่อม)
+
+------------------------------------------------------------------
+2. แหล่งข้อมูล (Data Sources) - มี 2 ผู้ให้บริการ
+------------------------------------------------------------------
+
+ก) Freshnergy API (เซ็นเซอร์ 8 ตัว ติดที่โรงเรียน/เทศบาล)
+   - Endpoint : POST https://app.freshnergy.com/api/v2/device
+   - Auth     : Header "Authorization: <JWT_TOKEN>" (อายุ 24 ชม.
+                ต้องขอใหม่จาก account rangsit6000@gmail.com)
+   - วิธีเรียก : ส่ง CID ทีละตัว (ไม่ batch เพราะ CID ที่ไม่มีจริง
+                ทำให้ API ตอบ HTTP 500)
+   - ข้อมูลที่ได้ : pm2_5, pm1, pm10, co2, temp, humi, timeStamp
+                (timeStamp อยู่นอก object sensor)
+
+ข) Jumbo Smart Bus-Stop API (ป้ายรถเมล์อัจฉริยะ 3 จุด RS01-RS03)
+   - Endpoint : GET https://rsweather.jumboelec.co.th/api/v1/
+                weather/bus-stop/{stationId}/latest
+   - Auth     : Header "x-api-key: rangsit1@weather"
+   - วิธีเรียก : เรียกทีละ stationId (ไม่มี batch)
+   - ข้อมูลที่ได้ : pm25, pm10, temperature, humidity, createdAt
+                (ISO 8601 UTC) - ไม่มี pm1 และ co2
+
+ทั้งสองผู้ให้บริการมีรูปแบบข้อมูล (schema) ต่างกันโดยสิ้นเชิง ทั้ง
+ชื่อ field และรูปแบบเวลา จึงต้องมี adapter function แยกกันใน
+pm25_cron.php คือ api_fetch_freshnergy() และ api_fetch_jumbo()
+ที่ทำหน้าที่แปลงข้อมูลทั้งสองแบบให้ลงตาราง schema เดียวกัน
+
+------------------------------------------------------------------
+3. การเก็บข้อมูล (Storage)
+------------------------------------------------------------------
+pm25_cron.php รันทุก 5 นาที ผ่านบริการภายนอก cron-job.org
+(ไม่ใช้ cPanel cron เพราะ cPanel cron ใช้งานไม่ได้บน hosting นี้)
+
+ลำดับการทำงาน:
+  1. โหลดรายชื่อสถานี active จากตาราง pm25_sensors (พร้อมระบุ
+     api_provider ว่าเป็น freshnergy หรือ jumbo)
+  2. วนเรียก API ตามผู้ให้บริการของแต่ละสถานี
+  3. บันทึกด้วย INSERT IGNORE ลงตาราง pm25_data - มี
+     UNIQUE KEY (cid, sensor_timestamp) ป้องกันข้อมูลซ้ำ ถ้า cron
+     รันซ้อนกันหรือ API ส่งข้อมูลเดิมซ้ำจะไม่ insert ซ้ำ
+  4. log ผลลัพธ์ (inserted / dup-skip / api_error) ลงไฟล์
+     storage/pm25_cron.log
+
+ตารางหลักในฐานข้อมูล:
+  - pm25_sensors : ข้อมูลอุปกรณ์/สถานี เช่น location_name, cid,
+    api_provider, lat/lng, serial_number, sim_number, is_active
+  - pm25_data    : ข้อมูล time-series ทุกครั้งที่ดึงมา ได้แก่
+    cid, pm25, pm1, pm10, co2, temperature, humidity,
+    sensor_timestamp, created_at
+
+------------------------------------------------------------------
+4. การแสดงผล (Display)
+------------------------------------------------------------------
+- pm25_dashboard.php (สาธารณะ ไม่ต้อง login)
+  แสดง stats bar (จำนวนสถานี/ออนไลน์/ค่าเฉลี่ย/สูงสุด), แถบเกณฑ์สี
+  AQI, การ์ดราย-สถานี (PM2.5/PM1/PM10/CO2/อุณหภูมิ/ความชื้น),
+  กราฟเส้นด้วย Chart.js (เลือก metric + สถานี), แผนที่ Leaflet +
+  OpenStreetMap แสดง pin แต่ละสถานี - ไม่แสดง CID/Serial/SIM
+  เพื่อความปลอดภัย
+
+- admin/pm25_dashboard.php (ต้อง login)
+  เหมือนหน้าสาธารณะ แต่แสดง CID/Serial/SIM เพิ่ม และมีปุ่มไปยัง
+  หน้าจัดการสถานี
+
+- admin/pm25_sensors.php
+  หน้า CRUD จัดการสถานี พร้อมวาง pin บนแผนที่ (รองรับปุ่ม
+  "ใช้ตำแหน่งปัจจุบัน" ผ่าน Geolocation API ของเบราว์เซอร์)
+
+เกณฑ์สี PM2.5 ใช้มาตรฐานกรมควบคุมมลพิษ ปี 2564 (5 ระดับ):
+  0-15.0      ฟ้าอมน้ำเงิน  ดีมาก
+  15.1-25.0   เขียว         ดี
+  25.1-37.5   เหลือง/อำพัน  ปานกลาง
+  37.6-75.0   ส้ม           เริ่มมีผลกระทบต่อสุขภาพ
+  >= 75.1     แดง           มีผลกระทบต่อสุขภาพ
+
+Stack ที่ใช้: PHP + PDO, Leaflet.js 1.9.4, Chart.js 4.4.0,
+Tailwind CSS (CDN), FontAwesome 6.4.0 - ไม่มี build step ฝั่ง
+frontend
+
+------------------------------------------------------------------
+5. การให้บริการข้อมูลแก่ระบบอื่น (Public REST API)
+------------------------------------------------------------------
+ไฟล์ api/pm25_public.php คือ endpoint ที่เปิดให้ระบบ/หน่วยงาน
+ภายนอกดึงข้อมูลไปใช้ต่อได้
+
+Authentication:
+  ต้องมี API key (เก็บในตาราง pm25_api_keys) ส่งผ่านวิธีใดวิธี
+  หนึ่ง:
+    - Header: Authorization: Bearer <api_key>
+    - Query string: ?api_key=<key>
+
+  ระบบตรวจสอบทุกครั้งที่เรียกว่า key ยัง active และยังไม่หมดอายุ
+  (expires_at) จากนั้นอัปเดต last_used_at และ request_count เพื่อ
+  เก็บสถิติการใช้งานของแต่ละ key
+
+Endpoints:
+  GET /api/pm25_public.php?type=latest
+    คืนค่าล่าสุดของทุกสถานี พร้อม summary (avg/max/min ของทุก
+    metric, จำนวนสถานีออนไลน์) และระดับ AQI ต่อสถานี
+
+  GET /api/pm25_public.php?type=history&hours=24
+    คืนข้อมูลย้อนหลัง (สูงสุด 168 ชั่วโมง = 7 วัน) สามารถกรอง
+    เฉพาะสถานีเดียวด้วย &cid=<CID>
+
+  รองรับ CORS (Access-Control-Allow-Origin: *) ทำให้เว็บไซต์
+  third-party เรียกตรงจาก JavaScript ฝั่ง frontend ได้เลย
+
+  Response เป็น JSON มาตรฐาน รวม metadata เกณฑ์สี AQI มาด้วยใน
+  ตัว เพื่อให้ผู้ที่นำข้อมูลไปใช้ไม่ต้อง hardcode เกณฑ์สีเอง
+
+จุดออกแบบที่สำคัญ: API สาธารณะถูกแยกเป็นคนละชั้นจากกระบวนการ
+ดึงข้อมูล (cron/ingestion) อย่างชัดเจน ผู้บริโภคภายนอกจะไม่มีทาง
+แตะ API ต้นทาง (Freshnergy/Jumbo) โดยตรงเลย แต่จะอ่านจากฐานข้อมูล
+ที่ระบบ normalize ให้เป็นรูปแบบเดียวแล้ว ส่งผลให้:
+  - ปลอดภัย: ไม่มีการรั่วไหลของ JWT token หรือ x-api-key ต้นทาง
+  - เร็ว: ไม่ต้องรอ API ภายนอกตอบกลับ
+  - มั่นคง: schema คงที่ ไม่ว่าผู้ให้บริการ sensor ต้นทางจะ
+    เปลี่ยนชื่อ field หรือรูปแบบข้อมูลอย่างไรก็ตาม
+
+------------------------------------------------------------------
+6. สรุปไฟล์ที่เกี่ยวข้องทั้งหมด
+------------------------------------------------------------------
+pm25_dashboard.php              หน้า Dashboard สาธารณะ
+pm25_cron.php                   Cron Script ดึงข้อมูล API -> DB
+admin/pm25_dashboard.php        Dashboard สำหรับ Admin (ต้อง login)
+admin/pm25_sensors.php          จัดการสถานี + วาง pin บนแผนที่
+admin/api/pm25_sensor_api.php   AJAX endpoint บันทึกข้อมูลสถานี
+api/pm25_public.php             REST API สาธารณะ (มี API key)
+database/pm25_sensors.sql           สร้างตาราง + ข้อมูล 8 สถานีแรก
+database/pm25_jumbo_stations.sql    เพิ่มสถานี Jumbo 3 จุด
+database/pm25_data_unique_key.sql   UNIQUE KEY กันข้อมูลซ้ำ
+database/pm25_add_temp_humi.sql     เพิ่มคอลัมน์ temperature/humidity
+storage/pm25_cron.log            Log การทำงานของ cron

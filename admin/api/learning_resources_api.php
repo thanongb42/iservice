@@ -83,12 +83,12 @@ try {
             // Handle resource file upload
             if (isset($_FILES['resource_file']) && $_FILES['resource_file']['error'] !== UPLOAD_ERR_NO_FILE) {
                 $allowed_resource_types = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'mp3', 'zip', 'rar'];
-                $result = handle_file_upload($_FILES['resource_file'], '../../uploads/resources/', $allowed_resource_types);
+                $result = handle_file_upload($_FILES['resource_file'], '../../public/uploads/resources/', $allowed_resource_types);
 
                 if (isset($result['error'])) {
                     throw new Exception($result['error']);
                 } else {
-                    // Remove ../../ prefix for storage in database
+                    // Strip ../../ prefix → store as "public/uploads/resources/file.ext"
                     $resource_url = str_replace('../../', '', $result['success']);
                 }
             }
@@ -96,12 +96,12 @@ try {
             // Handle cover image upload
             if (isset($_FILES['cover_image_file']) && $_FILES['cover_image_file']['error'] !== UPLOAD_ERR_NO_FILE) {
                 $allowed_image_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                $result = handle_file_upload($_FILES['cover_image_file'], '../../uploads/covers/', $allowed_image_types);
+                $result = handle_file_upload($_FILES['cover_image_file'], '../../public/uploads/covers/', $allowed_image_types);
 
                 if (isset($result['error'])) {
                     throw new Exception($result['error']);
                 } else {
-                    // Remove ../../ prefix for storage in database
+                    // Strip ../../ prefix → store as "public/uploads/covers/file.ext"
                     $cover_image = str_replace('../../', '', $result['success']);
                 }
             }

@@ -97,7 +97,7 @@ include 'admin-layout/topbar.php';
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">ชื่อสถานที่</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">CID</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">CID / แหล่งข้อมูล</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">S/N</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">SIM</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">PM2.5 ล่าสุด</th>
@@ -125,7 +125,12 @@ include 'admin-layout/topbar.php';
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 text-gray-400 font-mono text-xs"><?= $s['id'] ?></td>
                 <td class="px-4 py-3 font-medium text-gray-800"><?= htmlspecialchars($s['location_name']) ?></td>
-                <td class="px-4 py-3 font-mono text-gray-600 text-xs"><?= htmlspecialchars($s['cid']) ?></td>
+                <td class="px-4 py-3 font-mono text-gray-600 text-xs">
+                    <?= htmlspecialchars($s['cid']) ?>
+                    <?php if (($s['api_provider'] ?? 'freshnergy') === 'jumbo'): ?>
+                        <span class="ml-1 text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-semibold tracking-wide align-middle">Jumbo</span>
+                    <?php endif; ?>
+                </td>
                 <td class="px-4 py-3 font-mono text-gray-500 text-xs"><?= htmlspecialchars($s['serial_number'] ?? '-') ?></td>
                 <td class="px-4 py-3 text-gray-500 text-xs"><?= htmlspecialchars($s['sim_number'] ?? '-') ?></td>
                 <td class="px-4 py-3 text-center">

@@ -28,8 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ticket'])) {
                     sr.status AS request_status,
                     sr.created_at,
                     sr.requester_name,
-                    sr.requester_phone,
-                    sr.requester_email,
                     ta.assignment_id,
                     ta.assigned_to,
                     ta.created_at AS assigned_at,
@@ -81,6 +79,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ticket'])) {
                                 $tracking_data['details'] = $d_result->fetch_assoc();
                             }
                             $d_stmt->close();
+                        }
+                    }
+
+                    // Look up friendly label for request_type (INTERNET service)
+                    if (!empty($tracking_data['details']['request_type'])) {
+                        $rt_stmt = $conn->prepare("SELECT type_name FROM internet_request_types WHERE type_code = ?");
+                        if ($rt_stmt) {
+                            $rt_stmt->bind_param('s', $tracking_data['details']['request_type']);
+                            $rt_stmt->execute();
+                            $rt_row = $rt_stmt->get_result()->fetch_assoc();
+                            $tracking_data['request_type_label'] = $rt_row['type_name'] ?? $tracking_data['details']['request_type'];
+                            $rt_stmt->close();
                         }
                     }
                 } else {
@@ -225,6 +235,11 @@ include __DIR__ . '/includes/header_public.php';
                 <div class="flex justify-between items-start mb-6 pb-6 border-b">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 mb-2"><?php echo htmlspecialchars($tracking_data['request_code']); ?></h2>
+                        <?php if (!empty($tracking_data['request_type_label'])): ?>
+                        <p class="text-teal-700 font-semibold mb-1">
+                            <i class="fas fa-tag mr-1"></i><?php echo htmlspecialchars($tracking_data['request_type_label']); ?>
+                        </p>
+                        <?php endif; ?>
                         <p class="text-gray-600 text-lg"><?php echo htmlspecialchars($tracking_data['subject']); ?></p>
                     </div>
                     <div class="flex gap-2">
@@ -287,28 +302,6 @@ include __DIR__ . '/includes/header_public.php';
                 </div>
                 <?php endif; ?>
 
-                <!-- Contact Information -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="text-gray-600 text-sm font-semibold mb-3">ติดต่อ</p>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <?php if (!empty($tracking_data['requester_phone'])): ?>
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-phone text-teal-600 text-lg"></i>
-                            <a href="tel:<?php echo htmlspecialchars($tracking_data['requester_phone']); ?>" class="text-teal-600 hover:text-teal-700 font-medium">
-                                <?php echo htmlspecialchars($tracking_data['requester_phone']); ?>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($tracking_data['requester_email'])): ?>
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-envelope text-teal-600 text-lg"></i>
-                            <a href="mailto:<?php echo htmlspecialchars($tracking_data['requester_email']); ?>" class="text-teal-600 hover:text-teal-700 font-medium">
-                                <?php echo htmlspecialchars($tracking_data['requester_email']); ?>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
             </div>
 
             <!-- Timeline -->
@@ -426,8 +419,14 @@ include __DIR__ . '/includes/header_public.php';
             <div class="bg-white rounded-lg shadow-lg p-8">
                 <h3 class="text-2xl font-bold text-gray-900 mb-6">ข้อมูลเพิ่มเติม</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <?php
+                    // Personal data fields are hidden on this public page (PDPA);
+                    // request_type is shown separately near the ticket number above
+                    $personal_data_fields = ['citizen_id', 'existing_email'];
+                    $hidden_detail_fields = array_merge(['id', 'request_id', 'request_type'], $personal_data_fields);
+                    ?>
                     <?php foreach ($tracking_data['details'] as $key => $value): ?>
-                        <?php if ($key !== 'id' && $key !== 'request_id' && !is_null($value) && $value !== ''): ?>
+                        <?php if (!in_array($key, $hidden_detail_fields) && !is_null($value) && $value !== ''): ?>
                         <div class="border-b pb-3">
                             <p class="text-gray-600 text-sm font-semibold mb-1"><?php echo ucfirst(str_replace('_', ' ', $key)); ?></p>
                             <p class="text-gray-900"><?php echo htmlspecialchars($value); ?></p>

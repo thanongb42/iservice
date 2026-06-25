@@ -1,6 +1,7 @@
 <?php
 date_default_timezone_set('Asia/Bangkok');
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/pm25_helpers.php';
 $pdo = getPDO();
 
 // ── Step 1: ดึงค่าล่าสุดจาก pm25_data ทุก CID (เหมือน pm25_realtime.php) ──────
@@ -29,7 +30,6 @@ try {
 } catch (Exception $e) {}
 
 // ── Step 3: รวมข้อมูลทุก metric ─────────────────────────────────────────────
-function nullFloat($v): ?float { return $v !== null && $v !== '' ? (float)$v : null; }
 
 $sensors = [];
 if (!empty($sensorRecords)) {
@@ -87,10 +87,10 @@ try {
 } catch (Exception $e) {}
 
 // ── กราฟเส้น 24 ชั่วโมง (ทุก metric) ────────────────────────────────────────
-$chartRawByCid = []; // [cid] => [[ts, pm25, pm1, pm10, temp, humi, co2], ...]
+$cids          = array_column($sensors, 'cid');
+$chartRawByCid = []; // [cid][ts] => {pm25,pm1,...}
 $allTs = [];
 try {
-    $cids = array_column($sensors, 'cid');
     if (!empty($cids)) {
         $in   = implode(',', array_fill(0, count($cids), '?'));
         $stmt = $pdo->prepare("
@@ -123,15 +123,34 @@ $chartLabels = array_values($allTs);
 $chartTsKeys = array_keys($allTs);
 $hasChart    = !empty($chartLabels);
 
-function pmLevel($v): array {
-    if ($v === null) return ['hex' => '#94a3b8', 'label' => 'ไม่มีข้อมูล'];
-    $v = (float)$v;
-    if ($v <= 25)  return ['hex' => '#16a34a', 'label' => 'ดีมาก'];
-    if ($v <= 37)  return ['hex' => '#84cc16', 'label' => 'ดี'];
-    if ($v <= 50)  return ['hex' => '#eab308', 'label' => 'ปานกลาง'];
-    if ($v <= 90)  return ['hex' => '#f97316', 'label' => 'เริ่มมีผลกระทบ'];
-    return             ['hex' => '#ef4444', 'label' => 'มีผลกระทบต่อสุขภาพ'];
-}
+// ── ค่าเฉลี่ย PM2.5 รายวัน (เดือนปัจจุบัน) ───────────────────────────────────
+$dailyData    = []; // [cid][day] => avg_pm25
+$currentYear  = (int)date('Y');
+$currentMonth = (int)date('m');
+$daysInMonth  = (int)date('t');
+$today        = (int)date('j');
+$monthStart   = mktime(0, 0, 0, $currentMonth, 1, $currentYear);
+$monthEnd     = mktime(23, 59, 59, $currentMonth, $daysInMonth, $currentYear);
+try {
+    if (!empty($cids)) {
+        $in   = implode(',', array_fill(0, count($cids), '?'));
+        $stmt = $pdo->prepare("
+            SELECT cid,
+                   DAY(FROM_UNIXTIME(sensor_timestamp)) AS day,
+                   AVG(pm25) AS avg_pm25
+            FROM pm25_data
+            WHERE cid IN ($in)
+              AND sensor_timestamp BETWEEN ? AND ?
+              AND pm25 IS NOT NULL
+            GROUP BY cid, DAY(FROM_UNIXTIME(sensor_timestamp))
+            ORDER BY cid, day
+        ");
+        $stmt->execute(array_merge($cids, [$monthStart, $monthEnd]));
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $dailyData[$r['cid']][(int)$r['day']] = (float)$r['avg_pm25'];
+        }
+    }
+} catch (Exception $e) {}
 
 $sensorMapData = array_map(function ($s) use ($now) {
     return [
@@ -160,6 +179,7 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบติดตามคุณภาพอากาศ PM2.5 - เทศบาลนครรังสิต</title>
+    <link rel="icon" type="image/png" href="public/assets/images/logo/rangsit-small-logo.png">
     <meta http-equiv="refresh" content="60">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -200,6 +220,11 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/15 hover:bg-white/25 text-white transition-colors">
                 <i class="fas fa-home"></i>
                 <span class="hidden sm:inline">หน้าหลัก</span>
+            </a>
+            <a href="pm25_report.php"
+               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/15 hover:bg-white/25 text-white transition-colors">
+                <i class="fas fa-chart-bar"></i>
+                <span class="hidden sm:inline">รายงาน</span>
             </a>
             <a href="login.php"
                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-teal-700 hover:bg-teal-50 transition-colors">
@@ -249,21 +274,24 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 
 <!-- ─── AQI Legend Bar ─── -->
 <div class="bg-white border-b border-slate-100">
-    <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <span class="text-slate-400 font-medium shrink-0">เกณฑ์ PM2.5:</span>
-        <?php foreach ([
-            ['#16a34a','0–25','ดีมาก'],
-            ['#84cc16','26–37','ดี'],
-            ['#eab308','38–50','ปานกลาง'],
-            ['#f97316','51–90','เริ่มมีผลกระทบ'],
-            ['#ef4444','≥91','มีผลกระทบ'],
-        ] as [$c,$r,$l]): ?>
-        <div class="flex items-center gap-1">
-            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<?= $c ?>"></span>
-            <span style="color:<?= $c ?>" class="font-semibold"><?= $r ?></span>
-            <span class="text-slate-400"><?= $l ?></span>
+    <div class="max-w-7xl mx-auto px-4 py-2">
+        <div class="flex rounded-lg overflow-hidden text-xs shadow-sm">
+            <div class="bg-slate-800 text-white px-4 flex items-center font-bold whitespace-nowrap shrink-0">
+                PM<sub>2.5</sub>(µg/m³)
+            </div>
+            <?php foreach ([
+                ['#3BCCFF','#0c4a6e','0–15.0',    'ดีมาก'],
+                ['#92D050','#14532d','15.1–25.0',  'ดี'],
+                ['#FFFF00','#713f12','25.1–37.5',  'ปานกลาง'],
+                ['#FFA200','#ffffff','37.6–75.0',  'เริ่มมีผลกระทบ'],
+                ['#F04646','#ffffff','≥ 75.1',     'มีผลกระทบ'],
+            ] as [$c, $tc, $r, $l]): ?>
+            <div class="flex-1 text-center py-2 font-semibold leading-tight" style="background:<?= $c ?>;color:<?= $tc ?>">
+                <div class="text-[11px]"><?= $r ?></div>
+                <div class="text-[10px] opacity-80"><?= $l ?></div>
+            </div>
+            <?php endforeach; ?>
         </div>
-        <?php endforeach; ?>
     </div>
 </div>
 
@@ -299,18 +327,21 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
 
             <!-- PM2.5 circle -->
             <div class="pm-ring" style="background:<?= $level['hex'] ?>">
-                <div class="text-white font-bold text-[1.8rem] leading-none">
+                <div class="font-bold text-[1.8rem] leading-none" style="color:<?= $level['text'] ?>">
                     <?= $pm !== null ? number_format($pm, 1) : '--' ?>
                 </div>
-                <div class="text-white text-[10px] opacity-80 mt-0.5">µg/m³</div>
+                <div class="text-[10px] opacity-80 mt-0.5" style="color:<?= $level['text'] ?>">µg/m³</div>
             </div>
 
-            <!-- AQI label -->
-            <div class="text-center mb-2">
+            <!-- level label + advice -->
+            <div class="text-center mb-1">
                 <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                      style="background:<?= $level['hex'] ?>1a; color:<?= $level['hex'] ?>">
-                    PM2.5 · <?= $level['label'] ?>
+                      style="background:<?= $level['hex'] ?>22; color:<?= $level['hex'] ?>; border:1px solid <?= $level['hex'] ?>44">
+                    <?= $level['label'] ?>
                 </span>
+            </div>
+            <div class="text-center text-[10px] text-slate-400 px-2 mb-2 leading-snug">
+                <?= $level['advice'] ?>
             </div>
 
             <!-- Location name -->
@@ -360,6 +391,80 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
         <?php endforeach; ?>
     </div>
 
+    <!-- ─── Daily AQI Table ─── -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+        <div class="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-slate-100">
+            <i class="fas fa-calendar-alt text-teal-600"></i>
+            <h2 class="text-base font-semibold text-slate-700">
+                PM2.5 รายวัน —
+                <?php
+                    $monthNamesTH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                                     'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                    echo $monthNamesTH[$currentMonth] . ' ' . ($currentYear + 543);
+                ?>
+            </h2>
+            <span class="ml-auto text-xs text-slate-400">ค่าเฉลี่ยรายวัน (µg/m³)</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="border-collapse text-xs" style="min-width:100%">
+                <thead>
+                    <tr>
+                        <th class="bg-slate-800 text-white text-left px-4 py-2.5 font-semibold whitespace-nowrap sticky left-0 z-10 min-w-[200px]">
+                            สถานี
+                        </th>
+                        <?php for ($d = 1; $d <= $daysInMonth; $d++): ?>
+                        <th class="py-2.5 px-1 text-center font-semibold min-w-[30px]
+                            <?= $d === $today ? 'bg-teal-600 text-white' : 'bg-slate-800 text-slate-300' ?>">
+                            <?= $d ?>
+                        </th>
+                        <?php endfor; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($sensors as $s):
+                        $cidDay = $dailyData[$s['cid']] ?? [];
+                    ?>
+                    <tr class="border-t border-slate-100 hover:brightness-95 transition-all">
+                        <td class="px-4 py-2 font-medium text-slate-700 whitespace-nowrap sticky left-0 bg-white border-r border-slate-100 z-10">
+                            <?= htmlspecialchars($s['location_name']) ?>
+                        </td>
+                        <?php for ($d = 1; $d <= $daysInMonth; $d++):
+                            $pmD = $cidDay[$d] ?? null;
+                            $lv  = pmLevel($pmD);
+                        ?>
+                        <td class="text-center py-2 px-0 font-bold leading-none"
+                            <?= $pmD !== null
+                                ? 'style="background:' . $lv['hex'] . ';color:' . $lv['text'] . '"'
+                                : 'style="background:#f8fafc"' ?>>
+                            <?php if ($pmD !== null): ?>
+                                <?= number_format($pmD, 1) ?>
+                            <?php elseif ($d < $today): ?>
+                                <span class="text-slate-300">–</span>
+                            <?php endif; ?>
+                        </td>
+                        <?php endfor; ?>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-x-4 gap-y-1 px-5 py-2.5 border-t border-slate-100 text-[11px] text-slate-500">
+            <?php foreach ([
+                ['#3BCCFF','0–15.0 ดีมาก'],
+                ['#92D050','15.1–25.0 ดี'],
+                ['#FFFF00','25.1–37.5 ปานกลาง'],
+                ['#FFA200','37.6–75.0 เริ่มมีผลกระทบ'],
+                ['#F04646','≥75.1 มีผลกระทบ'],
+            ] as [$c, $l]): ?>
+            <span class="flex items-center gap-1">
+                <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:<?= $c ?>"></span>
+                <?= $l ?>
+            </span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <!-- ─── Line Chart ─── -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
         <div class="flex items-center gap-2 mb-4">
@@ -403,10 +508,14 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
         </div>
 
         <!-- Chart info -->
-        <div class="flex items-baseline gap-2 mb-2">
+        <div class="flex items-center gap-2 mb-2 flex-wrap">
             <span id="chartStationName" class="text-sm font-semibold text-slate-700"></span>
             <span id="chartMetricLabel" class="text-xs text-slate-400"></span>
-            <span id="chartCurrentVal" class="ml-auto text-sm font-bold"></span>
+            <span id="chartCurrentVal" class="text-sm font-bold"></span>
+            <a id="btnFullChart" href="pm25_chart.php" target="_blank"
+               class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-600 transition-colors">
+                <i class="fas fa-expand-alt text-[10px]"></i> ดูทั้งหมด
+            </a>
         </div>
 
         <div class="relative" style="height:280px">
@@ -433,32 +542,50 @@ $pinnedCount = count(array_filter($sensors, function ($s) {
         <div id="map"></div>
     </div>
 
-    <!-- ─── AQI Legend ─── -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">เกณฑ์คุณภาพอากาศ PM2.5 (µg/m³)</h3>
-        <div class="flex flex-wrap gap-2 text-[12px]">
-            <?php foreach ([
-                ['#16a34a', '0 – 25',  'ดีมาก'],
-                ['#84cc16', '26 – 37', 'ดี'],
-                ['#eab308', '38 – 50', 'ปานกลาง'],
-                ['#f97316', '51 – 90', 'เริ่มมีผลกระทบต่อสุขภาพ'],
-                ['#ef4444', '≥ 91',    'มีผลกระทบต่อสุขภาพ'],
-                ['#94a3b8', '–',       'ไม่มีข้อมูล'],
-            ] as [$c, $range, $label]): ?>
-            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style="background:<?= $c ?>18">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:<?= $c ?>"></span>
-                <span style="color:<?= $c ?>" class="font-semibold"><?= $range ?></span>
-                <span class="text-slate-500"><?= $label ?></span>
-            </div>
-            <?php endforeach; ?>
-        </div>
+    <!-- ─── AQI Legend Table ─── -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <table class="w-full border-collapse">
+            <tbody>
+                <tr>
+                    <td class="bg-slate-800 text-white font-bold px-5 py-3 whitespace-nowrap text-sm w-40">
+                        PM<sub>2.5</sub>(µg/m³)
+                    </td>
+                    <?php
+                    $legendData = [
+                        ['#3BCCFF','#0c4a6e','0–15.0',    'fa-person-running', 'ดีมาก',              'ดำเนินชีวิตได้ตามปกติ'],
+                        ['#92D050','#14532d','15.1–25.0',  'fa-person',         'ดี',                 'ทำกิจกรรมกลางแจ้งได้ · กลุ่มเสี่ยงสังเกตอาการ'],
+                        ['#FFFF00','#713f12','25.1–37.5',  'fa-person',         'ปานกลาง',            'ลดเวลากิจกรรมกลางแจ้ง · กลุ่มเสี่ยงใช้หน้ากาก PM2.5'],
+                        ['#FFA200','#ffffff','37.6–75.0',  'fa-head-side-mask', 'เริ่มมีผลกระทบ',     'ใช้หน้ากาก PM2.5 · จำกัดเวลากลางแจ้ง'],
+                        ['#F04646','#ffffff','≥ 75.1',     'fa-person-falling', 'มีผลกระทบต่อสุขภาพ','งดกิจกรรมกลางแจ้งทุกชนิด · ใช้หน้ากาก PM2.5'],
+                    ];
+                    foreach ($legendData as [$c,$tc,$r]) : ?>
+                    <td class="text-center font-bold py-2.5 px-2 text-sm leading-tight"
+                        style="background:<?= $c ?>;color:<?= $tc ?>">
+                        <?= $r ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                <tr>
+                    <td class="bg-slate-800 border-t border-slate-700"></td>
+                    <?php foreach ($legendData as [$c,$tc,$r,$icon,$label,$advice]): ?>
+                    <td class="text-center py-3 px-2" style="background:<?= $c ?>;border-top:1px solid rgba(0,0,0,.08)">
+                        <i class="fas <?= $icon ?> text-2xl block mb-1" style="color:<?= $tc ?>"></i>
+                        <div class="text-[11px] font-bold mb-1" style="color:<?= $tc ?>"><?= $label ?></div>
+                        <div class="text-[10px] leading-snug opacity-80" style="color:<?= $tc ?>"><?= $advice ?></div>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <?php endif; ?>
 </div>
 
-<footer class="text-center text-xs text-slate-400 pb-6 px-4">
-    ระบบติดตามคุณภาพอากาศ PM2.5 · เทศบาลนครรังสิต · <?= date('Y') ?>
+<?php $privacy_category='pm25'; $privacy_page_title='Dashboard PM2.5 — เทศบาลนครรังสิต'; require_once __DIR__.'/includes/privacy_consent.php'; ?>
+<footer class="text-center text-xs text-slate-400 pb-6 px-4 space-y-1">
+    <div>ระบบติดตามคุณภาพอากาศ PM2.5 · เทศบาลนครรังสิต · <?= date('Y') ?></div>
+    <div>พัฒนาโดย : งานสถิติและข้อมูลสารสนเทศ &nbsp;ฝ่ายบริการและเผยแพร่วิชาการ &nbsp;กองยุทธศาสตร์และงบประมาณ &nbsp;&nbsp;โทร 151</div>
 </footer>
 
 <script>
@@ -550,10 +677,16 @@ function selectMetric(key) {
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: c => ` ${c.parsed.y !== null ? c.parsed.y : '-'}` } }
+                tooltip: {
+                    callbacks: { label: c => ` ${c.parsed.y !== null ? c.parsed.y : '-'}` }
+                },
             },
             scales: {
-                x: { ticks: { maxTicksLimit: 12, font: { family:'Kanit',size:11 }, maxRotation: 0 }, grid: { color:'#f1f5f9' } },
+                x: {
+                    ticks: { maxTicksLimit: 10, font: { family:'Kanit',size:10 }, maxRotation: 0,
+                             callback: (val, i) => chartLabels[i] },
+                    grid: { color:'#f1f5f9' }
+                },
                 y: { beginAtZero: true, title: { display: true, text:'', font:{ family:'Kanit',size:11 } }, grid: { color:'#f1f5f9' } }
             },
             animation: false,
@@ -562,6 +695,17 @@ function selectMetric(key) {
     selectMetric('pm25');
     selectStation(0);
 })();
+
+// อัปเดต URL ปุ่ม "ดูทั้งหมด" ตาม station/metric ที่เลือก
+function updateFullChartLink() {
+    const cid    = sensorList[activeStation]?.cid ?? '';
+    const el     = document.getElementById('btnFullChart');
+    if (el) el.href = `pm25_chart.php?cid=${encodeURIComponent(cid)}&metric=${activeMetric}`;
+}
+const _origSelectStation = selectStation;
+selectStation = (idx) => { _origSelectStation(idx); updateFullChartLink(); };
+const _origSelectMetric  = selectMetric;
+selectMetric  = (k)   => { _origSelectMetric(k);   updateFullChartLink(); };
 <?php endif; ?>
 
 // ─── Map ───────────────────────────────────────────────
@@ -573,39 +717,52 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-function pmColor(v) {
-    if (v === null) return '#94a3b8';
-    if (v <= 25) return '#16a34a';
-    if (v <= 37) return '#84cc16';
-    if (v <= 50) return '#eab308';
-    if (v <= 90) return '#f97316';
-    return '#ef4444';
+// [lo, hi, bg, textColor, label, advice]
+const PM25_LEVELS = [
+    [0,    15.0, '#3BCCFF','#0c4a6e','ดีมาก',             'ดำเนินชีวิตได้ตามปกติ'],
+    [15.1, 25.0, '#92D050','#14532d','ดี',                 'ทำกิจกรรมกลางแจ้งได้ · กลุ่มเสี่ยงสังเกตอาการ'],
+    [25.1, 37.5, '#FFFF00','#713f12','ปานกลาง',            'ลดเวลากิจกรรมกลางแจ้ง · กลุ่มเสี่ยงใช้หน้ากาก PM2.5'],
+    [37.6, 75.0, '#FFA200','#ffffff','เริ่มมีผลกระทบ',     'ใช้หน้ากาก PM2.5 · จำกัดเวลากลางแจ้ง'],
+    [75.1, 9999, '#F04646','#ffffff','มีผลกระทบต่อสุขภาพ','งดกิจกรรมกลางแจ้ง · ใช้หน้ากาก PM2.5 ทุกครั้ง'],
+];
+function pmGet(v) {
+    if (v === null) return {bg:'#94a3b8',tc:'#fff',label:'ไม่มีข้อมูล',advice:''};
+    for (const [lo,hi,bg,tc,label,advice] of PM25_LEVELS) {
+        if (v <= hi) return {bg,tc,label,advice};
+    }
+    return {bg:'#F04646',tc:'#fff',label:'มีผลกระทบต่อสุขภาพ',advice:'งดกิจกรรมกลางแจ้ง'};
 }
+function pmColor(v) { return pmGet(v).bg; }
 
 const bounds = [];
 sensors.forEach(s => {
     if (!s.lat || !s.lng) return;
-    const c = pmColor(s.pm25);
-    const v = s.pm25 !== null ? Math.round(s.pm25) : '?';
+    const lv  = pmGet(s.pm25);
     const icon = L.divIcon({
-        html: `<div style="background:${c};width:46px;height:46px;border-radius:50%;border:3px solid white;
+        html: `<div style="background:${lv.bg};width:50px;height:50px;border-radius:50%;border:3px solid white;
                     box-shadow:0 3px 10px rgba(0,0,0,.28);display:flex;flex-direction:column;
                     align-items:center;justify-content:center;font-family:'Kanit',sans-serif;">
-                 <span style="color:white;font-size:13px;font-weight:700;line-height:1">${v}</span>
-                 <span style="color:white;font-size:8px;opacity:.8;line-height:1.2">µg</span>
+                 <span style="color:${lv.tc};font-size:13px;font-weight:700;line-height:1.1">${s.pm25 !== null ? Math.round(s.pm25) : '?'}</span>
+                 <span style="color:${lv.tc};font-size:8px;opacity:.8;line-height:1.3">µg/m³</span>
                </div>`,
-        className: '', iconSize: [46, 46], iconAnchor: [23, 23]
+        className: '', iconSize: [50, 50], iconAnchor: [25, 25]
     });
     const d = s.ts ? new Date(s.ts * 1000) : null;
     const tsStr = d ? `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : 'ไม่มีข้อมูล';
     const fmt = (v, unit) => v !== null ? v + ' ' + unit : '--';
-    const row = (icon, label, val) =>
-        `<tr><td style="color:#94a3b8;padding:2px 8px 2px 0;font-size:11px">${icon} ${label}</td>
+    const row = (ic, label, val) =>
+        `<tr><td style="color:#94a3b8;padding:2px 8px 2px 0;font-size:11px">${ic} ${label}</td>
              <td style="font-weight:600;font-size:12px;text-align:right">${val}</td></tr>`;
     L.marker([s.lat, s.lng], {icon}).addTo(map)
-     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:190px">
+     .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:210px">
          <div style="font-size:13px;font-weight:700;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</div>
-         <div style="color:${c};font-size:22px;font-weight:700;margin-bottom:4px">${fmt(s.pm25,'µg/m³')} <span style="font-size:12px;color:#64748b">PM2.5</span></div>
+         <div style="background:${lv.bg};border-radius:8px;padding:6px 10px;margin-bottom:8px">
+           <div style="color:${lv.tc};font-size:22px;font-weight:700;line-height:1">${fmt(s.pm25,'µg/m³')}</div>
+           <div style="color:${lv.tc};font-size:11px;font-weight:600;opacity:.9">PM 2.5 · ${lv.label}</div>
+         </div>
+         <div style="font-size:10px;color:#64748b;background:#f8fafc;border-radius:6px;padding:5px 8px;margin-bottom:8px;line-height:1.5">
+           💡 ${lv.advice}
+         </div>
          <table style="width:100%;border-collapse:collapse">
              ${row('🌡️','อุณหภูมิ', fmt(s.temp,'°C'))}
              ${row('💧','ความชื้น', fmt(s.humi,'%'))}
@@ -614,7 +771,7 @@ sensors.forEach(s => {
              ${row('☁️','CO2',     fmt(s.co2,'ppm'))}
          </table>
          <div style="color:#94a3b8;font-size:10px;margin-top:6px;border-top:1px solid #f1f5f9;padding-top:4px">อัปเดต: ${tsStr}</div>
-     </div>`, { maxWidth: 220 });
+     </div>`, { maxWidth: 240 });
     bounds.push([s.lat, s.lng]);
 });
 

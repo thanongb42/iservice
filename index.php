@@ -469,14 +469,9 @@ include __DIR__ . '/includes/header_public.php';
                 <div class="bg-white rounded-2xl shadow-sm p-4 text-center border border-slate-100">
                     <?php
                     $avgPM = $pm25Summary['avg_pm25'];
-                    $col = '#94a3b8';
-                    if ($avgPM !== null) {
-                        if ($avgPM <= 25) $col = '#16a34a';
-                        elseif ($avgPM <= 37) $col = '#84cc16';
-                        elseif ($avgPM <= 50) $col = '#eab308';
-                        elseif ($avgPM <= 90) $col = '#f97316';
-                        else $col = '#ef4444';
-                    }
+                    require_once __DIR__ . '/includes/pm25_helpers.php';
+                    $avgLv = pmLevel($avgPM);
+                    $col   = $avgLv['hex'];
                     ?>
                     <div class="text-2xl font-bold" style="color:<?= $col ?>"><?= $avgPM ?? '--' ?></div>
                     <div class="text-xs text-slate-400 mt-1">PM2.5 เฉลี่ย (µg/m³)</div>
@@ -501,13 +496,15 @@ include __DIR__ . '/includes/header_public.php';
             <!-- AQI Legend -->
             <div class="flex flex-wrap justify-center gap-2 text-xs mb-6">
                 <?php foreach ([
-                    ['#16a34a','0–25','ดีมาก'],['#84cc16','26–37','ดี'],
-                    ['#eab308','38–50','ปานกลาง'],['#f97316','51–90','เริ่มมีผลกระทบ'],
-                    ['#ef4444','≥91','มีผลกระทบ'],
-                ] as [$c,$r,$l]): ?>
-                <span class="flex items-center gap-1 px-3 py-1 rounded-full" style="background:<?= $c ?>18">
+                    ['#3BCCFF','#0c4a6e','0–15.0',    'ดีมาก'],
+                    ['#92D050','#14532d','15.1–25.0',  'ดี'],
+                    ['#FFFF00','#713f12','25.1–37.5',  'ปานกลาง'],
+                    ['#FFA200','#ffffff','37.6–75.0',  'เริ่มมีผลกระทบ'],
+                    ['#F04646','#ffffff','≥75.1',       'มีผลกระทบ'],
+                ] as [$c,$tc,$r,$l]): ?>
+                <span class="flex items-center gap-1 px-3 py-1 rounded-full" style="background:<?= $c ?>22;border:1px solid <?= $c ?>44">
                     <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:<?= $c ?>"></span>
-                    <span style="color:<?= $c ?>" class="font-semibold"><?= $r ?></span>
+                    <span style="color:<?= in_array($tc,['#fff','#ffffff']) ? $c : $tc ?>" class="font-semibold"><?= $r ?></span>
                     <span class="text-slate-500"><?= $l ?></span>
                 </span>
                 <?php endforeach; ?>
@@ -544,38 +541,48 @@ include __DIR__ . '/includes/header_public.php';
             ];
         }, $pm25Sensors)) ?>;
 
-        function pmColor(v) {
-            if (v === null) return '#94a3b8';
-            if (v <= 25)  return '#16a34a';
-            if (v <= 37)  return '#84cc16';
-            if (v <= 50)  return '#eab308';
-            if (v <= 90)  return '#f97316';
-            return '#ef4444';
+        const PM25_LEVELS = [
+            [0,    15.0, '#3BCCFF','#0c4a6e','ดีมาก',             'ดำเนินชีวิตได้ตามปกติ'],
+            [15.1, 25.0, '#92D050','#14532d','ดี',                 'ทำกิจกรรมกลางแจ้งได้ · กลุ่มเสี่ยงสังเกตอาการ'],
+            [25.1, 37.5, '#FFFF00','#713f12','ปานกลาง',            'ลดเวลากิจกรรมกลางแจ้ง · กลุ่มเสี่ยงใช้หน้ากาก'],
+            [37.6, 75.0, '#FFA200','#ffffff','เริ่มมีผลกระทบ',     'ใช้หน้ากาก PM2.5 ทุกครั้ง'],
+            [75.1, 9999, '#F04646','#ffffff','มีผลกระทบต่อสุขภาพ','งดกิจกรรมกลางแจ้ง'],
+        ];
+        function pmGet(v) {
+            if (v === null) return {bg:'#94a3b8',tc:'#fff',label:'ไม่มีข้อมูล',advice:''};
+            for (const [lo,hi,bg,tc,label,advice] of PM25_LEVELS) {
+                if (v <= hi) return {bg,tc,label,advice};
+            }
+            return {bg:'#F04646',tc:'#fff',label:'มีผลกระทบ',advice:'งดกิจกรรมกลางแจ้ง'};
         }
 
         const bounds = [];
         sensors.forEach(s => {
             if (!s.lat || !s.lng) return;
-            const c = pmColor(s.pm25);
-            const v = s.pm25 !== null ? Math.round(s.pm25) : '?';
+            const lv = pmGet(s.pm25);
+            const v  = s.pm25 !== null ? s.pm25.toFixed(1) : '?';
             const icon = L.divIcon({
-                html: `<div style="background:${c};width:44px;height:44px;border-radius:50%;border:3px solid white;
-                            box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;flex-direction:column;
-                            align-items:center;justify-content:center;font-family:sans-serif;">
-                         <span style="color:white;font-size:12px;font-weight:700;line-height:1">${v}</span>
-                         <span style="color:white;font-size:8px;opacity:.85;line-height:1.3">µg</span>
+                html: `<div style="background:${lv.bg};width:48px;height:48px;border-radius:50%;border:3px solid white;
+                            box-shadow:0 3px 10px rgba(0,0,0,.28);display:flex;flex-direction:column;
+                            align-items:center;justify-content:center;font-family:'Kanit',sans-serif;">
+                         <span style="color:${lv.tc};font-size:12px;font-weight:700;line-height:1.1">${v}</span>
+                         <span style="color:${lv.tc};font-size:7px;opacity:.85;line-height:1.3">µg/m³</span>
                        </div>`,
-                className: '', iconSize: [44, 44], iconAnchor: [22, 22]
+                className: '', iconSize: [48, 48], iconAnchor: [24, 24]
             });
-            const d = s.ts ? new Date(s.ts * 1000) : null;
+            const d  = s.ts ? new Date(s.ts * 1000) : null;
             const ts = d ? `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.` : '—';
             L.marker([s.lat, s.lng], {icon}).addTo(map)
-             .bindPopup(`<div style="font-family:sans-serif;min-width:160px">
-                 <b style="font-size:13px;display:block;margin-bottom:4px">${s.name}</b>
-                 <span style="color:${c};font-size:20px;font-weight:700">${s.pm25 !== null ? s.pm25+' µg/m³' : '—'}</span>
-                 ${s.temp !== null ? `<br><small>🌡️ ${s.temp}°C &nbsp; 💧 ${s.humi}%</small>` : ''}
-                 <br><small style="color:#94a3b8">อัปเดต: ${ts}</small>
-             </div>`);
+             .bindPopup(`<div style="font-family:'Kanit',sans-serif;min-width:190px">
+                 <b style="font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${s.name}</b>
+                 <div style="background:${lv.bg};border-radius:8px;padding:6px 10px;margin-bottom:6px">
+                   <div style="color:${lv.tc};font-size:20px;font-weight:700;line-height:1">${s.pm25 !== null ? s.pm25.toFixed(1)+' µg/m³' : '—'}</div>
+                   <div style="color:${lv.tc};font-size:11px;font-weight:600;opacity:.9">PM 2.5 · ${lv.label}</div>
+                 </div>
+                 ${lv.advice ? `<div style="font-size:10px;color:#64748b;background:#f8fafc;border-radius:6px;padding:4px 8px;margin-bottom:6px">💡 ${lv.advice}</div>` : ''}
+                 ${s.temp !== null ? `<div style="font-size:11px;color:#64748b">🌡️ ${s.temp}°C &nbsp; 💧 ${s.humi}%</div>` : ''}
+                 <div style="color:#94a3b8;font-size:10px;margin-top:4px">อัปเดต: ${ts}</div>
+             </div>`, {maxWidth: 220});
             bounds.push([s.lat, s.lng]);
         });
         if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
@@ -1143,3 +1150,4 @@ include __DIR__ . '/includes/header_public.php';
     </script>
 ?>
 <?php include __DIR__ . '/includes/footer_public.php'; ?>
+<?php $privacy_category='iservice'; $privacy_page_title='iService — เทศบาลนครรังสิต'; require_once __DIR__.'/includes/privacy_consent.php'; ?>

@@ -1,0 +1,1137 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>iService GDCC VM1 Cutover Runbook - 2026-06-25</title><style>:root{--ink:#172033;--muted:#5b667a;--line:#d9e0ea;--soft:#eef6f8;--accent:#0f766e;--warn:#9a6700;--code:#101827;--codeText:#eef4ff}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:Tahoma,"Noto Sans Thai",Arial,sans-serif;line-height:1.68;background:#fff}header{padding:42px 28px 30px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#edf8f7,#fff)}.wrap{max-width:1180px;margin:0 auto}.eyebrow{color:var(--accent);font-weight:700;font-size:13px;text-transform:uppercase}h1{margin:8px 0 12px;font-size:32px;line-height:1.25}.lead{max-width:920px;color:var(--muted);font-size:16px}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;color:#314057;font-size:13px}.layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;max-width:1180px;margin:0 auto;padding:28px 24px 64px}nav{position:sticky;top:18px;align-self:start;max-height:calc(100vh - 36px);overflow:auto;border:1px solid var(--line);border-radius:8px;padding:16px;background:#fff}nav h2{margin:0 0 10px;font-size:15px}nav a{display:block;color:#314057;text-decoration:none;padding:5px 0;font-size:13px;line-height:1.35}.toc-l2{padding-left:10px}.toc-l3{padding-left:22px;color:var(--muted)}main{min-width:0}main h1{display:none}h2{margin:34px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line);font-size:24px}h3{margin:28px 0 10px;font-size:19px;color:#1f3654}p{margin:8px 0 14px}blockquote{margin:16px 0;padding:12px 14px;border-left:4px solid var(--warn);background:#fff9eb;color:#4f3b12}code{font-family:Consolas,"Courier New",monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;font-size:.92em}pre{margin:12px 0 18px;padding:15px 16px;overflow:auto;color:var(--codeText);background:var(--code);border-radius:8px;font-size:13px;line-height:1.55}pre code{color:inherit;background:transparent;padding:0;border-radius:0;white-space:pre}ul{margin:8px 0 14px;padding-left:24px}.doc-note{margin:0 0 18px;padding:14px 16px;background:var(--soft);border:1px solid #c8e7e4;border-radius:8px}.printbar{display:flex;gap:10px;margin-top:18px}button{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:8px 12px;cursor:pointer;font:inherit}@media(max-width:900px){.layout{grid-template-columns:1fr;padding:20px 16px 48px}nav{position:relative;top:auto;max-height:none}header{padding:30px 18px 24px}h1{font-size:26px}}@media print{header,nav,.printbar{display:none}.layout{display:block;padding:0;max-width:none}pre{white-space:pre-wrap;border:1px solid #ddd;color:#111;background:#f7f7f7}}</style></head><body><header><div class="wrap"><div class="eyebrow">GDCC VM1 Migration</div><h1>iService Cutover Memory & Installation Runbook</h1><p class="lead">คู่มือ HTML สำหรับอ่านย้อนหลัง ทำเอกสารต่อ และใช้เป็น handoff ของงานย้าย <code>iservice.rangsitcity.go.th</code> ไป GDCC VM1 วันที่ 2026-06-25</p><div class="meta"><span class="pill">VM1: 112.121.157.74</span><span class="pill">Project: /home/rssc/web-server/project-php/iservice</span><span class="pill">DB: iservicedb</span><span class="pill">Generated: 2026-06-25 21:45:21</span></div><div class="printbar"><button onclick="window.print()">Print / Save PDF</button></div></div></header><div class="layout"><nav><h2>สารบัญ</h2><a class="toc-l1" href="#iservice-gdcc-vm1-cutover-memory-2026-06-25">iService GDCC VM1 Cutover Memory - 2026-06-25</a>
+<a class="toc-l2" href="#current-status">Current Status</a>
+<a class="toc-l2" href="#dns-notes">DNS Notes</a>
+<a class="toc-l2" href="#local-files-prepared">Local Files Prepared</a>
+<a class="toc-l2" href="#production-sql-dump">Production SQL Dump</a>
+<a class="toc-l2" href="#chronological-commands-and-outputs">Chronological Commands and Outputs</a>
+<a class="toc-l3" href="#1-ssh-to-vm1">1. SSH to VM1</a>
+<a class="toc-l3" href="#2-check-docker-stack">2. Check Docker stack</a>
+<a class="toc-l3" href="#3-open-mariadb-and-create-db-user">3. Open MariaDB and create DB/user</a>
+<a class="toc-l3" href="#4-create-vm1-project-data-directories">4. Create VM1 project/data directories</a>
+<a class="toc-l3" href="#5-upload-sql-from-windows">5. Upload SQL from Windows</a>
+<a class="toc-l3" href="#6-import-sql">6. Import SQL</a>
+<a class="toc-l3" href="#7-upload-project-files">7. Upload project files</a>
+<a class="toc-l3" href="#8-create-env-gdcc">8. Create <code>.env.gdcc</code></a>
+<a class="toc-l3" href="#9-db-config-verification-and-override-fix">9. DB config verification and override fix</a>
+<a class="toc-l3" href="#10-php-extensions-and-rebuild">10. PHP extensions and rebuild</a>
+<a class="toc-l3" href="#11-nginx-http-config-and-testing">11. Nginx HTTP config and testing</a>
+<a class="toc-l2" href="#continuation-update-https-live-browser-still-shows-not-secure">Continuation Update - HTTPS Live, Browser Still Shows Not Secure</a>
+<a class="toc-l3" href="#completed-after-previous-memory">Completed After Previous Memory</a>
+<a class="toc-l3" href="#https-verification-passed">HTTPS Verification Passed</a>
+<a class="toc-l3" href="#fixed-runtime-db-issue">Fixed Runtime DB Issue</a>
+<a class="toc-l3" href="#http-redirect-added">HTTP Redirect Added</a>
+<a class="toc-l3" href="#mixed-content-cleanup-done">Mixed Content Cleanup Done</a>
+<a class="toc-l3" href="#current-unresolved-issue">Current Unresolved Issue</a>
+<a class="toc-l3" href="#what-still-needs-debugging-next">What Still Needs Debugging Next</a>
+<a class="toc-l2" href="#chrome-not-secure-resolved">Chrome &quot;Not Secure&quot; - Resolved (Local Machine Issue)</a>
+<a class="toc-l2" href="#line-login-redirect-uri-bug-fixed">LINE Login redirect_uri Bug - Fixed</a>
+<a class="toc-l2" href="#planned-vm2-db-migration">Planned: Move MySQL/MariaDB to VM2 (Postgres Host)</a>
+<a class="toc-l3" href="#vm2-infra-survey">VM2 Infra Survey</a>
+<a class="toc-l3" href="#vm2-network-topology">Network Topology</a>
+<a class="toc-l3" href="#vm2-migration-plan">Migration Plan</a>
+<a class="toc-l3" href="#vm2-risks-open-questions">Risks &amp; Open Questions</a>
+<a class="toc-l2" href="#vm1-vm2-spec-summary">Infra Spec &amp; Resource Summary: VM1 vs VM2</a>
+<a class="toc-l3" href="#vm1-full-spec">VM1 Full Spec</a>
+<a class="toc-l3" href="#vm2-full-spec">VM2 Full Spec</a>
+<a class="toc-l3" href="#vm1-vm2-capacity-verdict">Capacity Verdict: Adding MariaDB to VM2</a>
+<a class="toc-l2" href="#cron-fundamentals">เรียนรู้ Cron: จาก Linux crontab สู่ Self-Service Web Scheduler</a>
+<a class="toc-l3" href="#cron-linux-basics">1. Linux crontab ทำงานอย่างไร</a>
+<a class="toc-l3" href="#cron-external-saas">2. ทำไมเดิมใช้ cron-job.org (SaaS ภายนอก)</a>
+<a class="toc-l3" href="#cron-vm1-native">3. ย้ายมารัน crontab ตรงบน VM1</a>
+<a class="toc-l3" href="#cron-virtual-pattern">4. หลักการ &quot;Virtual Cron&quot;: ทำไมไม่แก้ OS crontab ตรง ๆ ทุกครั้ง</a>
+<a class="toc-l3" href="#cron-implementation">5. สิ่งที่สร้างจริง: cron_schedules + runner.php + Admin UI</a>
+<a class="toc-l3" href="#cron-comparison-table">6. เทียบ 3 แนวทาง: cron-job.org vs OS crontab vs Virtual Cron</a>
+<a class="toc-l3" href="#cron-lessons-learned">7. บทเรียนที่ได้จากการลงมือทำจริง</a>
+<a class="toc-l3" href="#cron-when-to-use-offshelf">8. เมื่อไหร่ควรใช้เครื่องมือสำเร็จรูปแทน</a>
+</nav><main><div class="doc-note"><strong>หมายเหตุ:</strong> สถานะล่าสุด (2026-06-25 ภาคค่ำ): ปิดเคสแล้วทั้ง 2 เรื่อง — (1) Chrome &quot;Not secure&quot; พิสูจน์แล้วว่าเป็นปัญหาเฉพาะเครื่อง/โปรไฟล์ Chrome ของผู้ใช้ ไม่ใช่ฝั่งเซิร์ฟเวอร์ (2) LINE Login error 400 Invalid redirect_uri แก้แล้วโดยลบ <code>/iservice/</code> ที่หลุดเข้ามาในช่องตั้งค่า Callback URL ดูรายละเอียดท้ายเอกสาร</div><h1 id="iservice-gdcc-vm1-cutover-memory-2026-06-25">iService GDCC VM1 Cutover Memory - 2026-06-25</h1>
+<blockquote>Security note: password, token, private key, LINE secret, DB root password, and DB user password are intentionally redacted. Do not store real secrets in this handoff.</blockquote>
+<h2 id="current-status">Current Status</h2>
+<ul><li>Goal: move <code>https://iservice.rangsitcity.go.th/</code> to GDCC VM1 using the same pattern as <code>discover_rangsit</code>.</li></ul>
+<ul><li>VM1 IP: <code>112.121.157.74</code></li></ul>
+<ul><li>SSH user: <code>rssc</code></li></ul>
+<ul><li>Docker root: <code>/home/rssc/web-server</code></li></ul>
+<ul><li>Actual storage: <code>/data/rssc/web-server</code></li></ul>
+<ul><li>Project path: <code>/home/rssc/web-server/project-php/iservice</code></li></ul>
+<ul><li>PHP service/container: <code>php-app</code> / <code>php_app</code></li></ul>
+<ul><li>DB service/container: <code>id-booking-db</code> / <code>id_booking_db</code></li></ul>
+<ul><li>Reverse proxy service/container: <code>reverse-proxy</code> / <code>reverse_proxy</code></li></ul>
+<ul><li>phpMyAdmin tunnel: <code>ssh -L 8081:127.0.0.1:8081 rssc@112.121.157.74</code>, then browse <code>http://127.0.0.1:8081/</code></li></ul>
+<ul><li>DB created: <code>iservicedb</code></li></ul>
+<ul><li>DB user created: <code>iservice_user</code> for hosts <code>%</code> and <code>localhost</code></li></ul>
+<ul><li>Production SQL import succeeded; DB verification shows 49 tables/views, 20 users, 171 departments, 32 service_requests.</li></ul>
+<ul><li>Project files were uploaded to VM1.</li></ul>
+<ul><li><code>.env.gdcc</code> exists on VM1 and has permission <code>600</code>.</li></ul>
+<ul><li>PHP app now reads <code>DB_HOST=id-booking-db</code>, <code>DB_NAME=iservicedb</code>, and <code>IS_LOCAL=false</code>.</li></ul>
+<ul><li>PHP image was rebuilt with <code>gd</code>, <code>zip</code>, and <code>intl</code> added.</li></ul>
+<ul><li>Nginx HTTP config exists at <code>~/web-server/nginx/conf.d/iservice.conf</code>.</li></ul>
+<ul><li>HTTP tests via VM1 pass: <code>/</code>, <code>/request-form.php</code>, <code>/api/get_departments.php?level=1</code> all return <code>200</code>.</li></ul>
+<ul><li>Admin unauthenticated test returns <code>302</code>.</li></ul>
+<ul><li>Sensitive file checks: <code>/config/database.php</code> returns <code>404</code>; <code>/.env.gdcc</code> returns <code>404</code>.</li></ul>
+<ul><li><code>www.iservice.rangsitcity.go.th</code> already resolved to VM1 and returned <code>200</code>.</li></ul>
+<ul><li>At last DNS check, root <code>iservice.rangsitcity.go.th</code> still resolved to old IP <code>203.150.199.248</code>; wait before SSL.</li></ul>
+<h2 id="dns-notes">DNS Notes</h2>
+<p>Before DNS edit, cPanel had:</p>
+<pre><code>
+iservice.rangsitcity.go.th.      A 203.150.199.248
+www.iservice.rangsitcity.go.th.  A 203.150.199.248
+</code></pre>
+<p>Only these web A records should be changed:</p>
+<pre><code>
+iservice.rangsitcity.go.th.      A 112.121.157.74
+www.iservice.rangsitcity.go.th.  A 112.121.157.74
+</code></pre>
+<p>Do not change DKIM/SPF/cPanel/cpcalendars records unless intentionally migrating mail/cPanel behavior.</p>
+<p>Observed after editing DNS:</p>
+<pre><code>
+getent hosts iservice.rangsitcity.go.th
+getent hosts www.iservice.rangsitcity.go.th
+</code></pre>
+<p>Output:</p>
+<pre><code>
+203.150.199.248 iservice.rangsitcity.go.th
+112.121.157.74  www.iservice.rangsitcity.go.th
+</code></pre>
+<p>Interpretation: <code>www</code> propagated to VM1; root was still waiting.</p>
+<h2 id="local-files-prepared">Local Files Prepared</h2>
+<p>Touched/created local project files:</p>
+<pre><code>
+C:\xampp\htdocs\iservice\config\database.php
+C:\xampp\htdocs\iservice\.htaccess
+C:\xampp\htdocs\iservice\.gitignore
+C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.sql
+C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.vm1.sql
+C:\xampp\htdocs\iservice\.ai\iservice-gdcc-vm1-cutover-plan-2026-06-25.md
+C:\xampp\htdocs\iservice\.ai\iservice-gdcc-vm1-cutover-memory-2026-06-25.md
+C:\xampp\htdocs\iservice\.ai\iservice-gdcc-vm1-installation-runbook-2026-06-25.md
+</code></pre>
+<p>Important prep:</p>
+<ul><li><code>config/database.php</code> supports <code>.env.gdcc</code> overrides.</li></ul>
+<ul><li><code>.env.gdcc</code> is ignored by git.</li></ul>
+<ul><li>VM1 copy of <code>config/database.php</code> was patched so <code>.env.gdcc</code> overrides existing Docker env values from <code>php-app</code>.</li></ul>
+<ul><li>VM1 <code>.htaccess</code> HTTPS redirect was disabled so Nginx can own redirects after SSL.</li></ul>
+<ul><li><code>rangsitadmin_iservice_db.vm1.sql</code> was created from latest production dump with <code>DEFINER=...</code> removed.</li></ul>
+<h2 id="production-sql-dump">Production SQL Dump</h2>
+<p>Source dump:</p>
+<pre><code>
+C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.sql
+</code></pre>
+<p>Metadata:</p>
+<pre><code>
+Length        : 4965649
+LastWriteTime : 2026-06-25 16:06:26
+Database      : rangsitadmin_iservice_db
+Generation    : Jun 25, 2026 at 04:06 PM
+</code></pre>
+<p>Detected views with <code>DEFINER=rangsitadmin@localhost</code>:</p>
+<pre><code>
+v_service_requests_full
+v_task_assignments_full
+v_users_full
+v_user_roles
+</code></pre>
+<p>Sanitized dump:</p>
+<pre><code>
+C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.vm1.sql
+</code></pre>
+<p>Metadata:</p>
+<pre><code>
+Length        : 4965509
+LastWriteTime : 2026-06-25 16:09:47
+</code></pre>
+<p>Validation:</p>
+<pre><code>
+No DEFINER=
+No CREATE DATABASE
+No USE ...
+</code></pre>
+<p>Sanitizing command used locally, conceptually:</p>
+<pre><code>
+$text=[System.IO.File]::ReadAllText($src)
+$text=[regex]::Replace($text, &#39;DEFINER=`[^`]+`@`[^`]+`\s+&#39;, &#39;&#39;)
+[System.IO.File]::WriteAllText($dst,$text,$utf8NoBom)
+</code></pre>
+<h2 id="chronological-commands-and-outputs">Chronological Commands and Outputs</h2>
+<h3 id="1-ssh-to-vm1">1. SSH to VM1</h3>
+<p>Windows command:</p>
+<pre><code>
+ssh rssc@112.121.157.74
+</code></pre>
+<p>Output:</p>
+<pre><code>
+rssc@112.121.157.74&#39;s password:
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.17.0-14-generic x86_64)
+Last login: Thu Jun 25 16:16:43 2026 from 118.174.138.142
+rssc@rssc-webapp:~$
+</code></pre>
+<h3 id="2-check-docker-stack">2. Check Docker stack</h3>
+<pre><code>
+cd ~/web-server
+sudo docker compose ps
+</code></pre>
+<p>Output:</p>
+<pre><code>
+NAME                    IMAGE                      SERVICE         STATUS                  PORTS
+id_booking_db           mariadb:11                 id-booking-db   Up 45 hours             3306/tcp
+id_booking_phpmyadmin   phpmyadmin:latest          phpmyadmin      Up 45 hours             127.0.0.1:8081-&gt;80/tcp
+metabase                metabase/metabase:latest   metabase        Up 6 weeks              0.0.0.0:3100-&gt;3000/tcp
+nextjs_app              node:20-alpine             nextjs-app      Up 25 hours (healthy)
+pgadmin4                dpage/pgadmin4             pgadmin         Up 3 months             0.0.0.0:5050-&gt;80/tcp
+php_app                 web-server-php-app         php-app         Up 25 hours             80/tcp
+reverse_proxy           nginx:alpine               reverse-proxy   Up 25 hours             0.0.0.0:80-&gt;80/tcp, 0.0.0.0:443-&gt;443/tcp
+</code></pre>
+<h3 id="3-open-mariadb-and-create-db-user">3. Open MariaDB and create DB/user</h3>
+<p>Root entry eventually worked with historical root password. Password redacted:</p>
+<pre><code>
+sudo docker compose exec id-booking-db mariadb -u root -p&#39;[REDACTED_ROOT_PASSWORD]&#39;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+Welcome to the MariaDB monitor.
+Server version: 11.8.8-MariaDB-ubu2404 mariadb.org binary distribution
+MariaDB [(none)]&gt;
+</code></pre>
+<p>SQL:</p>
+<pre><code>
+CREATE DATABASE iservicedb
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+CREATE USER &#39;iservice_user&#39;@&#39;%&#39; IDENTIFIED BY &#39;[REDACTED]&#39;;
+GRANT ALL PRIVILEGES ON iservicedb.* TO &#39;iservice_user&#39;@&#39;%&#39;;
+FLUSH PRIVILEGES;
+SHOW DATABASES LIKE &#39;iservicedb&#39;;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+Query OK, 1 row affected
+Query OK, 0 rows affected
+Query OK, 0 rows affected
+Query OK, 0 rows affected
++-----------------------+
+| Database (iservicedb) |
++-----------------------+
+| iservicedb            |
++-----------------------+
+</code></pre>
+<h3 id="4-create-vm1-project-data-directories">4. Create VM1 project/data directories</h3>
+<pre><code>
+mkdir -p ~/web-server/project-php/iservice/database_Export
+ls -ld ~/web-server/project-php/iservice ~/web-server/project-php/iservice/database_Export
+</code></pre>
+<p>Output:</p>
+<pre><code>
+drwxrwxr-x 3 rssc rssc 4096 Jun 25 16:29 /home/rssc/web-server/project-php/iservice
+drwxrwxr-x 2 rssc rssc 4096 Jun 25 16:29 /home/rssc/web-server/project-php/iservice/database_Export
+</code></pre>
+<h3 id="5-upload-sql-from-windows">5. Upload SQL from Windows</h3>
+<p>Wrong attempt from inside VM1:</p>
+<pre><code>
+scp C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.vm1.sql rssc@112.121.157.74:/home/rssc/web-server/project-php/iservice/database_Export/
+</code></pre>
+<p>Output:</p>
+<pre><code>
+ssh: Could not resolve hostname c: Temporary failure in name resolution
+scp: Connection closed
+</code></pre>
+<p>Correct Windows PowerShell command:</p>
+<pre><code>
+scp &quot;C:\xampp\htdocs\iservice\database_Export\rangsitadmin_iservice_db.vm1.sql&quot; rssc@112.121.157.74:/home/rssc/web-server/project-php/iservice/database_Export/
+</code></pre>
+<p>Output:</p>
+<pre><code>
+rangsitadmin_iservice_db.vm1.sql 100% 4849KB 1.2MB/s 00:03
+</code></pre>
+<p>Verify on VM1:</p>
+<pre><code>
+ls -lh ~/web-server/project-php/iservice/database_Export/rangsitadmin_iservice_db.vm1.sql
+grep -n &quot;DEFINER&quot; ~/web-server/project-php/iservice/database_Export/rangsitadmin_iservice_db.vm1.sql | head
+</code></pre>
+<p>Output:</p>
+<pre><code>
+-rw-rw-r-- 1 rssc rssc 4.8M Jun 25 16:33 /home/rssc/web-server/project-php/iservice/database_Export/rangsitadmin_iservice_db.vm1.sql
+</code></pre>
+<p><code>grep</code> produced no output.</p>
+<h3 id="6-import-sql">6. Import SQL</h3>
+<p>First import failed because MariaDB saw <code>iservice_user@localhost</code>:</p>
+<pre><code>
+sudo docker compose exec -T id-booking-db mariadb -u iservice_user -p iservicedb &lt; ~/web-server/project-php/iservice/database_Export/rangsitadmin_iservice_db.vm1.sql
+</code></pre>
+<p>Output:</p>
+<pre><code>
+ERROR 1045 (28000): Access denied for user &#39;iservice_user&#39;@&#39;localhost&#39; (using password: YES)
+</code></pre>
+<p>Root password discovery:</p>
+<pre><code>
+grep -n -A 30 -B 5 &quot;id-booking-db&quot; docker-compose.yml
+</code></pre>
+<p>Relevant output; passwords redacted here:</p>
+<pre><code>
+DB_HOST: id-booking-db
+DB_NAME: id_booking
+DB_USER: id_booking_user
+DB_PASS: [REDACTED]
+MARIADB_DATABASE: id_booking
+MARIADB_USER: id_booking_user
+MARIADB_PASSWORD: [REDACTED]
+MARIADB_ROOT_PASSWORD: [REDACTED]
+</code></pre>
+<p>The current yml root password was stale because the DB volume already existed; the historical root password worked. After entering root, added <code>iservice_user@localhost</code>. Then a mistaken placeholder password was pasted, so users were reset from <code>.env.gdcc</code> later.</p>
+<p>Reset users from <code>.env.gdcc</code> without printing the password:</p>
+<pre><code>
+DBPASS=$(grep &#39;^DB_PASS=&#39; ~/web-server/project-php/iservice/.env.gdcc | cut -d= -f2-)
+sudo docker compose exec -T id-booking-db mariadb -u root -p&#39;[REDACTED_ROOT_PASSWORD]&#39; &lt;&lt;SQL
+DROP USER IF EXISTS &#39;iservice_user&#39;@&#39;%&#39;;
+DROP USER IF EXISTS &#39;iservice_user&#39;@&#39;localhost&#39;;
+CREATE USER &#39;iservice_user&#39;@&#39;%&#39; IDENTIFIED BY &#39;${DBPASS}&#39;;
+CREATE USER &#39;iservice_user&#39;@&#39;localhost&#39; IDENTIFIED BY &#39;${DBPASS}&#39;;
+GRANT ALL PRIVILEGES ON iservicedb.* TO &#39;iservice_user&#39;@&#39;%&#39;;
+GRANT ALL PRIVILEGES ON iservicedb.* TO &#39;iservice_user&#39;@&#39;localhost&#39;;
+FLUSH PRIVILEGES;
+SQL
+</code></pre>
+<p>Successful import command:</p>
+<pre><code>
+sudo docker compose exec -T id-booking-db mariadb -u iservice_user -p&#39;[REDACTED]&#39; iservicedb &lt; ~/web-server/project-php/iservice/database_Export/rangsitadmin_iservice_db.vm1.sql
+</code></pre>
+<p>Output:</p>
+<pre><code>
+(no output; import succeeded)
+</code></pre>
+<p>Verify count:</p>
+<pre><code>
+sudo docker compose exec id-booking-db mariadb -u iservice_user -p&#39;[REDACTED]&#39; iservicedb -N -e &quot;SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=&#39;iservicedb&#39;;&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
++----+
+| 49 |
++----+
+</code></pre>
+<p>Verify key tables/views:</p>
+<pre><code>
+sudo docker compose exec id-booking-db mariadb -u iservice_user -p&#39;[REDACTED]&#39; iservicedb -e &quot;SHOW TABLES LIKE &#39;users&#39;; SHOW TABLES LIKE &#39;departments&#39;; SHOW TABLES LIKE &#39;service_requests&#39;; SHOW TABLES LIKE &#39;v_service_requests_full&#39;;&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+users
+departments
+service_requests
+v_service_requests_full
+</code></pre>
+<p>Row counts:</p>
+<pre><code>
+sudo docker compose exec id-booking-db mariadb -u iservice_user -p&#39;[REDACTED]&#39; iservicedb -e &quot;SELECT COUNT(*) AS users_count FROM users; SELECT COUNT(*) AS departments_count FROM departments; SELECT COUNT(*) AS requests_count FROM service_requests;&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+users_count       20
+departments_count 171
+requests_count    32
+</code></pre>
+<h3 id="7-upload-project-files">7. Upload project files</h3>
+<p>Uploaded by FileZilla SFTP:</p>
+<pre><code>
+Protocol: SFTP
+Host: 112.121.157.74
+User: rssc
+Port: 22
+Local: C:\xampp\htdocs\iservice
+Remote: /home/rssc/web-server/project-php/iservice
+</code></pre>
+<p>Important: upload contents into <code>.../project-php/iservice</code>, not nested <code>.../project-php/iservice/iservice</code>.</p>
+<p>Verify:</p>
+<pre><code>
+ls -l ~/web-server/project-php/iservice/index.php ~/web-server/project-php/iservice/config/database.php ~/web-server/project-php/iservice/.htaccess
+</code></pre>
+<p>Output:</p>
+<pre><code>
+-rw-rw-r-- 1 rssc rssc  4175 Jun 25 16:52 /home/rssc/web-server/project-php/iservice/.htaccess
+-rw-rw-r-- 1 rssc rssc  9655 Jun 25 17:00 /home/rssc/web-server/project-php/iservice/config/database.php
+-rw-rw-r-- 1 rssc rssc 72002 Jun 25 16:53 /home/rssc/web-server/project-php/iservice/index.php
+</code></pre>
+<h3 id="8-create-env-gdcc">8. Create <code>.env.gdcc</code></h3>
+<pre><code>
+nano ~/web-server/project-php/iservice/.env.gdcc
+</code></pre>
+<p>Content, secret redacted:</p>
+<pre><code>
+DB_HOST=id-booking-db
+DB_NAME=iservicedb
+DB_USER=iservice_user
+DB_PASS=[REDACTED]
+DB_CHARSET=utf8mb4
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://iservice.rangsitcity.go.th/
+</code></pre>
+<p>Permissions:</p>
+<pre><code>
+chmod 600 ~/web-server/project-php/iservice/.env.gdcc
+ls -l ~/web-server/project-php/iservice/.env.gdcc
+</code></pre>
+<p>Output:</p>
+<pre><code>
+-rw------- 1 rssc rssc 205 Jun 25 17:08 /home/rssc/web-server/project-php/iservice/.env.gdcc
+</code></pre>
+<h3 id="9-db-config-verification-and-override-fix">9. DB config verification and override fix</h3>
+<p>Initial check showed <code>php-app</code> Docker env was still overriding DB name:</p>
+<pre><code>
+sudo docker compose exec php-app php -r &quot;require &#39;/var/www/html/iservice/config/database.php&#39;; echo DB_HOST.&#39; &#39;.DB_NAME.&#39; &#39;.(IS_LOCAL ? &#39;local&#39; : &#39;prod&#39;).PHP_EOL; echo table_exists(&#39;users&#39;) ? &#39;users-table-ok&#39; : &#39;users-table-missing&#39;;&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+id-booking-db id_booking prod
+users-table-ok
+</code></pre>
+<p>Patch VM1 config so <code>.env.gdcc</code> overrides existing env values:</p>
+<pre><code>
+cp ~/web-server/project-php/iservice/config/database.php ~/web-server/project-php/iservice/config/database.php.bak
+perl -0pi -e &quot;s/if \(\$key !== &#39;&#39; &amp;&amp; getenv\(\$key\) === false\) \{/if (\$key !== &#39;&#39;) {/&quot; ~/web-server/project-php/iservice/config/database.php
+sudo docker compose exec php-app php -l /var/www/html/iservice/config/database.php
+</code></pre>
+<p>Output:</p>
+<pre><code>
+No syntax errors detected in /var/www/html/iservice/config/database.php
+</code></pre>
+<p>After user reset from <code>.env.gdcc</code>, successful DB check:</p>
+<pre><code>
+id-booking-db iservicedb prod
+users-table-ok
+</code></pre>
+<h3 id="10-php-extensions-and-rebuild">10. PHP extensions and rebuild</h3>
+<p>Before rebuild:</p>
+<pre><code>
+sudo docker compose exec php-app php -m | grep -E &quot;mysqli|pdo_mysql|mbstring|gd|fileinfo|curl|zip|intl&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+curl
+fileinfo
+mbstring
+mysqli
+pdo_mysql
+</code></pre>
+<p>Original Dockerfile:</p>
+<pre><code>
+FROM php:8.2-apache
+
+RUN docker-php-ext-install pdo_mysql mysqli
+
+RUN a2enmod rewrite
+</code></pre>
+<p>Updated Dockerfile:</p>
+<pre><code>
+cat &gt; ~/web-server/php/Dockerfile &lt;&lt;&#39;EOF&#39;
+FROM php:8.2-apache
+
+RUN apt-get update \
+    &amp;&amp; apt-get install -y --no-install-recommends \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+        libzip-dev \
+        libicu-dev \
+    &amp;&amp; docker-php-ext-configure gd --with-freetype --with-jpeg \
+    &amp;&amp; docker-php-ext-install pdo_mysql mysqli gd zip intl \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+RUN a2enmod rewrite
+EOF
+</code></pre>
+<p>Rebuild:</p>
+<pre><code>
+sudo docker compose up -d --build php-app
+</code></pre>
+<p>Output summary:</p>
+<pre><code>
+Image web-server-php-app Built 80.3s
+Container php_app Started 1.5s
+</code></pre>
+<p>After rebuild:</p>
+<pre><code>
+sudo docker compose exec php-app php -m | grep -E &quot;mysqli|pdo_mysql|mbstring|gd|fileinfo|curl|zip|intl&quot;
+</code></pre>
+<p>Output:</p>
+<pre><code>
+curl
+fileinfo
+gd
+intl
+mbstring
+mysqli
+pdo_mysql
+zip
+</code></pre>
+<p>DB still OK:</p>
+<pre><code>
+id-booking-db iservicedb prod
+users-table-ok
+</code></pre>
+<h3 id="11-nginx-http-config-and-testing">11. Nginx HTTP config and testing</h3>
+<p>Created initial config:</p>
+<pre><code>
+cat &gt; ~/web-server/nginx/conf.d/iservice.conf &lt;&lt;&#39;EOF&#39;
+server {
+    listen 80;
+    server_name iservice.rangsitcity.go.th;
+
+    client_max_body_size 220m;
+
+    location ~* /(\.env|\.git|composer\.(json|lock)|api_token\.txt|.*\.sql)$ {
+        return 404;
+    }
+
+    location ^~ /config/ { return 404; }
+    location ^~ /database/ { return 404; }
+    location ^~ /app/ { return 404; }
+    location ^~ /includes/ { return 404; }
+    location ^~ /logs/ { return 404; }
+
+    location ^~ /iservice/ {
+        proxy_pass http://php-app:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+    }
+
+    location / {
+        proxy_pass http://php-app:80/iservice/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto http;
+    }
+}
+EOF
+</code></pre>
+<p>Validate/reload:</p>
+<pre><code>
+sudo docker compose exec reverse-proxy nginx -t
+sudo docker compose exec reverse-proxy nginx -s reload
+</code></pre>
+<p>Output:</p>
+<pre><code>
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026/06/25 10:18:42 [notice] 319#319: signal process started
+</code></pre>
+<p>Initial forced HTTP tests returned 301 because Apache <code>.htaccess</code> still forced HTTPS:</p>
+<pre><code>
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/request-form.php
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/api/get_departments.php?level=1
+</code></pre>
+<p>Output:</p>
+<pre><code>
+301
+301
+301
+</code></pre>
+<p>Disable Apache redirect on VM1:</p>
+<pre><code>
+cp ~/web-server/project-php/iservice/.htaccess ~/web-server/project-php/iservice/.htaccess.bak
+perl -0pi -e &#39;s/    # ── Force HTTP → HTTPS redirect.*?    # ────────────────────────────────────────────────────────────────────────\n/    # HTTPS redirect is handled by Nginx on VM1.\n/s&#39; ~/web-server/project-php/iservice/.htaccess
+</code></pre>
+<p>Retest output:</p>
+<pre><code>
+200
+200
+200
+</code></pre>
+<p>Security tests:</p>
+<pre><code>
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/admin/admin_dashboard.php
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/config/database.php
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/.env.gdcc
+</code></pre>
+<p>Output:</p>
+<pre><code>
+302
+404
+403
+</code></pre>
+<p>Add exact <code>.env</code> blocks and reload:</p>
+<pre><code>
+sed -i &#39;/client_max_body_size 220m;/a\
+\
+    location = /.env.gdcc { return 404; }\
+    location = /.env { return 404; }&#39; ~/web-server/nginx/conf.d/iservice.conf
+sudo docker compose exec reverse-proxy nginx -t
+sudo docker compose exec reverse-proxy nginx -s reload
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/.env.gdcc
+</code></pre>
+<p>Output:</p>
+<pre><code>
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026/06/25 10:25:45 [notice] 359#359: signal process started
+404
+</code></pre>
+<p>Add <code>www</code> to <code>server_name</code>:</p>
+<pre><code>
+grep -n &quot;server_name&quot; ~/web-server/nginx/conf.d/iservice.conf
+sed -i &#39;s/server_name iservice.rangsitcity.go.th;/server_name iservice.rangsitcity.go.th www.iservice.rangsitcity.go.th;/&#39; ~/web-server/nginx/conf.d/iservice.conf
+sudo docker compose exec reverse-proxy nginx -t
+sudo docker compose exec reverse-proxy nginx -s reload
+</code></pre>
+<p>Output:</p>
+<pre><code>
+3:    server_name iservice.rangsitcity.go.th;
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026/06/25 10:32:12 [notice] 379#379: signal process started
+</code></pre>
+<p>HTTP test:</p>
+<pre><code>
+curl --resolve iservice.rangsitcity.go.th:80:112.121.157.74 -s -o /dev/null -w &quot;%{http_code}\n&quot; http://iservice.rangsitcity.go.th/
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; http://www.iservice.rangsitcity.go.th/
+</code></pre>
+<p>Output:</p>
+<pre><code>
+200
+200
+</code></pre>
+<h2 id="continuation-update-https-live-browser-still-shows-not-secure">Continuation Update - HTTPS Live, Browser Still Shows Not Secure</h2>
+<p>Updated after SSL and HTTPS troubleshooting on 2026-06-25.</p>
+<h3 id="completed-after-previous-memory">Completed After Previous Memory</h3>
+<p>DNS fully propagated for both root and www:</p>
+<pre><code>
+getent hosts iservice.rangsitcity.go.th
+getent hosts www.iservice.rangsitcity.go.th
+</code></pre>
+<p>Output:</p>
+<pre><code>
+112.121.157.74  iservice.rangsitcity.go.th
+112.121.157.74  www.iservice.rangsitcity.go.th
+</code></pre>
+<p>Issued Let&#39;s Encrypt certificate:</p>
+<pre><code>
+sudo certbot certonly --webroot \
+  -w /home/rssc/web-server/project-php/iservice \
+  -d iservice.rangsitcity.go.th \
+  -d www.iservice.rangsitcity.go.th
+</code></pre>
+<p>Output summary:</p>
+<pre><code>
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/iservice.rangsitcity.go.th/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/iservice.rangsitcity.go.th/privkey.pem
+This certificate expires on 2026-09-23.
+</code></pre>
+<p>Added HTTPS server block to:</p>
+<pre><code>
+~/web-server/nginx/conf.d/iservice.conf
+</code></pre>
+<p>Then validated and reloaded:</p>
+<pre><code>
+sudo docker compose exec reverse-proxy nginx -t
+sudo docker compose exec reverse-proxy nginx -s reload
+</code></pre>
+<p>Output:</p>
+<pre><code>
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026/06/25 13:53:33 [notice] 425#425: signal process started
+</code></pre>
+<p>Confirmed Nginx sees iService HTTPS block:</p>
+<pre><code>
+sudo docker compose exec reverse-proxy nginx -T | grep -n &quot;server_name iservice\|listen 443\|ssl_certificate /etc/letsencrypt/live/iservice&quot; -A 3 -B 3
+</code></pre>
+<p>Relevant output:</p>
+<pre><code>
+408-server {
+409:    listen 443 ssl;
+410:    server_name iservice.rangsitcity.go.th www.iservice.rangsitcity.go.th;
+412:    ssl_certificate /etc/letsencrypt/live/iservice.rangsitcity.go.th/fullchain.pem;
+413-    ssl_certificate_key /etc/letsencrypt/live/iservice.rangsitcity.go.th/privkey.pem;
+</code></pre>
+<h3 id="https-verification-passed">HTTPS Verification Passed</h3>
+<pre><code>
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/request-form.php
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/api/get_departments.php?level=1
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://www.iservice.rangsitcity.go.th/
+</code></pre>
+<p>Output:</p>
+<pre><code>
+200
+200
+200
+200
+</code></pre>
+<p>Sensitive checks:</p>
+<pre><code>
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/config/database.php
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/.env.gdcc
+</code></pre>
+<p>Output:</p>
+<pre><code>
+404
+404
+</code></pre>
+<p>Certificate check:</p>
+<pre><code>
+curl -I https://iservice.rangsitcity.go.th/
+echo | openssl s_client -servername iservice.rangsitcity.go.th -connect iservice.rangsitcity.go.th:443 2&gt;/dev/null | openssl x509 -noout -subject -issuer -dates
+</code></pre>
+<p>Output summary:</p>
+<pre><code>
+HTTP/1.1 200 OK
+subject=CN = iservice.rangsitcity.go.th
+issuer=C = US, O = Let&#39;s Encrypt, CN = YE2
+notBefore=Jun 25 12:49:57 2026 GMT
+notAfter=Sep 23 12:49:56 2026 GMT
+</code></pre>
+<p>Chrome certificate details also showed:</p>
+<pre><code>
+Common Name (CN): iservice.rangsitcity.go.th
+Issuer: Let&#39;s Encrypt YE2
+Issued On: Thursday, June 25, 2026 at 7:49:57 PM
+Expires On: Wednesday, September 23, 2026 at 7:49:56 PM
+</code></pre>
+<h3 id="fixed-runtime-db-issue">Fixed Runtime DB Issue</h3>
+<p>After HTTPS went live, the page initially failed with:</p>
+<pre><code>
+Fatal error: Uncaught mysqli_sql_exception: Table &#39;id_booking.nav_menu&#39; doesn&#39;t exist in /var/www/html/iservice/includes/nav_menu_loader.php:30
+</code></pre>
+<p>CLI read the correct DB but web requests still used <code>id_booking</code>. Debug file <code>_dbcheck.php</code> showed:</p>
+<pre><code>
+ENV_FILE=/var/www/html/iservice/.env.gdcc
+ENV_EXISTS=yes
+ENV_READABLE=no
+DB_HOST=id-booking-db
+DB_NAME=id_booking
+SELECT_DATABASE=id_booking
+</code></pre>
+<p>Cause: <code>.env.gdcc</code> permission was <code>600</code> owned by <code>rssc</code>, so Apache/PHP in the container could not read it.</p>
+<p>Fix:</p>
+<pre><code>
+chmod 644 ~/web-server/project-php/iservice/.env.gdcc
+</code></pre>
+<p>After fix:</p>
+<pre><code>
+ENV_READABLE=yes
+ENV_DB_HOST_LINE=DB_HOST=id-booking-db
+ENV_DB_NAME_LINE=DB_NAME=iservicedb
+ENV_DB_USER_LINE=DB_USER=iservice_user
+ENV_DB_PASS_LINE=[REDACTED]
+DB_HOST=id-booking-db
+DB_NAME=iservicedb
+SELECT_DATABASE=iservicedb
+</code></pre>
+<p>Removed debug file:</p>
+<pre><code>
+rm ~/web-server/project-php/iservice/_dbcheck.php
+curl -s -o /dev/null -w &quot;%{http_code}\n&quot; https://iservice.rangsitcity.go.th/_dbcheck.php
+</code></pre>
+<p>Output:</p>
+<pre><code>
+404
+</code></pre>
+<h3 id="http-redirect-added">HTTP Redirect Added</h3>
+<p>HTTP initially still returned 200:</p>
+<pre><code>
+curl -I http://iservice.rangsitcity.go.th/
+</code></pre>
+<p>Output before fix:</p>
+<pre><code>
+HTTP/1.1 200 OK
+</code></pre>
+<p>Nginx HTTP block was replaced with redirect while preserving ACME challenge path:</p>
+<pre><code>
+server {
+    listen 80;
+    server_name iservice.rangsitcity.go.th www.iservice.rangsitcity.go.th;
+
+    location /.well-known/acme-challenge/ {
+        proxy_pass http://php-app:80/iservice/.well-known/acme-challenge/;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+</code></pre>
+<p>Verification:</p>
+<pre><code>
+curl -I http://iservice.rangsitcity.go.th/
+curl -I https://iservice.rangsitcity.go.th/
+</code></pre>
+<p>Output:</p>
+<pre><code>
+HTTP/1.1 301 Moved Permanently
+Location: https://iservice.rangsitcity.go.th/
+
+HTTP/1.1 200 OK
+</code></pre>
+<h3 id="mixed-content-cleanup-done">Mixed Content Cleanup Done</h3>
+<p>Initial scan found <code>http://iservice.rangsitcity.go.th</code> URLs from <code>nav_menu</code> DB. Query:</p>
+<pre><code>
+DBPASS=$(grep &#39;^DB_PASS=&#39; ~/web-server/project-php/iservice/.env.gdcc | cut -d= -f2-)
+sudo docker compose exec id-booking-db mariadb -u iservice_user -p&quot;$DBPASS&quot; iservicedb -e &quot;SELECT id, menu_name, menu_url FROM nav_menu WHERE menu_url LIKE &#39;http://iservice.rangsitcity.go.th%&#39;;&quot;
+</code></pre>
+<p>Found 9 rows for service/resource links. Fixed:</p>
+<pre><code>
+sudo docker compose exec id-booking-db mariadb -u iservice_user -p&quot;$DBPASS&quot; iservicedb -e &quot;UPDATE nav_menu SET menu_url = REPLACE(menu_url, &#39;http://iservice.rangsitcity.go.th&#39;, &#39;https://iservice.rangsitcity.go.th&#39;) WHERE menu_url LIKE &#39;http://iservice.rangsitcity.go.th%&#39;;&quot;
+</code></pre>
+<p>Then found privacy banner generating <code>http://...</code> because it only checked <code>$_SERVER[&#39;HTTPS&#39;]</code>, not <code>X-Forwarded-Proto</code>.</p>
+<p>File:</p>
+<pre><code>
+/home/rssc/web-server/project-php/iservice/includes/privacy_consent.php
+</code></pre>
+<p>Backup:</p>
+<pre><code>
+cp ~/web-server/project-php/iservice/includes/privacy_consent.php ~/web-server/project-php/iservice/includes/privacy_consent.php.bak
+</code></pre>
+<p>Patched base URL detection to:</p>
+<pre><code>
+$_is_https = (($_SERVER[&#39;HTTPS&#39;] ?? &#39;&#39;) === &#39;on&#39;) || (($_SERVER[&#39;HTTP_X_FORWARDED_PROTO&#39;] ?? &#39;&#39;) === &#39;https&#39;);
+$_base_url = ($_is_https ? &#39;https&#39; : &#39;http&#39;)
+               . &#39;://&#39; . ($_SERVER[&#39;HTTP_HOST&#39;] ?? &#39;localhost&#39;) . $_script_dir;
+</code></pre>
+<p>Then remaining <code>http://</code> occurrences were only SVG namespace strings inside data URIs:</p>
+<pre><code>
+http://www.w3.org/2000/svg
+</code></pre>
+<p>For cleanliness, replaced these across files:</p>
+<pre><code>
+grep -RIl &quot;http://www.w3.org/2000/svg&quot; ~/web-server/project-php/iservice --exclude-dir=.git --exclude=&quot;*.sql&quot; \
+  | xargs sed -i &#39;s#http://www.w3.org/2000/svg#https://www.w3.org/2000/svg#g&#39;
+</code></pre>
+<p>Final scans:</p>
+<pre><code>
+curl -s https://iservice.rangsitcity.go.th/ | grep -n &quot;http://&quot;
+curl -s https://iservice.rangsitcity.go.th/login.php | grep -n &quot;http://&quot;
+curl -s -L https://iservice.rangsitcity.go.th/admin/admin_dashboard.php | grep -n &quot;http://&quot;
+</code></pre>
+<p>Output: no rows.</p>
+<h3 id="current-unresolved-issue">Current Unresolved Issue</h3>
+<p>Chrome still shows <code>Not secure</code> / broken HTTPS for the user, even though server-side checks are valid.</p>
+<p>Chrome DevTools Security tab says:</p>
+<pre><code>
+This page is not secure (broken HTTPS).
+Resources - active content with certificate errors
+You have recently allowed content loaded with certificate errors (such as scripts or iframes) to run on this site.
+Certificate - valid and trusted
+Connection - secure connection settings
+</code></pre>
+<p>Chrome certificate panel shows the correct Let&#39;s Encrypt certificate for <code>iservice.rangsitcity.go.th</code>.</p>
+<p><code>chrome://settings/content/insecureContent</code> showed no sites added under allowed or blocked insecure content.</p>
+<h3 id="what-still-needs-debugging-next">What Still Needs Debugging Next</h3>
+<p>The next session should continue from here:</p>
+<p>1. In Chrome DevTools Security tab, reload while the tab is open and inspect the left-side resource/origin list. 2. Identify which origin/resource is marked red with certificate errors. 3. In Chrome DevTools Network tab, enable Preserve log, reload, and look for failed/red requests or certificate-error resources. 4. If no resource appears, clear site data for <code>iservice.rangsitcity.go.th</code>, test in a fresh Chrome profile or another browser, and compare. 5. Server-side state currently appears correct: HTTPS cert valid, HTTP redirects to HTTPS, no <code>http://</code> strings in main/login/admin HTML output, and sensitive files return 404.</p>
+<p>Do not consider the Chrome Not secure issue resolved until browser Security tab shows secure for a fresh reload/profile.</p>
+<h2 id="chrome-not-secure-resolved">Chrome &quot;Not Secure&quot; - Resolved (Local Machine Issue)</h2>
+<p>Continued debugging in a later session. Outside-the-browser checks (curl from the operator&#39;s machine) confirmed the server was clean: no <code>http://</code> strings in homepage/login/request-form/admin HTML, every external resource (Tailwind CDN, Font Awesome via cdnjs, Google Fonts, Leaflet via unpkg) loaded over <code>https://</code>, and the certificate chain verified with <code>openssl s_client</code> returned <code>Verify return code: 0 (ok)</code>.</p>
+<p>Elimination steps taken with the affected user, in order:</p>
+<pre><code>
+1. Site settings &gt; Reset permissions, delete site data, restart Chrome entirely -&gt; still &quot;Not secure&quot;.
+2. Reproduced on every page, every browser/profile (as first reported) -&gt; pointed away from a simple Chrome profile cache.
+3. Checked TLS chain and DNS independently (openssl, curl --ssl-no-revoke) -&gt; server confirmed clean.
+4. Re-tested specifically in Firefox -&gt; secure, no warning, on any network.
+5. Re-tested in Chrome Guest mode (no extensions, no profile data) -&gt; secure, no &quot;Not secure&quot; label.
+6. Disabled all extensions in the user&#39;s main Chrome profile -&gt; still showed &quot;Not secure&quot;.
+</code></pre>
+<p>Conclusion: since Firefox and Chrome Guest mode both loaded the site securely, the certificate and server configuration were never the problem. The warning was isolated to state inside that one Chrome profile (cached certificate-error allowance, stale Service Worker, or similar profile-level data) and not reproducible anywhere else. The user accepted this as a local machine issue and closed the investigation without further server-side changes.</p>
+<h2 id="line-login-redirect-uri-bug-fixed">LINE Login redirect_uri Bug - Fixed</h2>
+<p>Symptom reported by the user — LINE Login failed with:</p>
+<pre><code>
+https://access.line.me/oauth2/v2.1/authorize?response_type=code&amp;client_id=2009291275&amp;redirect_uri=https%3A%2F%2Fiservice.rangsitcity.go.th%2Fiservice%2Fline_login_callback.php&amp;state=login.1782400921.9e334a157c55fd2d7d848e58&amp;scope=profile%20openid
+
+400 Bad Request
+Invalid redirect_uri value. Check if it is registered in a LINE developers site.
+</code></pre>
+<p>Root cause: <code>login.php</code>, <code>line_request_auth.php</code>, and <code>admin/system_setting.php</code> all derive the LINE callback URL from the <code>line_callback_url</code> row in the <code>system_settings</code> table. When that setting is empty, the code falls back to building the URL from <code>$_SERVER[&#39;SCRIPT_NAME&#39;]</code>. On VM1, Nginx&#39;s <code>location /</code> block proxies external requests to the internal backend path <code>http://php-app:80/iservice/...</code> (see <a href="#11-nginx-http-config-and-testing">section 11</a>), so PHP inside the container sees <code>SCRIPT_NAME</code> as <code>/iservice/login.php</code> even though the public URL has no <code>/iservice/</code> segment. The fallback then produced <code>https://iservice.rangsitcity.go.th/iservice/line_login_callback.php</code>, which did not match any Callback URL registered in the LINE Developers Console for channel <code>2009291275</code> — LINE Console only had:</p>
+<pre><code>
+https://iservice.rangsitcity.go.th/admin/line_callback.php
+https://iservice.rangsitcity.go.th/line_login_callback.php
+https://iservice.rangsitcity.go.th/line_request_callback.php
+</code></pre>
+<p>The <code>system_settings.line_callback_url</code> value on VM1 had in fact been saved with the buggy auto-detected value:</p>
+<pre><code>
+https://iservice.rangsitcity.go.th/iservice/admin/line_callback.php
+</code></pre>
+<p>Fix applied via Admin &gt; ตั้งค่าระบบ &gt; LINE tab &gt; &quot;Callback URL (สำหรับผูก LINE account)&quot; field — corrected to:</p>
+<pre><code>
+https://iservice.rangsitcity.go.th/admin/line_callback.php
+</code></pre>
+<p>Saving this lets <code>login.php</code> and <code>line_request_auth.php</code> derive <code>line_login_callback.php</code> and <code>line_request_callback.php</code> correctly via string replacement on the saved value, instead of falling back to the broken <code>SCRIPT_NAME</code> auto-detection. Verified working after save — LINE Login completed successfully.</p>
+<p><strong>Note for future Nginx changes:</strong> any code under this project that builds absolute URLs from <code>$_SERVER[&#39;SCRIPT_NAME&#39;]</code> or <code>dirname($_SERVER[&#39;SCRIPT_NAME&#39;])</code> is at risk of the same <code>/iservice/</code> leak as long as the <code>location /</code> proxy rewrite to <code>http://php-app:80/iservice/</code> stays in place. Prefer reading from an explicit, admin-configured setting (like <code>line_callback_url</code>) over auto-detection for anything registered with a third party (OAuth callbacks, webhooks, etc.).</p>
+<h2 id="planned-vm2-db-migration">Planned: Move MySQL/MariaDB to VM2 (Postgres Host)</h2>
+<p>Idea raised after the cutover was stable: instead of keeping <code>iservicedb</code> (MariaDB) on VM1 next to <code>php-app</code>, move it to VM2 — the existing private database server that already runs Postgres for other projects. This section records the infra survey and a draft migration plan. <strong>Not executed yet</strong> — exploration only, pending a decision to proceed.</p>
+<h3 id="vm2-infra-survey">VM2 Infra Survey</h3>
+<p>SSH access is defined client-side in <code>C:\Users\Administrator.DESKTOP-HJREAI3\.ssh\config</code>:</p>
+<pre><code>
+# --- เครื่องที่ 1 (Web Server ออกเน็ตได้) ---
+Host VM1
+    HostName 112.121.157.74
+    User rssc
+
+# --- เครื่องที่ 2 (Database Server ปิดเน็ต) ---
+Host VM2_Database
+    HostName 192.168.237.4
+    User rssc
+    ProxyJump VM1
+</code></pre>
+<p>VM2 has no internet egress (&quot;ปิดเน็ต&quot;) and is only reachable through VM1&#39;s private LAN interface. Password auth only — no key configured yet, so every hop currently requires typing the password twice (once for VM1 as jump host, once for VM2 itself). From inside a VM1 shell, VM2 is reached directly at <code>192.168.237.4</code> without needing the Windows-side <code>ProxyJump</code> alias.</p>
+<p>Survey commands and output (2026-06-25):</p>
+<pre><code>
+hostname; df -h; free -h; which docker postgresql psql; sudo docker ps -a; sudo systemctl status postgresql --no-pager
+</code></pre>
+<pre><code>
+hostname: rssc-db-srv
+Private IP: 192.168.237.4 (eth0)
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2        20G  9.1G  9.0G  51% /
+
+Mem: total 31Gi, used 966Mi, free 26Gi, buff/cache 4.5Gi, available 30Gi
+Swap: 0B
+
+docker: /usr/bin/docker (only Docker is installed — no native postgresql.service)
+
+CONTAINER ID   IMAGE                COMMAND                  STATUS        PORTS                                         NAMES
+3bde4dd05009   postgres:15-alpine   &quot;docker-entrypoint.s…&quot;   Up 3 months   0.0.0.0:5432-&gt;5432/tcp, [::]:5432-&gt;5432/tcp   postgres_db
+
+Unit postgresql.service could not be found.
+</code></pre>
+<p>Takeaways:</p>
+<ul><li>VM2 has far more headroom than VM1: 31GB RAM (26GB free) vs VM1&#39;s 15GB RAM (2.2GB free, see <a href="#chrome-not-secure-resolved">earlier survey output</a>).</li></ul>
+<ul><li>VM2 root disk is small — only 20GB total, 9GB free. <code>iservicedb</code> itself is tiny (~5MB dump) so it fits easily, but this caps how much more can be added later without resizing the disk or attaching a data volume (VM1 has separate <code>/data</code> 98G and <code>/data2</code> 196G mounts; VM2 currently does not).</li></ul>
+<ul><li>Everything on VM2 runs in Docker already — Postgres is a single container (<code>postgres_db</code>, <code>postgres:15-alpine</code>) bound to <code>0.0.0.0:5432</code>. No existing docker-compose file was inspected yet — next survey step should find it (likely <code>~/web-server/docker-compose.yml</code> equivalent) to add a MariaDB service the same way.</li></ul>
+<h3 id="vm2-network-topology">Network Topology</h3>
+<pre><code>
+[Internet] ---- VM1 (112.121.157.74, public)  ----private LAN (192.168.237.0/24)----  VM2 (192.168.237.4, no internet egress)
+                php-app, reverse-proxy,                                              postgres_db (Docker, 0.0.0.0:5432)
+                id-booking-db (MariaDB, current iservicedb home)                      [future: MariaDB for iservicedb]
+</code></pre>
+<p>VM1 can already reach VM2 over the private LAN (proven by direct <code>ssh rssc@192.168.237.4</code> from a VM1 shell). Postgres on VM2 is bound to <code>0.0.0.0:5432</code> rather than only the private interface — acceptable today only because VM2 itself has no internet route in, so <code>0.0.0.0</code> effectively means &quot;reachable from the private LAN only.&quot; Any new MariaDB container should follow the same convention (<code>0.0.0.0:3306-&gt;3306</code>) for consistency, but this depends on VM2 staying non-routable from the public internet — worth explicitly confirming with whoever manages the GDCC network/firewall rather than assuming.</p>
+<h3 id="vm2-migration-plan">Migration Plan</h3>
+<p>Draft steps, mirroring the original VM1 cutover pattern:</p>
+<pre><code>
+1. On VM2: locate or create the docker-compose file; add a `mariadb:11` service
+   (match the version currently running on VM1's id-booking-db) named e.g. `iservice-db`,
+   with a named volume for /var/lib/mysql, port mapped 0.0.0.0:3306->3306.
+2. On VM1: dump the current `iservicedb` from `id-booking-db`
+   (same pattern as the original production import — see section 6 above),
+   transfer the dump to VM2 over the private LAN (scp via the VM1 jump session).
+3. On VM2: create `iservicedb` + `iservice_user` on the new MariaDB container,
+   import the dump, verify table/row counts match VM1's (49 tables, 20 users,
+   171 departments, 32 service_requests at last count).
+4. On VM1: update `~/web-server/project-php/iservice/.env.gdcc`:
+     DB_HOST=192.168.237.4
+     DB_PORT=3306  (add if config/database.php doesn't already default to 3306)
+   Keep DB_NAME/DB_USER/DB_PASS matching what was created on VM2.
+5. Test from inside the php-app container that it can reach VM2 directly:
+     sudo docker compose exec php-app php -r "var_dump((new mysqli('192.168.237.4','iservice_user','[pass]','iservicedb'))->host_info);"
+6. Re-run the same HTTP/HTTPS smoke tests used during the original cutover
+   (/, /request-form.php, /api/get_departments.php?level=1, admin dashboard, LINE login)
+   to confirm nothing regressed.
+7. Only after the new DB is verified working end-to-end: stop and remove
+   `iservicedb` usage on VM1's `id-booking-db` (keep a final dump as a rollback
+   point before dropping anything).
+8. Update this runbook + CLAUDE.md production DB notes once migration is confirmed stable.
+</code></pre>
+<h3 id="vm2-risks-open-questions">Risks &amp; Open Questions</h3>
+<ul><li><strong>Cross-VM dependency:</strong> if VM2 is unreachable (reboot, network blip), <code>php-app</code> on VM1 loses its database — previously a local container dependency, now a network one. Worth checking what monitoring/alerting exists for VM2 uptime.</li></ul>
+<ul><li><strong>Disk headroom:</strong> VM2&#39;s 20GB root disk has 9GB free with nothing added yet — fine for <code>iservicedb</code> alone, but leaves little room if more databases get moved here later. Consider whether a data volume should be attached before treating VM2 as the long-term DB host.</li></ul>
+<ul><li><strong>Exposed port convention:</strong> following Postgres&#39;s existing <code>0.0.0.0:5432</code> pattern for the new MariaDB port is consistent, but it&#39;s worth explicitly confirming VM2 truly has no public route (not just no default route) before trusting <code>0.0.0.0</code> bindings as &quot;private by network isolation.&quot;</li></ul>
+<ul><li><strong>SSH auth:</strong> both VM1 and VM2 are still password-only. Setting up key-based auth (and adding <code>IdentityFile</code> to the Windows <code>.ssh/config</code>) would make this migration — and all future operational work — much faster to drive directly instead of relaying commands manually.</li></ul>
+<ul><li><strong>Not yet inspected:</strong> VM2&#39;s docker-compose source file, Postgres credentials/usage by other projects, and whether <code>id-booking-db</code> on VM1 is shared by anything besides iService (it also serves the original <code>id_booking</code> database per <code>docker-compose.yml</code> in <a href="#6-import-sql">section 6</a>) — confirm nothing else depends on iservicedb staying co-located before moving it.</li></ul>
+<h2 id="vm1-vm2-spec-summary">Infra Spec &amp; Resource Summary: VM1 vs VM2</h2>
+<p>Consolidated from the live surveys run on both machines on 2026-06-25. CPU core count/model was not captured on either machine yet — re-run <code>nproc; lscpu | grep -E "Model name|CPU\(s\)|MHz"</code> on each to fill that gap.</p>
+<h3 id="vm1-full-spec">VM1 Full Spec</h3>
+<pre><code>
+Role            : Web/App server (public-facing)
+Hostname        : rssc-webapp
+Public IP       : 112.121.157.74
+OS              : Ubuntu 24.04.3 LTS
+Kernel          : 6.17.0-14-generic x86_64
+CPU             : not yet captured
+RAM             : 15Gi total | 3.4Gi used | 2.2Gi free | 10Gi buff/cache | 12Gi available | Swap 0B
+Container runtime: Docker (docker compose), web-server stack at ~/web-server
+
+Disk:
+  /dev/sda3   20G   19G used   710M avail   97% used  -> /        (high usage by design — see capacity verdict note)
+  /dev/sda2  488M  boot
+  /dev/sda1  197M  boot/efi
+  /dev/sdb    98G  1.4G used   92G avail     2% used  -> /data
+  /dev/sdc   196G   28K used  186G avail     1% used  -> /data2
+
+Containers (docker ps -a, 2026-06-25):
+  php_app                 web-server-php-app          80/tcp
+  reverse_proxy           nginx:alpine                 0.0.0.0:80/443
+  nextjs_app               node:20-alpine               (healthy)
+  id_booking_phpmyadmin   phpmyadmin:latest            127.0.0.1:8081
+  id_booking_db           mariadb:11                   3306/tcp   (hosts iservicedb + id_booking)
+  metabase                metabase/metabase:latest      0.0.0.0:3100
+  pgadmin4                dpage/pgadmin4                0.0.0.0:5050  (admin UI only, connects out to VM2 Postgres)
+  portainer               portainer/portainer-ce        0.0.0.0:8000/9000/9443
+</code></pre>
+<h3 id="vm2-full-spec">VM2 Full Spec</h3>
+<pre><code>
+Role            : Database server (private, no internet egress)
+Hostname        : rssc-db-srv
+Private IP      : 192.168.237.4 (eth0) — reachable only from VM1's private LAN
+OS              : Ubuntu 24.04.3 LTS
+Kernel          : 6.8.0-86-generic x86_64
+CPU             : not yet captured
+RAM             : 31Gi total | 966Mi used | 26Gi free | 4.5Gi buff/cache | 30Gi available | Swap 0B
+Container runtime: Docker only — no native postgresql.service
+
+Disk:
+  /dev/sda2   20G   9.1G used   9.0G avail   51% used  -> /   (only disk on the box, no /data volume)
+  /dev/sda1  511M   boot/efi
+
+Containers (docker ps -a, 2026-06-25):
+  postgres_db   postgres:15-alpine   0.0.0.0:5432-&gt;5432/tcp   (up 3 months)
+
+SSH:
+  Windows-side alias (ProxyJump via VM1):
+    Host VM2_Database
+        HostName 192.168.237.4
+        User rssc
+        ProxyJump VM1
+  From inside a VM1 shell: ssh rssc@192.168.237.4 (direct, same private LAN)
+  Auth: password only on both hops — no key configured yet
+</code></pre>
+<h3 id="vm1-vm2-capacity-verdict">Capacity Verdict: Adding MariaDB to VM2</h3>
+<p><strong>VM2 has comfortable room to add a MariaDB container for <code>iservicedb</code></strong> — RAM is barely touched (26GB free) and the <code>mariadb:11</code> image plus <code>iservicedb</code> data (a few hundred MB at most, given the original dump was ~5MB) would use well under 1GB of the 9GB free on VM2&#39;s root disk.</p>
+<p><strong>Context on VM1&#39;s root disk being at 97% used (710MB free on a 20GB <code>/</code> partition):</strong> VM1 and VM2 are GDCC-allocated VMs, and the organization intentionally wants utilization kept high — under-used GDCC VMs risk being reclaimed. So 97% root disk usage on VM1 is not automatically a problem to fix; it may be working as intended. The only thing actually worth watching is the failure mode, not the percentage: if <code>/</code> hits 100% and Docker/Apache/MariaDB can&#39;t write (logs, temp files, container writes), that breaks the running app — that&#39;s the trigger to act, not the utilization number itself. A quick <code>docker system df</code> check is still useful to know what is using the space (in case it&#39;s reclaimable build cache vs. genuinely useful data), but the goal is awareness, not automatically trimming it down.</p>
+<p>Caveats for the VM2 plan specifically:</p>
+<ul><li>VM2&#39;s 9GB free is fine for <code>iservicedb</code> alone but leaves little margin if more databases get consolidated there later — no spare volume like VM1&#39;s <code>/data</code>/<code>/data2</code> exists yet on VM2.</li></ul>
+<ul><li>No backup job was observed for the existing <code>postgres_db</code> on VM2 during this survey — plan backups for both Postgres and the new MariaDB together rather than assuming one is already covered.</li></ul>
+<ul><li>Disable MariaDB binary logging (<code>skip-log-bin</code>) unless replication is actually needed, to avoid unnecessary disk growth on VM2&#39;s single small disk.</li></ul>
+<h2 id="cron-fundamentals">เรียนรู้ Cron: จาก Linux crontab สู่ Self-Service Web Scheduler</h2>
+<p>บันทึกนี้ตั้งใจเขียนแบบสอนตัวเอง (learning notes) — เป้าหมายคือเข้าใจหลักการของ cron ก่อนใช้เครื่องมือสำเร็จรูป ไม่ใช่แค่ copy คำสั่งมาวางแล้วใช้งานได้โดยไม่รู้ว่าทำงานอย่างไร</p>
+<h3 id="cron-linux-basics">1. Linux crontab ทำงานอย่างไร</h3>
+<p><code>cron</code> คือ daemon ที่รันอยู่บน Linux ตลอดเวลา (background process) มันจะตื่นขึ้นมาเช็คทุก ๆ 1 นาที ว่ามี job ไหนถึงเวลาต้องรันบ้าง โดยอ่าน schedule จากไฟล์ที่เรียกว่า <code>crontab</code> ของแต่ละ user</p>
+<p>รูปแบบ 1 บรรทัดใน crontab:</p>
+<pre><code>
+*    *    *    *    *    command-to-run
+┬    ┬    ┬    ┬    ┬
+│    │    │    │    └── วันในสัปดาห์ (0-7, 0 และ 7 = อาทิตย์)
+│    │    │    └─────── เดือน (1-12)
+│    │    └──────────── วันในเดือน (1-31)
+│    └───────────────── ชั่วโมง (0-23)
+└────────────────────── นาที (0-59)
+</code></pre>
+<p>ตัวอย่างที่ใช้จริงในโปรเจกต์นี้:</p>
+<pre><code>
+*/15 * * * *   = ทุก 15 นาที (นาทีที่หาร 15 ลงตัว คือ :00, :15, :30, :45 — ตรงเวลานาฬิกาเสมอ ไม่ใช่นับถอยจากตอนติดตั้ง)
+5 0 * * *      = ทุกวัน เวลา 00:05
+* * * * *      = ทุกนาที (ใช้กับ cron/runner.php ที่สร้างขึ้นใหม่)
+</code></pre>
+<p><strong>จุดสำคัญที่มักเข้าใจผิด:</strong> <code>*/15</code> ไม่ได้หมายความว่า &quot;15 นาทีถัดจากตอนนี้&quot; แต่หมายถึง &quot;ทุกค่าที่หารด้วย 15 ลงตัว นับจากนาทีที่ 0 ของทุกชั่วโมง&quot; เพราะฉะนั้นไม่ว่าจะติดตั้ง crontab เวลาไหน ก็จะไปชนที่ <code>:00 :15 :30 :45</code> เสมอ — เป็นเหตุผลที่ตอบคำถาม &quot;อยากให้รันตรงเวลา 09:00, 09:15, ... ไม่ใช่นับจากตอนนี้&quot; ได้ตรงไปตรงมา (ดู <a href="#planned-vm2-db-migration">ช่วงก่อนหน้า</a> ที่เปลี่ยนจาก <code>*/5</code> เป็น <code>*/15</code>)</p>
+<p>คำสั่งจัดการ crontab ที่ใช้บ่อยในโปรเจกต์นี้:</p>
+<pre><code>
+crontab -l                 # ดู schedule ทั้งหมดของ user ปัจจุบัน
+crontab -e                 # แก้ไขแบบเปิด editor (เช่น nano)
+crontab -l | crontab -     # อ่านของเดิมแล้วเขียนกลับ (ใช้คู่กับ echo/grep ต่อ pipe เพื่อแก้แบบไม่ต้องเปิด editor)
+</code></pre>
+<h3 id="cron-external-saas">2. ทำไมเดิมใช้ cron-job.org (SaaS ภายนอก)</h3>
+<p>ก่อนเรียนรู้เรื่อง crontab ของ VM1 เอง โปรเจกต์ใช้ <a href="https://console.cron-job.org/dashboard">cron-job.org</a> เป็นตัวยิง HTTP request ไปที่ <code>pm25_cron.php</code> ทุก 5 นาที วิธีนี้มีข้อดีคือตั้งง่าย ไม่ต้อง SSH ไม่ต้องรู้จัก Linux crontab เลย แต่มีข้อเสียคือ:</p>
+<ul><li>พึ่งพาบริการนอก — ถ้า cron-job.org ล่ม/โดนจำกัด rate/หยุดให้บริการ ระบบเราก็หยุดทำงานไปด้วย โดยที่เราควบคุมไม่ได้</li></ul>
+<ul><li>ข้อมูล credential/URL ปลายทางของเราต้องไปฝากไว้กับบริการภายนอก</li></ul>
+<ul><li>ดู response/log ของการรันแต่ละครั้งได้จำกัดตามที่ dashboard ของเขาให้ดู</li></ul>
+<h3 id="cron-vm1-native">3. ย้ายมารัน crontab ตรงบน VM1</h3>
+<p>ขั้นแรกของการเรียนรู้คือเลิกพึ่ง cron-job.org แล้วตั้ง <code>crontab</code> ของ user <code>rssc</code> บน VM1 ให้ยิง URL เดิมเอง:</p>
+<pre><code>
+*/15 * * * * cd /home/rssc/web-server && sudo docker compose exec -T php-app php /var/www/html/iservice/pm25_cron.php >> /home/rssc/pm25_cron_trigger.log 2>&amp;1
+</code></pre>
+<p>จุดที่ต้องระวังตอนทำจริง (เจอเองระหว่างตั้งค่า):</p>
+<ul><li><code>docker compose exec</code> ต้อง <code>cd</code> ไปโฟลเดอร์ที่มี <code>docker-compose.yml</code> ก่อน ไม่งั้นหาคอนเทนเนอร์ไม่เจอ</li></ul>
+<ul><li>ต้องใส่ <code>-T</code> เพื่อปิด pseudo-tty เพราะ cron รันแบบไม่มี terminal โต้ตอบ — ถ้าไม่ใส่จะ error &quot;the input device is not a TTY&quot;</li></ul>
+<ul><li><code>sudo</code> ใน crontab ใช้ได้เฉพาะถ้า user มี <code>NOPASSWD</code> ตั้งไว้ใน sudoers (เช็คด้วย <code>sudo -n docker ps</code> — ถ้าไม่ต้องใส่ password ก็ใช้ได้)</li></ul>
+<ul><li>คำสั่ง <code>sed</code> ที่ใช้แก้ไข crontab แบบ in-place ต้องเขียน pattern ให้เจาะจงพอ ไม่งั้นจะไปแก้ entry ของ project อื่นที่ดันมี pattern ตรงกันโดยไม่ตั้งใจ (เกือบเกิดขึ้นจริงตอนเปลี่ยน <code>*/5</code> เป็น <code>*/15</code> — บังเอิญรอดเพราะ entry อื่นตั้งค่าตรงกันอยู่แล้ว แต่เป็นบทเรียนว่าควรใช้ <code>grep</code> filter เฉพาะบรรทัดที่ต้องการ ไม่ใช่ sed แบบกว้าง)</li></ul>
+<h3 id="cron-virtual-pattern">4. หลักการ &quot;Virtual Cron&quot;: ทำไมไม่แก้ OS crontab ตรง ๆ ทุกครั้ง</h3>
+<p>หลังจากย้ายมาอยู่บน VM1 แล้ว ทุกครั้งที่จะเพิ่ม/ลบ/แก้ schedule ของ job ใหม่ ต้อง SSH เข้าไปแก้ <code>crontab</code> เอง — ใช้ได้สำหรับงานของแอดมินที่คุ้นเคยกับ Linux แต่ไม่เหมาะกับการเปิดให้คนอื่นจัดการเอง (ไม่อยากให้ทุกคนต้องมี SSH access)</p>
+<p>วิธีแก้ปัญหานี้แบบสากล (ใช้ในระบบจัดการ job หลายเจ้า เช่น Laravel Scheduler, Django-Celery-Beat) คือ <strong>Virtual Cron / Database-Driven Scheduler</strong>:</p>
+<pre><code>
+แทนที่จะมี:
+  crontab entry 1 ตัวต่อ 1 job  (ต้องแก้ไฟล์ระบบทุกครั้งที่เพิ่ม/ลบ job)
+
+ใช้แบบนี้แทน:
+  crontab entry เดียว ที่รันทุกนาที (* * * * *)
+       │
+       ▼
+  เรียก runner.php
+       │
+       ▼
+  runner.php query ตาราง DB (cron_schedules)
+  หา job ที่ &quot;ถึงเวลาแล้ว&quot; ตาม interval ที่ตั้งไว้
+       │
+       ▼
+  ยิง HTTP request ไปที่ target_url ของ job นั้น ๆ
+  บันทึกผลลัพธ์ (success/error, http code, เวลาที่ใช้) กลับเข้า DB
+</code></pre>
+<p>ข้อดีของแนวทางนี้:</p>
+<ul><li><strong>แก้ schedule ผ่านหน้าเว็บได้เลย</strong> — เพิ่ม/ลบ/เปลี่ยนความถี่ของ job ก็แค่ INSERT/UPDATE/DELETE แถวใน DB ไม่ต้องแตะ crontab ของระบบปฏิบัติการอีก</li></ul>
+<ul><li><strong>มีประวัติการรันเก็บไว้ใน DB</strong> (<code>cron_schedule_runs</code>) — ย้อนดูได้ว่า job ไหนรันสำเร็จ/ล้มเหลวกี่ครั้ง เมื่อไหร่ ใช้เวลานานแค่ไหน ต่างจาก SSH ดู log ไฟล์ที่ grep เองทุกครั้ง</li></ul>
+<ul><li><strong>เปิดสิทธิ์ให้ non-technical user จัดการ job ได้</strong> โดยไม่ต้องให้ SSH access เข้าเซิร์ฟเวอร์เลย — เหมาะกับการเปิดให้แอดมิน iService ทั่วไปใช้ ไม่จำเป็นต้องเป็นคนที่ดูแล VM1 โดยตรง</li></ul>
+<p>ข้อเสีย/ข้อจำกัดที่ต้องรู้:</p>
+<ul><li><strong>ความละเอียดของเวลาจำกัดที่ 1 นาที</strong> — เพราะ runner ถูกเรียกทุก 1 นาทีเท่านั้น ถ้าต้องการ schedule ที่ละเอียดกว่านาที (เช่น ทุก 10 วินาที) ต้องใช้วิธีอื่น ไม่ใช่ pattern นี้</li></ul>
+<ul><li><strong>ยังต้องมี crontab entry จริง 1 บรรทัดอยู่ดี</strong> (ตัวที่เรียก <code>runner.php</code>) — Virtual Cron ไม่ได้ทำให้ไม่ต้องใช้ OS cron เลย แค่ลดจำนวน entry ที่ต้องแก้ไขด้วยมือจากหลายบรรทัดเหลือบรรทัดเดียว</li></ul>
+<ul><li><strong>ถ้า runner.php รันช้ากว่า 1 นาที</strong> (เช่น job ข้างในใช้เวลานาน) อาจมีการ trigger ซ้ำซ้อนได้ ถึงแม้โค้ดที่เขียนมีการเช็ค <code>last_run_at</code> กันไว้แล้วก็ตาม (ดู logic ใน <a href="#cron-implementation">หัวข้อ 5</a>)</li></ul>
+<h3 id="cron-implementation">5. สิ่งที่สร้างจริง: cron_schedules + runner.php + Admin UI</h3>
+<p>โครงสร้างตาราง DB (ไฟล์ <code>database/add_cron_schedules.sql</code>):</p>
+<pre><code>
+cron_schedules
+├── id
+├── name              -- ชื่อ job ที่อ่านง่าย เช่น &quot;PM2.5 Data Sync&quot;
+├── target_url         -- URL ที่จะยิง เช่น https://iservice.rangsitcity.go.th/pm25_cron.php
+├── interval_minutes   -- ความถี่ เป็นนาที เช่น 15
+├── is_active          -- เปิด/ปิดโดยไม่ต้องลบ
+├── last_run_at        -- เวลาที่รันล่าสุด
+├── last_status        -- success / error
+├── last_http_code
+└── last_message       -- เก็บ response body ส่วนต้น (ช่วยดัก warning จาก endpoint ปลายทางได้ — ดูตัวอย่างจริงด้านล่าง)
+
+cron_schedule_runs       -- ตารางประวัติ เก็บทุกครั้งที่รัน (1-to-many กับ cron_schedules)
+├── schedule_id (FK)
+├── ran_at
+├── status / http_code / message
+└── duration_ms
+</code></pre>
+<p>หลักการตัดสินใจ &quot;ถึงเวลาหรือยัง&quot; ใน <code>cron/runner.php</code> — ใช้นาทีนับจาก Unix epoch หารด้วย interval แทนการดู <code>date(&#39;i&#39;)</code> เฉย ๆ เพื่อให้ใช้ได้ถูกต้องแม้ interval ไม่ใช่ตัวหารของ 60:</p>
+<pre><code>
+$minutesSinceEpoch = intdiv(time(), 60);
+if ($minutesSinceEpoch % $interval !== 0) {
+    continue; // ยังไม่ถึงเวลา
+}
+if (!empty($job[&#39;last_run_at&#39;]) &amp;&amp; (time() - strtotime($job[&#39;last_run_at&#39;])) &lt; 50) {
+    continue; // กันรันซ้ำในนาทีเดียวกัน
+}
+</code></pre>
+<p>เคสจริงที่เจอตอนทดสอบ — runner ดักจับ PHP warning จาก endpoint ปลายทางได้ทันที เพราะเก็บ response body ทั้งก้อนไว้ดู (เดิมที cron-job.org ไม่โชว์รายละเอียดนี้เลย จึงไม่มีใครรู้ว่ามี warning ซ่อนอยู่หลายเดือน):</p>
+<pre><code>
+last_message: &quot;Warning: file_put_contents(/var/www/html/iservice/storage/pm25_cron.log): Failed to open stream: Permission denied ...&quot;
+</code></pre>
+<p>สาเหตุคือไฟล์ log เป็นของ <code>rssc:rssc</code> (permission <code>664</code>) แต่ PHP ในคอนเทนเนอร์รันเป็น <code>www-data</code> (uid/gid 33) ซึ่งไม่ใช่ owner และไม่ใช่ group เดียวกัน เลยตกไปอยู่กลุ่ม &quot;other&quot; ที่อ่านได้อย่างเดียว แก้โดย:</p>
+<pre><code>
+sudo chown rssc:33 storage/pm25_cron.log   # ตั้ง group เป็น gid 33 (www-data ในคอนเทนเนอร์)
+sudo chmod 664 storage/pm25_cron.log        # group มีสิทธิ์เขียนแล้ว
+</code></pre>
+<p>หน้า Admin UI (<code>admin/cron_schedules.php</code>) ใช้ pattern เดียวกับหน้า admin อื่นในโปรเจกต์ (เทียบกับ <code>admin/pm25_api_keys.php</code>) — ฟอร์ม POST ธรรมดาไม่ใช้ AJAX แยกไฟล์ API เพราะ logic ไม่ซับซ้อนพอที่จะคุ้มกับความซับซ้อนเพิ่ม: create / update / toggle / delete / run_now ล้วนเป็น POST handler ในไฟล์เดียวกัน ตามด้วย redirect หรือ render ตารางใหม่</p>
+<h3 id="cron-comparison-table">6. เทียบ 3 แนวทาง: cron-job.org vs OS crontab vs Virtual Cron</h3>
+<pre><code>
+                       cron-job.org      OS crontab ตรง       Virtual Cron (สร้างเอง)
+ตั้ง schedule ใหม่      หน้าเว็บ SaaS      SSH + แก้ crontab     หน้าเว็บของเราเอง
+ต้อง SSH ไหม            ไม่ต้อง            ต้อง ทุกครั้ง          ต้อง แค่ครั้งแรก (bootstrap)
+ดู log/ประวัติ          จำกัดตาม SaaS      ต้อง SSH ไปดูไฟล์      ดูในหน้าเว็บ มีประวัติเก็บใน DB
+พึ่งบริการภายนอกไหม     พึ่ง                ไม่พึ่ง               ไม่พึ่ง
+ความละเอียดเวลา         ขึ้นกับ SaaS        วินาทีระดับนาที (cron) จำกัดที่ 1 นาที (จำกัดกว่า crontab ตรง)
+เหมาะกับ                ตั้งเร็ว ไม่อยากยุ่ง  แอดมินที่คุ้น Linux    เปิดให้คนอื่นจัดการได้ ไม่ต้องรู้ Linux
+</code></pre>
+<h3 id="cron-lessons-learned">7. บทเรียนที่ได้จากการลงมือทำจริง</h3>
+<ul><li><strong>cron ไม่ได้ &quot;นับเวลา&quot; แต่ &quot;เช็คนาฬิกา&quot;</strong> — เข้าใจตรงนี้แล้วจะตอบคำถามเรื่อง &quot;ทำไมรันตรง :00 :15 :30 :45&quot; ได้เอง ไม่ต้องจำเป็นกรณี ๆ ไป</li></ul>
+<ul><li><strong>คำสั่งที่แก้ไฟล์ระบบแบบ pattern-matching (เช่น sed) ต้องเจาะจงให้พอ</strong> — ไฟล์ crontab ของ user หนึ่งคนอาจมีหลายโปรเจกต์ปนกันอยู่ การแก้แบบ global replace มีโอกาสกระทบของคนอื่นโดยไม่ตั้งใจ</li></ul>
+<ul><li><strong>ระบบที่ &quot;ดูเหมือนซ้ำกัน&quot; อาจไม่ได้ซ้ำจริง</strong> — pm25_cron.php (iService/MariaDB) กับ pm25_cron.js (Next.js CDP/PostgreSQL) ทำงานคล้ายกันมาก แต่เป็นคนละระบบที่เลี้ยงคนละแอป ก่อนจะ &quot;ยุบรวม&quot; ของที่ดูซ้ำกัน ต้องเช็คให้แน่ใจก่อนว่าจริง ๆ ซ้ำหรือแค่หน้าตาคล้าย</li></ul>
+<ul><li><strong>เก็บ response/log แบบเต็ม ๆ มีค่ามากกว่าที่คิด</strong> — บั๊ก permission ของ log file ซ่อนอยู่มาหลายเดือนเพราะ cron-job.org ไม่โชว์ response body ให้เห็น พอเปลี่ยนมาเก็บ message เต็มใน DB ก็เจอปัญหาทันทีในการทดสอบครั้งแรก</li></ul>
+<h3 id="cron-when-to-use-offshelf">8. เมื่อไหร่ควรใช้เครื่องมือสำเร็จรูปแทน</h3>
+<p>การสร้าง Virtual Cron เองมีไว้เพื่อ &quot;เข้าใจหลักการ&quot; ไม่ได้แปลว่าต้องสร้างเองทุกโปรเจกต์ตลอดไป เครื่องมือสำเร็จรูปที่ใช้หลักการเดียวกันนี้ (DB/queue-driven scheduler บน OS cron ตัวเดียว) และควรพิจารณาเมื่อความต้องการซับซ้อนขึ้น ได้แก่:</p>
+<ul><li><strong>Laravel Task Scheduling</strong> — ถ้าโปรเจกต์เปลี่ยนไปใช้ Laravel framework เต็มรูปแบบ มีระบบนี้ในตัวอยู่แล้ว ไม่ต้องสร้าง <code>runner.php</code> เอง</li></ul>
+<ul><li><strong>n8n / Node-RED</strong> — ถ้าต้องการ workflow ที่ซับซ้อนกว่าแค่ &quot;ยิง URL ตามเวลา&quot; เช่น มีเงื่อนไข, retry, แจ้งเตือนผ่าน LINE/Email เมื่อ job ล้มเหลว</li></ul>
+<ul><li><strong>cron-job.org (กลับไปใช้ได้ถ้าจำเป็น)</strong> — ถ้าวันหนึ่ง VM1 ไม่มี cron daemon ให้ใช้เลย (เช่น ย้ายไป serverless/managed hosting ที่ควบคุม OS-level cron ไม่ได้) SaaS ภายนอกก็ยังเป็นตัวเลือกที่สมเหตุสมผล — สิ่งที่ได้จากการทำเองคือ <em>เข้าใจว่าเครื่องมือสำเร็จรูปพวกนี้ทำอะไรอยู่ข้างหลัง</em> ไม่ใช่แค่เชื่อตามที่มันบอก</li></ul>
+</main></div></body></html>

@@ -45,3 +45,56 @@ To: thanongb42@gmail.com
 Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0014)
 Link: http://localhost/iservice/tracking.php?req=REQ-2026-0014
 
+To: Angcle@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อีเมลเทศบาล (REQ-2026-0015)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0015
+
+To: thanong@rangsitcity.go.th
+Subject: ได้รับคำร้องขอใช้บริการ: พื้นที่เก็บข้อมูล NAS (REQ-2026-0016)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0016
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0017)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0017
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0018)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0018
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0019)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0019
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: ขอพิธีกร (REQ-2026-0020)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0020
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: อินเทอร์เน็ต / WiFi (REQ-2026-0021)
+Link: http://localhost/iservice/tracking.php?req=REQ-2026-0021
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0011)
+Link: https://localhost/iservice/tracking.php?req=REQ-2026-0011
+
+To: thanongb42@gmail.com
+Subject: ได้รับคำร้องขอใช้บริการ: บริการถ่ายภาพ (REQ-2026-0012)
+Link: https://localhost/iservice/tracking.php?req=REQ-2026-0012
+
+[ADMIN_NOTIFY] To: admin@rangsit.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: piyanun@rangsit.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: sira@rangsit.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: ratcharakorn@rangsit.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: thanongb42@gmail.com | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: rungnaree.s@rangsitcity.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: sopida@rangsitcity.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: kongpop@rangsitcity.go.th | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: porntip.pp695@gmail.com | REQ-2026-0012 | บริการถ่ายภาพ
+[ADMIN_NOTIFY] To: mor_mef@yahoo.com | REQ-2026-0012 | บริการถ่ายภาพ
+----------------------------------------
+UPDATE NOTIFICATION (requester)
+To: thanongb42@gmail.com
+Subject: อัปเดตสถานะคำร้อง: บริการถ่ายภาพ (REQ-2026-0012)
+Status: ถูกปฏิเสธ
+Link: https://localhost/iservice/tracking.php?req=REQ-2026-0012
+
